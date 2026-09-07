@@ -8,11 +8,17 @@
     },
     "id": "doongndon.gd-utils",
     "name": "Doong's GD Utils",
-    "version": "v1.0.0",
-    "developers": ["doongndon"],
-    "description": "An in-game info HUD, instant restart and pause menu level info.",
+    "version": "v1.1.0",
+    "developers": [
+        "doongndon"
+    ],
+    "description": "An in-game info HUD, instant restart, level info and crash-safe progress saving.",
     "repository": "https://github.com/doongndon/doongs-gd-utills",
-    "tags": ["gameplay", "interface", "utility"],
+    "tags": [
+        "gameplay",
+        "interface",
+        "utility"
+    ],
     "settings": {
         "hud-title": {
             "type": "title",
@@ -29,7 +35,12 @@
             "name": "Position",
             "description": "Which screen corner the HUD is anchored to.",
             "default": "top-left",
-            "one-of": ["top-left", "top-right", "bottom-left", "bottom-right"]
+            "one-of": [
+                "top-left",
+                "top-right",
+                "bottom-left",
+                "bottom-right"
+            ]
         },
         "hud-scale": {
             "type": "float",
@@ -88,6 +99,22 @@
             "type": "bool",
             "name": "Level info in pause menu",
             "description": "Adds a level ID / object count / attempt readout and a Copy ID button to the pause menu.",
+            "default": true
+        },
+        "crash-title": {
+            "type": "title",
+            "name": "Crash Safety"
+        },
+        "save-on-background": {
+            "type": "bool",
+            "name": "Save when leaving the app",
+            "description": "Forces a game save whenever the app goes to the background, so attempts and best percents survive if the system kills it.",
+            "default": true
+        },
+        "resume-button": {
+            "type": "bool",
+            "name": "Resume button on the menu",
+            "description": "If the game closed while you were in an online level, shows a Resume button on the main menu to jump straight back to it.",
             "default": true
         }
     }

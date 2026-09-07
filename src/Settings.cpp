@@ -23,6 +23,9 @@ namespace gdu {
         instantRestart = mod->getSettingValue<bool>("instant-restart");
         pauseInfo = mod->getSettingValue<bool>("pause-info");
 
+        saveOnBackground = mod->getSettingValue<bool>("save-on-background");
+        resumeButton = mod->getSettingValue<bool>("resume-button");
+
         ++revision;
     }
 }
