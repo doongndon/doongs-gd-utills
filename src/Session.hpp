@@ -12,11 +12,15 @@ namespace gdu::session {
     struct Record {
         int levelID = 0;
         std::string levelName;
+        bool practice = false;
         bool active = false;
     };
 
     // 레벨에 들어갈 때 호출. 온라인 레벨이 아니면 아무 것도 하지 않는다.
     void begin(GJGameLevel* level);
+
+    // 연습 모드를 켜고 끌 때 호출. 돌아왔을 때 같은 모드로 들어가기 위한 것.
+    void setPractice(bool practice);
 
     // 레벨에서 정상적으로 나갈 때 호출.
     void end();

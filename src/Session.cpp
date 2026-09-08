@@ -5,6 +5,7 @@ using namespace geode::prelude;
 namespace {
     constexpr const char* KEY_ID = "resume-level-id";
     constexpr const char* KEY_NAME = "resume-level-name";
+    constexpr const char* KEY_PRACTICE = "resume-practice";
     constexpr const char* KEY_ACTIVE = "resume-active";
 
     // 앱이 OS 에 의해 강제 종료되면 Geode 가 알아서 저장해 줄 틈이 없다.
@@ -38,7 +39,20 @@ namespace gdu::session {
         auto* mod = Mod::get();
         mod->setSavedValue<int64_t>(KEY_ID, id);
         mod->setSavedValue<std::string>(KEY_NAME, std::string(level->m_levelName));
+        mod->setSavedValue<bool>(KEY_PRACTICE, false);
         mod->setSavedValue<bool>(KEY_ACTIVE, true);
+        flush();
+    }
+
+    void setPractice(bool practice) {
+        auto* mod = Mod::get();
+        if (!mod->getSavedValue<bool>(KEY_ACTIVE, false)) {
+            return;
+        }
+        if (mod->getSavedValue<bool>(KEY_PRACTICE, false) == practice) {
+            return;
+        }
+        mod->setSavedValue<bool>(KEY_PRACTICE, practice);
         flush();
     }
 
@@ -56,6 +70,7 @@ namespace gdu::session {
         return Record{
             .levelID = static_cast<int>(mod->getSavedValue<int64_t>(KEY_ID, 0)),
             .levelName = mod->getSavedValue<std::string>(KEY_NAME, ""),
+            .practice = mod->getSavedValue<bool>(KEY_PRACTICE, false),
             .active = mod->getSavedValue<bool>(KEY_ACTIVE, false),
         };
     }

@@ -2,8 +2,6 @@
 #include <Geode/modify/MenuLayer.hpp>
 #include <Geode/modify/PlayLayer.hpp>
 
-#include <fmt/format.h>
-
 #include "Session.hpp"
 #include "Settings.hpp"
 
@@ -32,6 +30,11 @@ class $modify(ResumePlayLayer, PlayLayer) {
         return true;
     }
 
+    void togglePracticeMode(bool practiceMode) {
+        PlayLayer::togglePracticeMode(practiceMode);
+        gdu::session::setPractice(practiceMode);
+    }
+
     void onQuit() {
         // 스스로 나가는 것이므로 "도중에 죽었다" 표시를 지운다.
         gdu::session::end();
@@ -56,8 +59,7 @@ class $modify(ResumeMenuLayer, MenuLayer) {
 
         // 저장 목록에 없는 레벨이면 다시 열 방법이 없다. 눌러도 안 되는 버튼을
         // 띄우느니 아예 만들지 않는다.
-        auto* level = GameLevelManager::sharedState()->getSavedLevel(record.levelID);
-        if (!level) {
+        if (!GameLevelManager::sharedState()->getSavedLevel(record.levelID)) {
             gdu::session::end();
             return true;
         }
@@ -107,8 +109,29 @@ class $modify(ResumeMenuLayer, MenuLayer) {
             return;
         }
 
+        // 레벨 데이터가 이미 받아져 있으면 곧장 플레이로 들어간다. 없으면 레벨
+        // 페이지로 보내서 GD 가 알아서 내려받게 한다.
+        if (level->m_levelString.empty()) {
+            CCDirector::sharedDirector()->pushScene(
+                CCTransitionFade::create(0.4f, LevelInfoLayer::scene(level, false))
+            );
+            return;
+        }
+
         CCDirector::sharedDirector()->pushScene(
-            CCTransitionFade::create(0.4f, LevelInfoLayer::scene(level, false))
+            CCTransitionFade::create(0.4f, PlayLayer::scene(level, false, false))
         );
+
+        if (!record.practice) {
+            return;
+        }
+
+        // 씬이 실제로 돌기 시작한 다음 프레임에 연습 모드를 켠다. 아직 화면에
+        // 올라가지도 않은 레이어를 건드리면 깨지기 쉽다.
+        Loader::get()->queueInMainThread([] {
+            if (auto* playLayer = PlayLayer::get()) {
+                playLayer->togglePracticeMode(true);
+            }
+        });
     }
 };

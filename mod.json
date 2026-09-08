@@ -8,7 +8,7 @@
     },
     "id": "doongndon.gd-utils",
     "name": "Doong's GD Utils",
-    "version": "v1.1.0",
+    "version": "v1.2.0",
     "developers": [
         "doongndon"
     ],
@@ -114,7 +114,7 @@
         "resume-button": {
             "type": "bool",
             "name": "Resume button on the menu",
-            "description": "If the game closed while you were in an online level, shows a Resume button on the main menu to jump straight back to it.",
+            "description": "If the game closed while you were in an online level, shows a Resume button on the main menu that drops you straight back into that level, in practice mode if you were in it.",
             "default": true
         }
     }
