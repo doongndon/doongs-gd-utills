@@ -8,11 +8,11 @@
     },
     "id": "doongndon.gd-utils",
     "name": "Doong's GD Utils",
-    "version": "v1.2.0",
+    "version": "v1.3.0",
     "developers": [
         "doongndon"
     ],
-    "description": "An in-game info HUD, instant restart, level info and crash-safe progress saving.",
+    "description": "An in-game info HUD, instant restart, level info and a crash-safe save.",
     "repository": "https://github.com/doongndon/doongs-gd-utills",
     "tags": [
         "gameplay",
@@ -109,12 +109,6 @@
             "type": "bool",
             "name": "Save when leaving the app",
             "description": "Forces a game save whenever the app goes to the background, so attempts and best percents survive if the system kills it.",
-            "default": true
-        },
-        "resume-button": {
-            "type": "bool",
-            "name": "Resume button on the menu",
-            "description": "If the game closed while you were in an online level, shows a Resume button on the main menu that drops you straight back into that level, in practice mode if you were in it.",
             "default": true
         }
     }
