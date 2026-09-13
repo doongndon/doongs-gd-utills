@@ -24,6 +24,7 @@ namespace gdu {
         bool pauseInfo = true;
 
         bool saveOnBackground = true;
+        bool decoTools = true;
 
         // 갱신될 때마다 증가한다. HUD 는 이 값만 비교해 다시 배치할지 정한다.
         unsigned int revision = 0;

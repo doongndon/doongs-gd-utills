@@ -24,6 +24,7 @@ namespace gdu {
         pauseInfo = mod->getSettingValue<bool>("pause-info");
 
         saveOnBackground = mod->getSettingValue<bool>("save-on-background");
+        decoTools = mod->getSettingValue<bool>("deco-tools");
 
         ++revision;
     }

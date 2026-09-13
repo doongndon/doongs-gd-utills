@@ -8,11 +8,11 @@
     },
     "id": "doongndon.gd-utils",
     "name": "Doong's GD Utils",
-    "version": "v1.3.0",
+    "version": "v1.4.0",
     "developers": [
         "doongndon"
     ],
-    "description": "An in-game info HUD, instant restart, level info and a crash-safe save.",
+    "description": "An info HUD, instant restart, level info, a crash-safe save and editor deco tools.",
     "repository": "https://github.com/doongndon/doongs-gd-utills",
     "tags": [
         "gameplay",
@@ -109,6 +109,16 @@
             "type": "bool",
             "name": "Save when leaving the app",
             "description": "Forces a game save whenever the app goes to the background, so attempts and best percents survive if the system kills it.",
+            "default": true
+        },
+        "editor-title": {
+            "type": "title",
+            "name": "Editor"
+        },
+        "deco-tools": {
+            "type": "bool",
+            "name": "Deco tools button",
+            "description": "Adds a Deco button to the editor with Scatter (random jitter) and Ramp (gradual change) for the current selection.",
             "default": true
         }
     }
