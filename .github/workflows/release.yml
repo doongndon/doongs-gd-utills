@@ -1,0 +1,105 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  check:
+    name: Check version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Tag must match mod.json
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          set -euo pipefail
+          declared=$(python3 -c "import json; print(json.load(open('mod.json'))['version'])")
+          if [ "$declared" != "${{ github.ref_name }}" ]; then
+            echo "mod.json says $declared but the tag is ${{ github.ref_name }}" >&2
+            exit 1
+          fi
+
+  build:
+    name: ${{ matrix.config.name }}
+    needs: check
+    strategy:
+      fail-fast: false
+      matrix:
+        config:
+          - name: Windows
+            os: windows-latest
+
+          - name: macOS
+            os: macos-latest
+
+          - name: iOS
+            os: macos-latest
+            target: iOS
+
+          - name: Android32
+            os: ubuntu-latest
+            target: Android32
+
+          - name: Android64
+            os: ubuntu-latest
+            target: Android64
+
+    runs-on: ${{ matrix.config.os }}
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Build the mod
+        uses: geode-sdk/build-geode-mod@main
+        with:
+          combine: true
+          target: ${{ matrix.config.target }}
+
+  release:
+    name: Publish
+    needs: build
+    runs-on: ubuntu-latest
+    env:
+      INDEX_TOKEN: ${{ secrets.GEODE_INDEX_TOKEN }}
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: geode-sdk/build-geode-mod/combine@main
+        id: build
+
+      - name: Attach the .geode file to a GitHub release
+        id: publish
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          file=$(find "${{ steps.build.outputs.build-output }}" -name '*.geode' | head -n 1)
+          if [ -z "$file" ]; then
+            echo "the build produced no .geode file" >&2
+            exit 1
+          fi
+          gh release create "${{ github.ref_name }}" "$file" \
+            --title "${{ github.ref_name }}" --generate-notes
+          echo "url=https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/$(basename "$file")" >> "$GITHUB_OUTPUT"
+
+      # 인덱스에 처음 올리는 것만 사람이 한 번 해야 한다. 그 뒤로는 태그를 밀
+      # 때마다 새 버전이 자동으로 올라간다. 토큰 시크릿이 없으면 조용히 건너뛴다.
+      - name: Submit the new version to the Geode index
+        if: ${{ startsWith(github.ref, 'refs/tags/') && env.INDEX_TOKEN != '' }}
+        run: |
+          set -euo pipefail
+          id=$(python3 -c "import json; print(json.load(open('mod.json'))['id'])")
+          curl -fsS -X POST "https://api.geode-sdk.org/v1/mods/$id/versions" \
+            -H "Authorization: Bearer $INDEX_TOKEN" \
+            -H "Content-Type: application/json" \
+            -H "User-Agent: doongs-gd-utils-ci" \
+            -d "{\"download_link\": \"${{ steps.publish.outputs.url }}\"}"
