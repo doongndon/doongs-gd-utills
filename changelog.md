@@ -1,3 +1,6 @@
+# v1.5.0
+ - Added a **Check for updates** button that installs the newest release from GitHub
+
 # v1.4.0
  - Added editor deco tools: **Scatter** (random jitter) and **Ramp** (gradual change)
 

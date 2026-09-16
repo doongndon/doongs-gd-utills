@@ -11,4 +11,7 @@ A small quality-of-life pack:
   rotation and scale of the selection for natural looking decoration; *Ramp* changes rotation
   and scale gradually across the selection, left to right. Both register a normal undo step.
 
+- **Check for updates** — a button in the settings that pulls the newest release from GitHub
+  and installs it. Restart the game to apply.
+
 Everything is toggleable in the mod settings.
