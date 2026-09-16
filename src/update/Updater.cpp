@@ -59,7 +59,7 @@ namespace {
         if (version <= mod->getVersion()) {
             std::filesystem::remove(staging, ec);
             finish(
-                fmt::format("Already up to date ({})", mod->getVersion().toString()),
+                fmt::format("Already up to date ({})", mod->getVersion()),
                 NotificationIcon::Info
             );
             return;
@@ -78,7 +78,7 @@ namespace {
         }
 
         finish(
-            fmt::format("Updated to {} - restart the game to apply", version.toString()),
+            fmt::format("Updated to {} - restart the game to apply", version),
             NotificationIcon::Success
         );
     }
