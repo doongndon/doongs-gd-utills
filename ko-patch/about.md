@@ -22,6 +22,16 @@ Repeated sentences are templates rather than 4,872 separate lines: one rule cove
 holding a number or a name are templates too, since a label carrying one never matches as
 fixed text.
 
+Installed mods are covered too, not just the game. Geode's own mod manager, BetterEdit,
+Tinker, BetterInfo and NodeIDs: their buttons, their settings, and the description under
+every setting. Those strings were read out of each mod's source with `tools/extract.py`
+rather than copied off screenshots, so what is covered is again countable.
+
+What is not covered is every other mod, and there is no list to work from for those - each
+one would have to be read the same way. The Gemini setting exists for that gap.
+
+Mod names and their developers are never translated. They are names other people chose.
+
 Translations live in `translations/ko.json`. Adding a line there is all it takes to cover
 one more piece of text.
 

@@ -1,3 +1,6 @@
+# v3.3.0
+ - Installed mods are translated too. Geode's own mod manager, BetterEdit, Tinker, BetterInfo and NodeIDs - their buttons, settings and every setting description
+
 # v3.2.0
  - Other people's mod names are left alone. "Save Buttons" was coming out as "Buttons 저장" and "Overcharged Main Levels" as "레벨 Overcharged Main개" - the mod now asks Geode for every installed mod's name and developer and never touches them
 

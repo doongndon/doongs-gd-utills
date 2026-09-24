@@ -9,6 +9,7 @@ Geode 가 만들던 것과 같은 모양으로 낸다. 해상도 세 벌(sd/hd/u
 어느 판본을 쓸지는 cocos 가 화질 설정을 보고 스스로 고르기 때문이다.
 """
 
+import json
 import math
 import pathlib
 import sys
