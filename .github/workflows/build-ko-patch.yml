@@ -7,10 +7,12 @@ on:
       - "**"
     paths:
       - "ko-patch/**"
+      - "common/**"
       - ".github/workflows/build-ko-patch.yml"
   pull_request:
     paths:
       - "ko-patch/**"
+      - "common/**"
       - ".github/workflows/build-ko-patch.yml"
 
 jobs:

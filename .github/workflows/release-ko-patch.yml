@@ -1,9 +1,9 @@
-name: Release
+name: Release Korean Patch
 
 on:
   push:
     tags:
-      - "v*"
+      - "ko-v*"
   workflow_dispatch:
 
 permissions:
@@ -20,11 +20,23 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/')
         run: |
           set -euo pipefail
-          declared=$(python3 -c "import json; print(json.load(open('mod.json'))['version'])")
-          if [ "$declared" != "${{ github.ref_name }}" ]; then
-            echo "mod.json says $declared but the tag is ${{ github.ref_name }}" >&2
+          declared=$(python3 -c "import json; print(json.load(open('ko-patch/mod.json'))['version'])")
+          tagged="${{ github.ref_name }}"
+          tagged="${tagged#ko-}"
+          if [ "$declared" != "$tagged" ]; then
+            echo "ko-patch/mod.json says $declared but the tag is ${{ github.ref_name }}" >&2
             exit 1
           fi
+
+      - name: Charset must cover the translations
+        run: python3 ko-patch/tools/sync_charset.py --check
+
+      - name: Bold font must match the translations
+        run: |
+          set -euo pipefail
+          pip install --quiet pillow fonttools
+          python3 ko-patch/tools/make_bold_font.py --bold 1
+          git diff --exit-code -- ko-patch/fonts/doongpixel.ttf
 
   build:
     name: ${{ matrix.config.name }}
@@ -59,6 +71,7 @@ jobs:
       - name: Build the mod
         uses: geode-sdk/build-geode-mod@main
         with:
+          path: ./ko-patch
           combine: true
           target: ${{ matrix.config.target }}
 
@@ -66,8 +79,6 @@ jobs:
     name: Publish
     needs: build
     runs-on: ubuntu-latest
-    env:
-      INDEX_TOKEN: ${{ secrets.GEODE_INDEX_TOKEN }}
 
     steps:
       - uses: actions/checkout@v5
@@ -76,7 +87,6 @@ jobs:
         id: build
 
       - name: Attach the .geode file to a GitHub release
-        id: publish
         if: startsWith(github.ref, 'refs/tags/')
         env:
           GH_TOKEN: ${{ github.token }}
@@ -89,14 +99,9 @@ jobs:
           fi
           gh release create "${{ github.ref_name }}" "$file" \
             --title "${{ github.ref_name }}" --generate-notes
-          echo "url=https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/$(basename "$file")" >> "$GITHUB_OUTPUT"
 
-      # 인덱스에 처음 올리는 것만 사람이 한 번 해야 한다. 그 뒤로는 태그를 밀
-      # 때마다 새 버전이 자동으로 올라간다. 토큰 시크릿이 없으면 조용히 건너뛴다.
-      # 저장소에 모드가 둘이라 GitHub 의 "latest" 별칭은 쓸 수 없다. 그건
-      # 저장소 전체에서 가장 최근 릴리스 하나만 가리켜서, 다른 모드를 올린
-      # 순간 엉뚱한 곳을 짚는다. 그래서 모드마다 고정 태그를 두고 새 파일이
-      # 나올 때마다 그 태그를 옮긴다. 모드 안의 업데이트 버튼이 보는 주소다.
+      # 모드마다 고정 태그를 두고 새 파일이 나올 때마다 옮긴다. 모드 안의
+      # 업데이트 버튼이 보는 주소라, 저장소에 모드가 둘이어도 서로 엉키지 않는다.
       - name: Move the rolling tag to this build
         if: startsWith(github.ref, 'refs/tags/')
         env:
@@ -104,20 +109,9 @@ jobs:
         run: |
           set -euo pipefail
           file=$(find "${{ steps.build.outputs.build-output }}" -name '*.geode' | head -n 1)
-          gh release delete "utils-latest" --yes --cleanup-tag || true
-          gh release create "utils-latest" "$file" \
+          gh release delete "ko-latest" --yes --cleanup-tag || true
+          gh release create "ko-latest" "$file" \
             --target "${{ github.sha }}" \
-            --title "Newest Doong's GD Utils" \
+            --title "Newest Korean Patch" \
             --notes "Always points at the newest build. Released as ${{ github.ref_name }}." \
             --latest=false
-
-      - name: Submit the new version to the Geode index
-        if: ${{ startsWith(github.ref, 'refs/tags/') && env.INDEX_TOKEN != '' }}
-        run: |
-          set -euo pipefail
-          id=$(python3 -c "import json; print(json.load(open('mod.json'))['id'])")
-          curl -fsS -X POST "https://api.geode-sdk.org/v1/mods/$id/versions" \
-            -H "Authorization: Bearer $INDEX_TOKEN" \
-            -H "Content-Type: application/json" \
-            -H "User-Agent: doongs-gd-utils-ci" \
-            -d "{\"download_link\": \"${{ steps.publish.outputs.url }}\"}"

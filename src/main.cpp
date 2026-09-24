@@ -1,7 +1,7 @@
 #include <Geode/Geode.hpp>
 
 #include "Settings.hpp"
-#include "update/Updater.hpp"
+#include "Updater.hpp"
 
 using namespace geode::prelude;
 
@@ -12,5 +12,5 @@ $on_mod(Loaded) {
         gdu::Settings::get().reload();
     });
 
-    gdu::updater::listenForButton();
+    shared::updater::listenForButton("doongndon/doongs-gd-utills", "utils-latest");
 }

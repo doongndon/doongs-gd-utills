@@ -1,6 +1,7 @@
 #include <Geode/Geode.hpp>
 
 #include "Translator.hpp"
+#include "Updater.hpp"
 
 using namespace geode::prelude;
 
@@ -18,4 +19,6 @@ $on_mod(Loaded) {
     listenForSettingChanges<bool>("own-font", [](bool own) {
         kopatch::Translator::get().setOwnFont(own);
     });
+
+    shared::updater::listenForButton("doongndon/doongs-gd-utills", "ko-latest");
 }

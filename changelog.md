@@ -1,3 +1,6 @@
+# v1.6.0
+ - The update button now follows a tag of its own, so the Korean patch sharing this repository cannot point it at the wrong release
+
 # v1.5.0
  - Added a **Check for updates** button that installs the newest release from GitHub
 

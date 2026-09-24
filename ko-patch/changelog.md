@@ -1,3 +1,6 @@
+# v1.3.0
+ - Added a **Check for updates** button that installs the newest release from GitHub
+
 # v1.2.0
  - Translation now covers the world map, gauntlets, level lists, the editor and its dialogs
  - Added sentence templates, so achievement lines translate whatever level name they carry

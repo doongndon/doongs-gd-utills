@@ -16,11 +16,6 @@
 using namespace geode::prelude;
 
 namespace {
-    // GitHub 의 "latest" 별칭. 릴리스를 새로 올려도 주소가 그대로라, 모드 안에
-    // 버전 목록 같은 걸 들고 있을 필요가 없다.
-    constexpr const char* DOWNLOAD_URL =
-        "https://github.com/doongndon/doongs-gd-utills/releases/latest/download/doongndon.gd-utils.geode";
-
     std::atomic_bool RUNNING{ false };
 
     Ref<Notification> g_progress = nullptr;
@@ -84,8 +79,8 @@ namespace {
     }
 }
 
-namespace gdu::updater {
-    void checkAndInstall() {
+namespace {
+    void checkAndInstall(std::string url) {
         if (RUNNING.exchange(true)) {
             return;
         }
@@ -94,11 +89,11 @@ namespace gdu::updater {
         g_progress->show();
 
         async::spawn(
-            [] {
+            [url, agent = std::string(Mod::get()->getID())] {
                 return web::WebRequest()
-                    .userAgent("doongs-gd-utils")
+                    .userAgent(agent)
                     .timeout(std::chrono::seconds(120))
-                    .get(DOWNLOAD_URL);
+                    .get(url);
             },
             [](web::WebResponse response) {
                 if (!response.ok()) {
@@ -113,9 +108,19 @@ namespace gdu::updater {
         );
     }
 
-    void listenForButton() {
-        ButtonSettingPressedEventV3(Mod::get(), "check-updates").listen([](std::string_view) {
-            checkAndInstall();
-        }).leak();
+}
+
+namespace shared::updater {
+    void listenForButton(std::string repository, std::string rollingTag) {
+        auto url = fmt::format(
+            "https://github.com/{}/releases/download/{}/{}.geode",
+            repository, rollingTag, Mod::get()->getID()
+        );
+
+        ButtonSettingPressedEventV3(Mod::get(), "check-updates")
+            .listen([url = std::move(url)](std::string_view) {
+                checkAndInstall(url);
+            })
+            .leak();
     }
 }

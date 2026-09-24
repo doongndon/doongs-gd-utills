@@ -10,6 +10,11 @@ left in English, untouched.
 Translations live in `translations/ko.json`. Adding a line there is all it takes to cover
 one more piece of text.
 
+## Updating
+
+**Check for updates** in the settings pulls the newest release from GitHub and installs it.
+Restart the game afterwards to apply it.
+
 ## Living with other Korean patches and texture packs
 
 Text that is **already Korean** is left alone, so a Korean pack that got there first keeps

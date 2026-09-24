@@ -8,7 +8,7 @@
     },
     "id": "doongndon.ko-patch",
     "name": "Korean Patch",
-    "version": "v1.2.0",
+    "version": "v1.3.0",
     "developers": [
         "doongndon"
     ],
@@ -42,6 +42,18 @@
             "name": "Use the bundled font",
             "description": "Draws Korean text in the bundled Dunggeunmo pixel font. Turn this off if a texture pack already gives the game a font that can draw Korean, so the two do not mix on one screen.",
             "default": true
+        },
+        "update-title": {
+            "type": "title",
+            "name": "Updates"
+        },
+        "check-updates": {
+            "type": "button",
+            "name": "Check for updates",
+            "description": "Downloads the newest release straight from GitHub. Restart the game afterwards to apply it.",
+            "buttons": {
+                "check": "Check"
+            }
         }
     }
 }
