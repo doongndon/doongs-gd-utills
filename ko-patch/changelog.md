@@ -1,3 +1,6 @@
+# v1.5.0
+ - Added the vault, quests, the settings screen, level info and the icon colour picker
+
 # v1.4.0
  - Gold headings stay gold instead of turning into plain white text
 
