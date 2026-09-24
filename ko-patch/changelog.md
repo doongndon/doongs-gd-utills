@@ -1,3 +1,6 @@
+# v1.8.0
+ - Optional Gemini translation for text the table does not cover, collected into an editable file
+
 # v1.7.0
  - Fonts now carry the full common Hangul set, so Korean the mod did not write also draws
 

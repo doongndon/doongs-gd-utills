@@ -8,7 +8,7 @@
     },
     "id": "doongndon.ko-patch",
     "name": "Korean Patch",
-    "version": "v1.7.0",
+    "version": "v1.8.0",
     "developers": [
         "doongndon"
     ],
@@ -69,6 +69,28 @@
                 "jua",
                 "dunggeunmo"
             ]
+        },
+        "gemini-title": {
+            "type": "title",
+            "name": "Machine translation"
+        },
+        "gemini-enabled": {
+            "type": "bool",
+            "name": "Ask Gemini for missing text",
+            "description": "Text with no translation yet is sent to Gemini and the answer is kept in config/learned.json, which you can open and edit. It is a way of collecting candidates, not a finished translation: the mod cannot tell interface text from a level someone named, so check the file before trusting it.",
+            "default": false
+        },
+        "gemini-key": {
+            "type": "string",
+            "name": "Gemini API key",
+            "description": "Your own key from Google AI Studio. It is stored in plain text on this device.",
+            "default": ""
+        },
+        "gemini-model": {
+            "type": "string",
+            "name": "Gemini model",
+            "description": "Change this if Google retires the model and requests start failing.",
+            "default": "gemini-2.0-flash"
         },
         "update-title": {
             "type": "title",

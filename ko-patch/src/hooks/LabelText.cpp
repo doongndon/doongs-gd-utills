@@ -1,13 +1,13 @@
 #include <Geode/Geode.hpp>
 #include <Geode/modify/CCLabelBMFont.hpp>
 
+#include "Gemini.hpp"
 #include "Translator.hpp"
 
 using namespace geode::prelude;
 
 namespace {
-    // 비트맵 글꼴 경로는 한 번만 만들어 둔다. 고른 글꼴과 금색 여부의
-    // 네 갈래다.
+    // 비트맵 글꼴 경로는 한 번만 만들어 둔다. 고른 글꼴과 금색 여부의 네 갈래다.
     std::string const& ownFont(bool pixel, bool gold) {
         static std::string const juaPlain = "jua.fnt"_spr;
         static std::string const juaGold = "jua-gold.fnt"_spr;
@@ -38,6 +38,24 @@ class $modify(KoreanLabel, CCLabelBMFont) {
         bool m_usingOwnFont = false;
     };
 
+    // 한국어를 라벨에 올린다. 글꼴 교체까지 여기서 끝낸다.
+    void applyKorean(std::string const& korean, bool needUpdateLabel) {
+        auto const& translator = kopatch::Translator::get();
+
+        if (translator.ownFont() && !m_fields->m_usingOwnFont) {
+            // 어느 글꼴을 쓰고 있었는지는 바꾸기 전에 봐야 한다. 바꾸고 나면
+            // 우리 글꼴로 덮여서 원래 무엇이었는지 알 수 없다.
+            std::string_view const current = m_sFntFile;
+
+            m_fields->m_swappingFont = true;
+            this->setFntFile(ownFont(translator.pixelFont(), wantsGold(current)).c_str());
+            m_fields->m_swappingFont = false;
+            m_fields->m_usingOwnFont = true;
+        }
+
+        CCLabelBMFont::setString(korean.c_str(), needUpdateLabel);
+    }
+
     void setString(char const* text, bool needUpdateLabel) {
         auto const& translator = kopatch::Translator::get();
 
@@ -53,23 +71,41 @@ class $modify(KoreanLabel, CCLabelBMFont) {
             return;
         }
 
-        auto const entry = translator.translate(text);
-        if (!entry) {
-            CCLabelBMFont::setString(text, needUpdateLabel);
+        if (auto const entry = translator.translate(text)) {
+            if (entry->korean) {
+                this->applyKorean(entry->text, needUpdateLabel);
+            }
+            else {
+                CCLabelBMFont::setString(entry->text.c_str(), needUpdateLabel);
+            }
             return;
         }
 
-        if (entry->korean && translator.ownFont() && !m_fields->m_usingOwnFont) {
-            // 어느 글꼴을 쓰고 있었는지는 바꾸기 전에 봐야 한다. 바꾸고 나면
-            // 우리 글꼴로 덮여서 원래 무엇이었는지 알 수 없다.
-            std::string_view const current = m_sFntFile;
-
-            m_fields->m_swappingFont = true;
-            this->setFntFile(ownFont(translator.pixelFont(), wantsGold(current)).c_str());
-            m_fields->m_swappingFont = false;
-            m_fields->m_usingOwnFont = true;
+        if (auto const* learned = kopatch::gemini::find(text)) {
+            this->applyKorean(*learned, needUpdateLabel);
+            return;
         }
 
-        CCLabelBMFont::setString(entry->text.c_str(), needUpdateLabel);
+        // 표에도 없고 물어본 적도 없다. 답은 나중에 오므로 일단 원문을 그대로
+        // 띄우고, 도착하면 그때 바꿔 끼운다.
+        if (kopatch::gemini::enabled() && kopatch::gemini::worthAsking(text)) {
+            kopatch::gemini::request(
+                std::string(text),
+                [label = Ref<CCLabelBMFont>(this), source = std::string(text)](
+                    std::string const& korean
+                ) {
+                    if (!label) {
+                        return;
+                    }
+                    // 기다리는 사이 다른 글자로 바뀌었을 수 있다. 그때는 건드리지 않는다.
+                    if (std::string_view(label->m_sInitialStringUTF8) != source) {
+                        return;
+                    }
+                    static_cast<KoreanLabel*>(label.data())->applyKorean(korean, true);
+                }
+            );
+        }
+
+        CCLabelBMFont::setString(text, needUpdateLabel);
     }
 };

@@ -18,6 +18,22 @@ Titles keep their gold. GD draws headings in a gold font and body text in a whit
 the bundled font is baked in both colours and a translated label keeps whichever its
 original used.
 
+## Machine translation
+
+Off by default. Turn it on with your own Gemini key and text with no translation yet is
+sent to Gemini; answers land in `config/learned.json`, which is plain JSON you can open
+and edit.
+
+Treat it as a way of gathering candidates rather than a finished translation. Every label
+in the game arrives through one function, so the mod cannot tell an interface string from
+a level someone named - the prompt asks Gemini to leave proper nouns alone, and answers
+that come back unchanged are dropped, but some will still slip through. Read the file,
+delete what is wrong, and anything good is worth moving into `translations/ko.json` where
+everyone gets it.
+
+Requests stop at 300 a session and three at a time. Your key is stored in plain text on
+the device, as mod settings are.
+
 ## Updating
 
 **Check for updates** in the settings pulls the newest release from GitHub and installs it.
