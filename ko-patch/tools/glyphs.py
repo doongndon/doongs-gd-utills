@@ -39,5 +39,7 @@ def hangul_set() -> set[int]:
 
 
 def needed_codepoints() -> list[int]:
-    used = {ord(c) for text in korean_texts() for c in text}
+    # 줄바꿈 같은 제어 문자는 그릴 그림이 없다. 넣어 두면 글꼴이 못 그린다고
+    # 멈춰 서므로 여기서 걸러낸다.
+    used = {ord(c) for text in korean_texts() for c in text if ord(c) >= 0x20}
     return sorted(ALWAYS | hangul_set() | used)
