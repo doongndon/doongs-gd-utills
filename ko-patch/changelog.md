@@ -1,3 +1,8 @@
+# v3.4.0
+ - QOLMod translated whole: every module name, every description, every popup, the keybind and shortcut editors, the colour and gradient pickers
+ - Object Workshop, Jukebox, Overcharged Main Levels, Golden Best, Named Editor Layers, Editor Trail in Game, Robot/Ship Fire Color, Texture Loader, Editor Level ID API and matcool's editor mods
+ - Around 1100 more lines of Korean; 6070 entries in all
+
 # v3.3.0
  - Installed mods are translated too. Geode's own mod manager, BetterEdit, Tinker, BetterInfo and NodeIDs - their buttons, settings and every setting description
 
