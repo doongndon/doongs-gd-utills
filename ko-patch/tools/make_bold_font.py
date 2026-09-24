@@ -11,7 +11,6 @@
 """
 
 import argparse
-import json
 import pathlib
 
 from PIL import Image, ImageDraw, ImageFont
@@ -19,10 +18,10 @@ from fontTools.fontBuilder import FontBuilder
 from fontTools.pens.ttGlyphPen import TTGlyphPen
 from fontTools.ttLib import TTFont
 
-ROOT = pathlib.Path(__file__).resolve().parent.parent
+from glyphs import ROOT, needed_codepoints
+
 SOURCE = ROOT / "fonts" / "neodgm.ttf"
 TARGET = ROOT / "fonts" / "doongpixel.ttf"
-TRANSLATIONS = ROOT / "translations" / "ko.json"
 
 GRID = 16                 # 글꼴이 설계된 격자 크기(픽셀)
 UNITS_PER_EM = 1024
@@ -30,12 +29,6 @@ PIXEL = UNITS_PER_EM // GRID
 ASCENT_PX = 12
 DESCENT_PX = 4
 MARGIN = GRID             # 글자가 격자 밖으로 조금 나가도 담기도록 둘러둔 여백
-
-
-def needed_codepoints() -> list[int]:
-    translations = json.loads(TRANSLATIONS.read_text(encoding="utf-8"))
-    used = {ord(c) for text in translations.values() for c in text}
-    return sorted(used | set(range(32, 127)) | {0x2022})
 
 
 def pixels_of(char: str, font: ImageFont.FreeTypeFont, bold: int) -> set[tuple[int, int]]:

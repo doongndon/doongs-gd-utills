@@ -6,3 +6,4 @@ out/
 .idea/
 CMakeUserPresets.json
 *.geode
+__pycache__/

@@ -12,24 +12,15 @@ import json
 import pathlib
 import sys
 
-ROOT = pathlib.Path(__file__).resolve().parent.parent
-TRANSLATIONS = ROOT / "translations" / "ko.json"
+from glyphs import ROOT, needed_codepoints
+
 MOD_JSON = ROOT / "mod.json"
 
-# 번역문에 없더라도 GD 가 숫자와 기호를 섞어 쓰므로 기본 라틴 영역은 항상 넣는다.
-ALWAYS = set(range(32, 127)) | {0x2022}
 
-
-def wanted_codepoints() -> set[int]:
-    translations = json.loads(TRANSLATIONS.read_text(encoding="utf-8"))
-    used = {ord(c) for text in translations.values() for c in text}
-    return ALWAYS | used
-
-
-def to_charset(codepoints: set[int]) -> str:
+def to_charset(codepoints: list[int]) -> str:
     # 이어지는 번호는 "시작-끝" 으로 접어서 짧게 만든다.
     parts = []
-    ordered = sorted(codepoints)
+    ordered = list(codepoints)
     start = previous = ordered[0]
     for point in ordered[1:]:
         if point == previous + 1:
@@ -48,7 +39,7 @@ def main() -> int:
 
     mod = json.loads(MOD_JSON.read_text(encoding="utf-8"))
     font = mod["resources"]["fonts"]["neodgm"]
-    expected = to_charset(wanted_codepoints())
+    expected = to_charset(needed_codepoints())
 
     if font.get("charset") == expected:
         print("charset is in sync")
@@ -63,7 +54,7 @@ def main() -> int:
 
     font["charset"] = expected
     MOD_JSON.write_text(json.dumps(mod, indent=4, ensure_ascii=False) + "\n", encoding="utf-8")
-    print(f"charset updated ({len(wanted_codepoints())} codepoints)")
+    print(f"charset updated ({len(needed_codepoints())} codepoints)")
     return 0
 
 

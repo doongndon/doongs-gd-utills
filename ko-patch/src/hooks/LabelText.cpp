@@ -39,7 +39,7 @@ class $modify(KoreanLabel, CCLabelBMFont) {
             return;
         }
 
-        auto const* entry = translator.find(text);
+        auto const entry = translator.translate(text);
         if (!entry) {
             CCLabelBMFont::setString(text, needUpdateLabel);
             return;
