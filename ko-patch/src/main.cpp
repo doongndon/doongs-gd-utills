@@ -1,4 +1,5 @@
 #include <Geode/Geode.hpp>
+#include <Geode/modify/MenuLayer.hpp>
 
 #include "Gemini.hpp"
 #include "Translator.hpp"
@@ -40,5 +41,24 @@ $on_mod(Loaded) {
     listenForSettingChanges<std::string>("gemini-key", [applyGemini](std::string const&) { applyGemini(); });
     listenForSettingChanges<std::string>("gemini-model", [applyGemini](std::string const&) { applyGemini(); });
 
+    translator.protectModNames();
+
     shared::updater::listenForButton("doongndon/doongs-gd-utills", "ko-latest");
 }
+
+// 우리 모드가 켜질 때는 다른 모드가 아직 다 불려 오지 않았을 수 있다. 메뉴가
+// 처음 뜰 때 한 번 더 모아 둔다. 모드 목록은 거기서부터 열리기 때문이다.
+class $modify(KoreanMenuLayer, MenuLayer) {
+    bool init() {
+        if (!MenuLayer::init()) {
+            return false;
+        }
+
+        static bool collected = false;
+        if (!collected) {
+            collected = true;
+            kopatch::Translator::get().protectModNames();
+        }
+        return true;
+    }
+};

@@ -31,6 +31,11 @@ namespace kopatch {
 
         void load();
 
+        // 설치된 모드의 이름과 만든 이를 표에서 제외한다. 남이 지은 이름이라
+        // 번역할 것이 아니고, "Save Buttons" 같은 이름은 우리 틀에 걸려
+        // "Buttons 저장" 이 되어 버린다.
+        void protectModNames();
+
         void setEnabled(bool enabled) { m_enabled = enabled; }
         bool enabled() const { return m_enabled && !m_table.empty(); }
 
@@ -54,6 +59,7 @@ namespace kopatch {
         std::optional<Entry> applyPatterns(std::string_view text) const;
 
         geode::utils::StringMap<Entry> m_table;
+        geode::utils::StringSet m_protected;
         std::vector<Pattern> m_patterns;
         bool m_enabled = true;
         bool m_ownFont = true;

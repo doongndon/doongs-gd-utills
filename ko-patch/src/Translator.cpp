@@ -127,6 +127,20 @@ namespace kopatch {
         log::info("loaded {} translations and {} patterns", m_table.size(), m_patterns.size());
     }
 
+    void Translator::protectModNames() {
+        m_protected.clear();
+        for (auto* mod : Loader::get()->getAllMods()) {
+            if (!mod) {
+                continue;
+            }
+            m_protected.emplace(std::string(mod->getName().view()));
+            for (auto const& developer : mod->getDevelopers()) {
+                m_protected.emplace(developer);
+            }
+        }
+        log::info("leaving {} mod names and developers alone", m_protected.size());
+    }
+
     std::optional<Entry> Translator::lookup(std::string_view text) const {
         auto const found = m_table.find(text);
         if (found != m_table.end()) {
@@ -136,6 +150,11 @@ namespace kopatch {
     }
 
     std::optional<Entry> Translator::translate(std::string_view text) const {
+        // 남이 만든 모드의 이름과 제작자 이름은 건드리지 않는다.
+        if (m_protected.contains(text)) {
+            return std::nullopt;
+        }
+
         if (auto entry = this->lookup(text)) {
             return entry;
         }

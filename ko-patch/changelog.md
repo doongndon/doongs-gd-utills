@@ -1,3 +1,6 @@
+# v3.2.0
+ - Other people's mod names are left alone. "Save Buttons" was coming out as "Buttons 저장" and "Overcharged Main Levels" as "레벨 Overcharged Main개" - the mod now asks Geode for every installed mod's name and developer and never touches them
+
 # v3.1.0
  - Fixed English words being translated inside English sentences, like "모두 more clicking" in another mod's description. The label is built a word at a time, so the mod now notices English being appended to its own Korean and puts the sentence back
  - Shortened the button labels that were being squeezed to fit
