@@ -1,6 +1,7 @@
 #include "Translator.hpp"
 
 #include <algorithm>
+#include <functional>
 
 using namespace geode::prelude;
 
@@ -49,6 +50,52 @@ namespace kopatch {
         return instance;
     }
 
+    void Translator::loadExact(matjson::Value const& section) {
+        for (auto const& [english, korean] : section) {
+            if (!korean.isString()) {
+                continue;
+            }
+            auto text = korean.asString().unwrapOrDefault();
+            if (english.empty() || text.empty()) {
+                continue;
+            }
+            bool const isKorean = containsHangul(text);
+            m_table.emplace(english, Entry{ .text = std::move(text), .korean = isKorean });
+        }
+    }
+
+    void Translator::loadPatterns(matjson::Value const& section) {
+        for (auto const& [match, korean] : section) {
+            if (!korean.isString()) {
+                continue;
+            }
+            auto to = korean.asString().unwrapOrDefault();
+            if (match.empty() || to.empty()) {
+                continue;
+            }
+            auto segments = split(match);
+            if (segments.size() < 2) {
+                continue;  // {} 가 없으면 틀이 아니라 그냥 문장이다
+            }
+            bool const isKorean = containsHangul(to);
+            m_patterns.push_back(Pattern{
+                .segments = std::move(segments),
+                .replacement = std::move(to),
+                .korean = isKorean,
+            });
+        }
+
+        // 글자가 고정된 부분이 긴 틀부터 본다. 두 틀이 같은 문장에 걸릴 때 더
+        // 깐깐한 쪽이 이기고, JSON 에 적힌 순서와 무관하게 늘 같은 결과가 나온다.
+        std::ranges::sort(m_patterns, std::ranges::greater{}, [](Pattern const& pattern) {
+            std::size_t length = 0;
+            for (auto const& segment : pattern.segments) {
+                length += segment.size();
+            }
+            return length;
+        });
+    }
+
     void Translator::load() {
         m_table.clear();
         m_patterns.clear();
@@ -65,38 +112,15 @@ namespace kopatch {
             return;
         }
 
-        auto const exact = root["exact"];
-        if (exact.isObject()) {
-            for (auto const& [english, korean] : exact) {
-                if (!korean.isString()) {
-                    continue;
-                }
-                auto text = korean.asString().unwrapOrDefault();
-                if (english.empty() || text.empty()) {
-                    continue;
-                }
-                bool const isKorean = containsHangul(text);
-                m_table.emplace(english, Entry{ .text = std::move(text), .korean = isKorean });
+        for (auto const& [name, section] : root) {
+            if (!section.isObject()) {
+                continue;
             }
-        }
-
-        auto const patterns = root["patterns"];
-        if (patterns.isArray()) {
-            for (auto const& rule : patterns.asArray().unwrapOrDefault()) {
-                auto const match = rule["match"].asString().unwrapOrDefault();
-                auto const to = rule["to"].asString().unwrapOrDefault();
-                if (match.empty() || to.empty()) {
-                    continue;
-                }
-                auto segments = split(match);
-                if (segments.size() < 2) {
-                    continue;  // {} 가 없으면 틀이 아니라 그냥 문장이다
-                }
-                m_patterns.push_back(Pattern{
-                    .segments = std::move(segments),
-                    .replacement = to,
-                    .korean = containsHangul(to),
-                });
+            if (name == "exact") {
+                this->loadExact(section);
+            }
+            else if (name == "patterns") {
+                this->loadPatterns(section);
             }
         }
 

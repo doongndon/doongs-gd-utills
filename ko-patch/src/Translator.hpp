@@ -43,6 +43,8 @@ namespace kopatch {
         std::optional<Entry> translate(std::string_view text) const;
 
     private:
+        void loadExact(matjson::Value const& section);
+        void loadPatterns(matjson::Value const& section);
         std::optional<Entry> applyPatterns(std::string_view text) const;
 
         geode::utils::StringMap<Entry> m_table;

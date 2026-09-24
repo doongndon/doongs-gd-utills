@@ -14,7 +14,7 @@ def korean_texts() -> list[str]:
     data = json.loads(TRANSLATIONS.read_text(encoding="utf-8"))
     texts = list(data["exact"].values())
     # 틀 문장의 {} 는 원문이 그대로 들어가는 자리라 글자가 아니다.
-    texts += [rule["to"].replace("{}", "") for rule in data["patterns"]]
+    texts += [to.replace("{}", "") for to in data["patterns"].values()]
     return texts
 
 

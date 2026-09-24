@@ -317,106 +317,30 @@
         "AlignX": "X 정렬",
         "AlignY": "Y 정렬"
     },
-    "patterns": [
-        {
-            "match": "Complete '{}' in Practice mode",
-            "to": "'{}' 연습 모드로 완료하기"
-        },
-        {
-            "match": "Completed '{}' in Practice mode",
-            "to": "'{}' 연습 모드로 완료함"
-        },
-        {
-            "match": "Complete '{}' in Normal mode",
-            "to": "'{}' 일반 모드로 완료하기"
-        },
-        {
-            "match": "Completed '{}' in Normal mode",
-            "to": "'{}' 일반 모드로 완료함"
-        },
-        {
-            "match": "Complete '{}' in Practice mode to unlock this {}!",
-            "to": "'{}' 을(를) 연습 모드로 완료하면 이 {} 이(가) 열립니다!"
-        },
-        {
-            "match": "Complete '{}' in Normal mode to unlock this {}!",
-            "to": "'{}' 을(를) 일반 모드로 완료하면 이 {} 이(가) 열립니다!"
-        },
-        {
-            "match": "Main Color {}",
-            "to": "기본 색상 {}"
-        },
-        {
-            "match": "Secondary Color {}",
-            "to": "보조 색상 {}"
-        },
-        {
-            "match": "{} to {} of {}",
-            "to": "{}~{} / 총 {}"
-        },
-        {
-            "match": "By {}",
-            "to": "제작: {}"
-        },
-        {
-            "match": "Collect {} Stars",
-            "to": "별 {}개 모으기"
-        },
-        {
-            "match": "Collect {} Diamonds",
-            "to": "다이아 {}개 모으기"
-        },
-        {
-            "match": "Collect {} Secret Coins",
-            "to": "시크릿 코인 {}개 모으기"
-        },
-        {
-            "match": "Collect {} User Coins",
-            "to": "유저 코인 {}개 모으기"
-        },
-        {
-            "match": "Complete {} Demons",
-            "to": "데몬 {}개 완료하기"
-        },
-        {
-            "match": "Complete {} Insane levels",
-            "to": "인세인 레벨 {}개 완료하기"
-        },
-        {
-            "match": "Complete {} Daily levels",
-            "to": "일일 레벨 {}개 완료하기"
-        },
-        {
-            "match": "Complete {} Map Packs",
-            "to": "맵 팩 {}개 완료하기"
-        },
-        {
-            "match": "Complete {} Gauntlets",
-            "to": "건틀릿 {}개 완료하기"
-        },
-        {
-            "match": "Unlock {}",
-            "to": "{} 해제하기"
-        },
-        {
-            "match": "{} Levels",
-            "to": "{} 레벨"
-        },
-        {
-            "match": "Objects: {}/{}, Songs: {}, SFX: {} | LDM: {} ({}%)",
-            "to": "오브젝트: {}/{}, 노래: {}, 효과음: {} | 간략: {} ({}%)"
-        },
-        {
-            "match": "Length: {} ({})",
-            "to": "길이: {} ({})"
-        },
-        {
-            "match": "{} Gauntlet",
-            "to": "{} 건틀릿"
-        },
-        {
-            "match": "{}/{} Levels",
-            "to": "레벨 {}/{}"
-        }
-    ]
+    "patterns": {
+        "Complete '{}' in Practice mode": "'{}' 연습 모드로 완료하기",
+        "Completed '{}' in Practice mode": "'{}' 연습 모드로 완료함",
+        "Complete '{}' in Normal mode": "'{}' 일반 모드로 완료하기",
+        "Completed '{}' in Normal mode": "'{}' 일반 모드로 완료함",
+        "Complete '{}' in Practice mode to unlock this {}!": "'{}' 을(를) 연습 모드로 완료하면 이 {} 이(가) 열립니다!",
+        "Complete '{}' in Normal mode to unlock this {}!": "'{}' 을(를) 일반 모드로 완료하면 이 {} 이(가) 열립니다!",
+        "Main Color {}": "기본 색상 {}",
+        "Secondary Color {}": "보조 색상 {}",
+        "{} to {} of {}": "{}~{} / 총 {}",
+        "By {}": "제작: {}",
+        "Collect {} Stars": "별 {}개 모으기",
+        "Collect {} Diamonds": "다이아 {}개 모으기",
+        "Collect {} Secret Coins": "시크릿 코인 {}개 모으기",
+        "Collect {} User Coins": "유저 코인 {}개 모으기",
+        "Complete {} Demons": "데몬 {}개 완료하기",
+        "Complete {} Insane levels": "인세인 레벨 {}개 완료하기",
+        "Complete {} Daily levels": "일일 레벨 {}개 완료하기",
+        "Complete {} Map Packs": "맵 팩 {}개 완료하기",
+        "Complete {} Gauntlets": "건틀릿 {}개 완료하기",
+        "Unlock {}": "{} 해제하기",
+        "Objects: {}/{}, Songs: {}, SFX: {} | LDM: {} ({}%)": "오브젝트: {}/{}, 노래: {}, 효과음: {} | 간략: {} ({}%)",
+        "Length: {} ({})": "길이: {} ({})",
+        "{} Gauntlet": "{} 건틀릿",
+        "{}/{} Levels": "레벨 {}/{}"
+    }
 }
