@@ -1,3 +1,7 @@
+# v2.1.0
+ - Text the game breaks across two lines is now recognised, so wrapped buttons and achievement descriptions translate too
+ - Added the achievement screen's categories, the level stats window and the Visual settings
+
 # v2.0.1
  - The update button could stop responding entirely after one press. It holds onto the download now, and always says something back
 

@@ -50,6 +50,7 @@ namespace kopatch {
     private:
         void loadExact(matjson::Value const& section);
         void loadPatterns(matjson::Value const& section);
+        std::optional<Entry> lookup(std::string_view text) const;
         std::optional<Entry> applyPatterns(std::string_view text) const;
 
         geode::utils::StringMap<Entry> m_table;

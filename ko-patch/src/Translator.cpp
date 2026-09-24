@@ -127,12 +127,30 @@ namespace kopatch {
         log::info("loaded {} translations and {} patterns", m_table.size(), m_patterns.size());
     }
 
-    std::optional<Entry> Translator::translate(std::string_view text) const {
+    std::optional<Entry> Translator::lookup(std::string_view text) const {
         auto const found = m_table.find(text);
         if (found != m_table.end()) {
             return found->second;
         }
         return this->applyPatterns(text);
+    }
+
+    std::optional<Entry> Translator::translate(std::string_view text) const {
+        if (auto entry = this->lookup(text)) {
+            return entry;
+        }
+
+        // 단추에 글자가 길면 GD 가 줄을 바꿔 넣는다. 그 줄바꿈은 글자의 일부라
+        // "Disable Trigger\nOrb Scale" 은 표에 적힌 "Disable Trigger Orb Scale"
+        // 과 다른 문자열이 된다. 같은 말인데 표가 못 알아보는 셈이라, 줄바꿈을
+        // 띄어쓰기로 펴서 한 번 더 찾아본다.
+        if (text.find('\n') == std::string_view::npos) {
+            return std::nullopt;
+        }
+
+        std::string flattened(text);
+        std::ranges::replace(flattened, '\n', ' ');
+        return this->lookup(flattened);
     }
 
     std::optional<Entry> Translator::applyPatterns(std::string_view text) const {
