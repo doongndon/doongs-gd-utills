@@ -7,7 +7,7 @@ using namespace geode::prelude;
 
 namespace {
     // 비트맵 글꼴 경로는 한 번만 만들어 둔다.
-    std::string const& koreanFont() {
+    std::string const& ownFont() {
         static std::string const path = "neodgm.fnt"_spr;
         return path;
     }
@@ -21,7 +21,7 @@ class $modify(KoreanLabel, CCLabelBMFont) {
     struct Fields {
         // setFntFile 이 내부에서 다시 setString 을 불러서 무한히 되도는 것을 막는다.
         bool m_swappingFont = false;
-        bool m_usingKoreanFont = false;
+        bool m_usingOwnFont = false;
     };
 
     void setString(char const* text, bool needUpdateLabel) {
@@ -32,17 +32,24 @@ class $modify(KoreanLabel, CCLabelBMFont) {
             return;
         }
 
+        // 이미 한글인 글자는 다른 한국어 패치가 먼저 바꿔 놓은 것이다. 거기에
+        // 또 손을 대면 두 패치가 같은 라벨을 두고 서로 밀어내게 된다.
+        if (kopatch::containsHangul(text)) {
+            CCLabelBMFont::setString(text, needUpdateLabel);
+            return;
+        }
+
         auto const* entry = translator.find(text);
         if (!entry) {
             CCLabelBMFont::setString(text, needUpdateLabel);
             return;
         }
 
-        if (entry->korean && !m_fields->m_usingKoreanFont) {
+        if (entry->korean && translator.ownFont() && !m_fields->m_usingOwnFont) {
             m_fields->m_swappingFont = true;
-            this->setFntFile(koreanFont().c_str());
+            this->setFntFile(ownFont().c_str());
             m_fields->m_swappingFont = false;
-            m_fields->m_usingKoreanFont = true;
+            m_fields->m_usingOwnFont = true;
         }
 
         CCLabelBMFont::setString(entry->text.c_str(), needUpdateLabel);

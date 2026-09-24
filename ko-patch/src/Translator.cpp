@@ -2,9 +2,9 @@
 
 using namespace geode::prelude;
 
-namespace {
+namespace kopatch {
     // 한글 음절 U+AC00..U+D7A3 은 UTF-8 에서 선두 바이트가 0xEA..0xED 이다.
-    bool hasHangul(std::string_view text) {
+    bool containsHangul(std::string_view text) {
         for (unsigned char byte : text) {
             if (byte >= 0xEA && byte <= 0xED) {
                 return true;
@@ -12,9 +12,7 @@ namespace {
         }
         return false;
     }
-}
 
-namespace kopatch {
     Translator& Translator::get() {
         static Translator instance;
         return instance;
@@ -44,7 +42,7 @@ namespace kopatch {
             if (english.empty() || text.empty()) {
                 continue;
             }
-            bool const isKorean = hasHangul(text);
+            bool const isKorean = containsHangul(text);
             m_table.emplace(english, Entry{ .text = std::move(text), .korean = isKorean });
         }
 
