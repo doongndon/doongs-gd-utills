@@ -1,3 +1,7 @@
+# v3.1.0
+ - Fixed English words being translated inside English sentences, like "모두 more clicking" in another mod's description. The label is built a word at a time, so the mod now notices English being appended to its own Korean and puts the sentence back
+ - Shortened the button labels that were being squeezed to fit
+
 # v3.0.1
  - Fixed "Normal mode" showing up as "아니오rmal mode". Multi-line text is split into several labels before it reaches the mod, so fragments of words were being looked up; it is translated whole now, before the split
 
