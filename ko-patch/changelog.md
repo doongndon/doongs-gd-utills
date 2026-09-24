@@ -1,3 +1,6 @@
+# v3.0.1
+ - Fixed "Normal mode" showing up as "아니오rmal mode". Multi-line text is split into several labels before it reaches the mod, so fragments of words were being looked up; it is translated whole now, before the split
+
 # v3.0.0
  - The whole game is Korean now. All 4,872 strings in 2.2: every achievement and its description, the official level names, every settings page, every editor trigger, the vault dialogue and the loading screens
 

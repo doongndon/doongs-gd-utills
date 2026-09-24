@@ -2,30 +2,10 @@
 #include <Geode/modify/CCLabelBMFont.hpp>
 
 #include "Gemini.hpp"
+#include "KoreanFont.hpp"
 #include "Translator.hpp"
 
 using namespace geode::prelude;
-
-namespace {
-    // 비트맵 글꼴 경로는 한 번만 만들어 둔다. 고른 글꼴과 금색 여부의 네 갈래다.
-    std::string const& ownFont(bool pixel, bool gold) {
-        static std::string const juaPlain = "jua.fnt"_spr;
-        static std::string const juaGold = "jua-gold.fnt"_spr;
-        static std::string const pixelPlain = "neodgm.fnt"_spr;
-        static std::string const pixelGold = "neodgm-gold.fnt"_spr;
-
-        if (pixel) {
-            return gold ? pixelGold : pixelPlain;
-        }
-        return gold ? juaGold : juaPlain;
-    }
-
-    // GD 는 제목과 강조에 금색 글꼴을 쓴다. 번역했다고 전부 흰 글꼴로 바꿔
-    // 버리면 제목과 본문이 같아 보여서, 화면의 위아래가 구분되지 않는다.
-    bool wantsGold(std::string_view fontFile) {
-        return fontFile.find("gold") != std::string_view::npos;
-    }
-}
 
 // GD 가 화면에 글자를 올릴 때는 거의 전부 이 한 지점을 지난다. 수도관이 여러
 // 갈래로 갈라지기 전의 본관을 잡는 셈이라, 여기 하나만 막으면 메뉴든 팝업이든
@@ -48,7 +28,8 @@ class $modify(KoreanLabel, CCLabelBMFont) {
             std::string_view const current = m_sFntFile;
 
             m_fields->m_swappingFont = true;
-            this->setFntFile(ownFont(translator.pixelFont(), wantsGold(current)).c_str());
+            this->setFntFile(
+                kopatch::ownFont(translator.pixelFont(), kopatch::wantsGold(current)).c_str());
             m_fields->m_swappingFont = false;
             m_fields->m_usingOwnFont = true;
         }
@@ -59,7 +40,11 @@ class $modify(KoreanLabel, CCLabelBMFont) {
     void setString(char const* text, bool needUpdateLabel) {
         auto const& translator = kopatch::Translator::get();
 
-        if (!text || m_fields->m_swappingFont || !translator.enabled()) {
+        // 여러 줄짜리 글은 MultilineBitmapFont 가 조각내어 이리로 보낸다.
+        // 조각은 문장이 아니라 토막이라 표에 걸리면 안 된다. 그쪽은 쪼개지기
+        // 전에 통째로 번역하므로 여기서는 손대지 않고 지나 보낸다.
+        if (!text || m_fields->m_swappingFont || !translator.enabled()
+            || kopatch::splittingText()) {
             CCLabelBMFont::setString(text, needUpdateLabel);
             return;
         }
