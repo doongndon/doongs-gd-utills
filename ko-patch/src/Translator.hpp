@@ -40,6 +40,11 @@ namespace kopatch {
         void setOwnFont(bool own) { m_ownFont = own; }
         bool ownFont() const { return m_ownFont; }
 
+        // 설정에서 고른 글꼴. 둥근모꼴은 픽셀 텍스처팩과, 주아는 대부분의
+        // 한국어 팩과 어울린다.
+        void setPixelFont(bool pixel) { m_pixelFont = pixel; }
+        bool pixelFont() const { return m_pixelFont; }
+
         std::optional<Entry> translate(std::string_view text) const;
 
     private:
@@ -51,5 +56,6 @@ namespace kopatch {
         std::vector<Pattern> m_patterns;
         bool m_enabled = true;
         bool m_ownFont = true;
+        bool m_pixelFont = false;
     };
 }

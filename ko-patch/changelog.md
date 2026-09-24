@@ -1,3 +1,6 @@
+# v1.6.0
+ - Added 배달의민족 주아 as a second font, selectable in the settings
+
 # v1.5.0
  - Added the vault, quests, the settings screen, level info and the icon colour picker
 

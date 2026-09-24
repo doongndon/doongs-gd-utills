@@ -6,11 +6,18 @@
 using namespace geode::prelude;
 
 namespace {
-    // 비트맵 글꼴 경로는 한 번만 만들어 둔다.
-    std::string const& ownFont(bool gold) {
-        static std::string const plain = "neodgm.fnt"_spr;
-        static std::string const golden = "neodgm-gold.fnt"_spr;
-        return gold ? golden : plain;
+    // 비트맵 글꼴 경로는 한 번만 만들어 둔다. 고른 글꼴과 금색 여부의
+    // 네 갈래다.
+    std::string const& ownFont(bool pixel, bool gold) {
+        static std::string const juaPlain = "jua.fnt"_spr;
+        static std::string const juaGold = "jua-gold.fnt"_spr;
+        static std::string const pixelPlain = "neodgm.fnt"_spr;
+        static std::string const pixelGold = "neodgm-gold.fnt"_spr;
+
+        if (pixel) {
+            return gold ? pixelGold : pixelPlain;
+        }
+        return gold ? juaGold : juaPlain;
     }
 
     // GD 는 제목과 강조에 금색 글꼴을 쓴다. 번역했다고 전부 흰 글꼴로 바꿔
@@ -58,7 +65,7 @@ class $modify(KoreanLabel, CCLabelBMFont) {
             std::string_view const current = m_sFntFile;
 
             m_fields->m_swappingFont = true;
-            this->setFntFile(ownFont(wantsGold(current)).c_str());
+            this->setFntFile(ownFont(translator.pixelFont(), wantsGold(current)).c_str());
             m_fields->m_swappingFont = false;
             m_fields->m_usingOwnFont = true;
         }
