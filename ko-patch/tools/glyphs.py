@@ -8,7 +8,8 @@ TRANSLATIONS = ROOT / "translations" / "ko.json"
 HANGUL_SET = pathlib.Path(__file__).resolve().parent / "hangul-set.txt"
 
 # 번역문에 없더라도 GD 가 숫자와 기호를 섞어 쓰므로 기본 라틴 영역은 항상 넣는다.
-ALWAYS = set(range(32, 127)) | {0x2022}
+# 가운뎃점(U+2022)은 두 글꼴 모두 cmap 에만 있고 획이 비어 있어 뺀다.
+ALWAYS = set(range(32, 127))
 
 
 def korean_texts() -> list[str]:

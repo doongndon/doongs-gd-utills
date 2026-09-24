@@ -1,3 +1,7 @@
+# v2.0.0
+ - Letters now carry a black outline and are drawn a third larger, so Korean reads at the same weight as the game's own lettering
+ - Added the mod manager's own screens and the buttons that were still English
+
 # v1.8.0
  - Optional Gemini translation for text the table does not cover, collected into an editable file
 

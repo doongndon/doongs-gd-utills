@@ -28,19 +28,34 @@ jobs:
             exit 1
           fi
 
-      - name: Charset must cover the translations
-        run: python3 ko-patch/tools/sync_charset.py --check
+  fonts:
+    name: Bake the fonts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
 
-      - name: Bold font must match the translations
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # 글자 그림판은 소스에 두지 않는다. 번역을 늘리면 담아야 할 글자도
+      # 늘어나므로, 빌드할 때마다 글꼴 파일에서 새로 굽고 모든 플랫폼이
+      # 같은 한 벌을 받아 쓴다.
+      - name: Bake the atlases
         run: |
           set -euo pipefail
-          pip install --quiet pillow fonttools
-          python3 ko-patch/tools/make_bold_font.py --bold 1
-          git diff --exit-code -- ko-patch/fonts/doongpixel.ttf
+          pip install --quiet pillow
+          python3 ko-patch/tools/make_atlas.py
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ko-patch-fonts
+          path: ko-patch/resources
+          retention-days: 1
 
   build:
     name: ${{ matrix.config.name }}
-    needs: check
+    needs: [check, fonts]
     strategy:
       fail-fast: false
       matrix:
@@ -67,6 +82,11 @@ jobs:
 
     steps:
       - uses: actions/checkout@v5
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: ko-patch-fonts
+          path: ./ko-patch/resources
 
       - name: Build the mod
         uses: geode-sdk/build-geode-mod@main
