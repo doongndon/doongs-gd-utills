@@ -106,8 +106,20 @@ jobs:
       - uses: geode-sdk/build-geode-mod/combine@main
         id: build
 
+      # 태그를 밀어서 온 것이면 그 이름을 쓰고, 손으로 돌렸으면 mod.json 의
+      # 판본으로 짓는다. 태그 자체는 gh 가 릴리스를 만들며 함께 세워 준다.
+      - name: Work out the tag
+        id: tag
+        run: |
+          set -euo pipefail
+          if [ "${{ github.ref_type }}" = "tag" ]; then
+            name="${{ github.ref_name }}"
+          else
+            name="ko-$(python3 -c "import json; print(json.load(open('ko-patch/mod.json'))['version'])")"
+          fi
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+
       - name: Attach the .geode file to a GitHub release
-        if: startsWith(github.ref, 'refs/tags/')
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -117,13 +129,13 @@ jobs:
             echo "the build produced no .geode file" >&2
             exit 1
           fi
-          gh release create "${{ github.ref_name }}" "$file" \
-            --title "${{ github.ref_name }}" --generate-notes
+          gh release create "${{ steps.tag.outputs.name }}" "$file" \
+            --target "${{ github.sha }}" \
+            --title "${{ steps.tag.outputs.name }}" --generate-notes
 
       # 모드마다 고정 태그를 두고 새 파일이 나올 때마다 옮긴다. 모드 안의
       # 업데이트 버튼이 보는 주소라, 저장소에 모드가 둘이어도 서로 엉키지 않는다.
       - name: Move the rolling tag to this build
-        if: startsWith(github.ref, 'refs/tags/')
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -133,5 +145,5 @@ jobs:
           gh release create "ko-latest" "$file" \
             --target "${{ github.sha }}" \
             --title "Newest Korean Patch" \
-            --notes "Always points at the newest build. Released as ${{ github.ref_name }}." \
+            --notes "Always points at the newest build. Released as ${{ steps.tag.outputs.name }}." \
             --latest=false

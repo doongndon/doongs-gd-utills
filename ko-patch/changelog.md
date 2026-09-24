@@ -1,6 +1,7 @@
 # v2.0.0
  - Letters now carry a black outline and are drawn a third larger, so Korean reads at the same weight as the game's own lettering
  - Added the mod manager's own screens and the buttons that were still English
+ - Editor: the exit dialog's Save and Play / Save and Exit, the object counter with no songs loaded, level length in seconds, and the side panel other editor mods add
 
 # v1.8.0
  - Optional Gemini translation for text the table does not cover, collected into an editable file

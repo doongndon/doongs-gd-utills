@@ -75,9 +75,21 @@ jobs:
       - uses: geode-sdk/build-geode-mod/combine@main
         id: build
 
+      # 태그를 밀어서 온 것이면 그 이름을 쓰고, 손으로 돌렸으면 mod.json 의
+      # 판본으로 짓는다. 태그 자체는 gh 가 릴리스를 만들며 함께 세워 준다.
+      - name: Work out the tag
+        id: tag
+        run: |
+          set -euo pipefail
+          if [ "${{ github.ref_type }}" = "tag" ]; then
+            name="${{ github.ref_name }}"
+          else
+            name=$(python3 -c "import json; print(json.load(open('mod.json'))['version'])")
+          fi
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+
       - name: Attach the .geode file to a GitHub release
         id: publish
-        if: startsWith(github.ref, 'refs/tags/')
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -87,9 +99,10 @@ jobs:
             echo "the build produced no .geode file" >&2
             exit 1
           fi
-          gh release create "${{ github.ref_name }}" "$file" \
-            --title "${{ github.ref_name }}" --generate-notes
-          echo "url=https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/$(basename "$file")" >> "$GITHUB_OUTPUT"
+          gh release create "${{ steps.tag.outputs.name }}" "$file" \
+            --target "${{ github.sha }}" \
+            --title "${{ steps.tag.outputs.name }}" --generate-notes
+          echo "url=https://github.com/${{ github.repository }}/releases/download/${{ steps.tag.outputs.name }}/$(basename "$file")" >> "$GITHUB_OUTPUT"
 
       # 인덱스에 처음 올리는 것만 사람이 한 번 해야 한다. 그 뒤로는 태그를 밀
       # 때마다 새 버전이 자동으로 올라간다. 토큰 시크릿이 없으면 조용히 건너뛴다.
@@ -98,7 +111,6 @@ jobs:
       # 순간 엉뚱한 곳을 짚는다. 그래서 모드마다 고정 태그를 두고 새 파일이
       # 나올 때마다 그 태그를 옮긴다. 모드 안의 업데이트 버튼이 보는 주소다.
       - name: Move the rolling tag to this build
-        if: startsWith(github.ref, 'refs/tags/')
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -108,11 +120,11 @@ jobs:
           gh release create "utils-latest" "$file" \
             --target "${{ github.sha }}" \
             --title "Newest Doong's GD Utils" \
-            --notes "Always points at the newest build. Released as ${{ github.ref_name }}." \
+            --notes "Always points at the newest build. Released as ${{ steps.tag.outputs.name }}." \
             --latest=false
 
       - name: Submit the new version to the Geode index
-        if: ${{ startsWith(github.ref, 'refs/tags/') && env.INDEX_TOKEN != '' }}
+        if: ${{ env.INDEX_TOKEN != '' }}
         run: |
           set -euo pipefail
           id=$(python3 -c "import json; print(json.load(open('mod.json'))['id'])")
