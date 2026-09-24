@@ -1,0 +1,71 @@
+#!/usr/bin/env python3
+"""ko.json 에 실제로 쓰인 글자만 글꼴 아틀라스에 굽도록 charset 을 맞춘다.
+
+한글 음절은 유니코드에 11,172자가 있다. 그걸 전부 구우면 텍스처가 수천 픽셀
+크기가 되어 폰에서 부담스럽다. 번역문에 등장하는 글자는 그 중 극히 일부이므로,
+쓰는 글자만 골라 담는다. 대신 번역을 추가하고 이 스크립트를 잊으면 그 글자가
+화면에서 사라지므로, CI 가 --check 로 어긋남을 잡는다.
+"""
+
+import argparse
+import json
+import pathlib
+import sys
+
+ROOT = pathlib.Path(__file__).resolve().parent.parent
+TRANSLATIONS = ROOT / "translations" / "ko.json"
+MOD_JSON = ROOT / "mod.json"
+
+# 번역문에 없더라도 GD 가 숫자와 기호를 섞어 쓰므로 기본 라틴 영역은 항상 넣는다.
+ALWAYS = set(range(32, 127)) | {0x2022}
+
+
+def wanted_codepoints() -> set[int]:
+    translations = json.loads(TRANSLATIONS.read_text(encoding="utf-8"))
+    used = {ord(c) for text in translations.values() for c in text}
+    return ALWAYS | used
+
+
+def to_charset(codepoints: set[int]) -> str:
+    # 이어지는 번호는 "시작-끝" 으로 접어서 짧게 만든다.
+    parts = []
+    ordered = sorted(codepoints)
+    start = previous = ordered[0]
+    for point in ordered[1:]:
+        if point == previous + 1:
+            previous = point
+            continue
+        parts.append(str(start) if start == previous else f"{start}-{previous}")
+        start = previous = point
+    parts.append(str(start) if start == previous else f"{start}-{previous}")
+    return ",".join(parts)
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--check", action="store_true", help="고치지 않고 어긋남만 알린다")
+    args = parser.parse_args()
+
+    mod = json.loads(MOD_JSON.read_text(encoding="utf-8"))
+    font = mod["resources"]["fonts"]["neodgm"]
+    expected = to_charset(wanted_codepoints())
+
+    if font.get("charset") == expected:
+        print("charset is in sync")
+        return 0
+
+    if args.check:
+        print(
+            "charset is out of date - run ko-patch/tools/sync_charset.py",
+            file=sys.stderr,
+        )
+        return 1
+
+    font["charset"] = expected
+    MOD_JSON.write_text(json.dumps(mod, indent=4, ensure_ascii=False) + "\n", encoding="utf-8")
+    print(f"charset updated ({len(wanted_codepoints())} codepoints)")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

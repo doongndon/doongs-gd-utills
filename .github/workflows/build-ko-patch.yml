@@ -1,18 +1,33 @@
-name: Build
+name: Build Korean Patch
 
 on:
   workflow_dispatch:
   push:
     branches:
       - "**"
-    paths-ignore:
+    paths:
       - "ko-patch/**"
+      - ".github/workflows/build-ko-patch.yml"
   pull_request:
-    paths-ignore:
+    paths:
       - "ko-patch/**"
+      - ".github/workflows/build-ko-patch.yml"
 
 jobs:
+  check:
+    name: Check charset
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      # 번역을 추가하고 charset 갱신을 잊으면 그 글자가 아틀라스에서 빠져
+      # 화면에 빈 칸으로 나온다. 조용히 깨지는 대신 여기서 멈추게 한다.
+      - name: Charset must cover the translations
+        run: python3 ko-patch/tools/sync_charset.py --check
+
   build:
+    name: ${{ matrix.config.name }}
+    needs: check
     strategy:
       fail-fast: false
       matrix:
@@ -35,7 +50,6 @@ jobs:
             os: ubuntu-latest
             target: Android64
 
-    name: ${{ matrix.config.name }}
     runs-on: ${{ matrix.config.os }}
 
     steps:
@@ -44,6 +58,7 @@ jobs:
       - name: Build the mod
         uses: geode-sdk/build-geode-mod@main
         with:
+          path: ./ko-patch
           combine: true
           target: ${{ matrix.config.target }}
 
@@ -58,5 +73,5 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: doongs-gd-utils
+          name: doongs-ko-patch
           path: ${{ steps.build.outputs.build-output }}
