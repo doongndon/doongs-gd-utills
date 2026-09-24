@@ -10,6 +10,10 @@ left in English, untouched.
 Translations live in `translations/ko.json`. Adding a line there is all it takes to cover
 one more piece of text.
 
+Titles keep their gold. GD draws headings in a gold font and body text in a white one, so
+the bundled font is baked in both colours and a translated label keeps whichever its
+original used.
+
 ## Updating
 
 **Check for updates** in the settings pulls the newest release from GitHub and installs it.

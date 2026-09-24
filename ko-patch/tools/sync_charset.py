@@ -38,10 +38,11 @@ def main() -> int:
     args = parser.parse_args()
 
     mod = json.loads(MOD_JSON.read_text(encoding="utf-8"))
-    font = mod["resources"]["fonts"]["neodgm"]
+    fonts = mod["resources"]["fonts"]
     expected = to_charset(needed_codepoints())
 
-    if font.get("charset") == expected:
+    # 흰 글꼴과 금색 글꼴은 색만 다르고 담는 글자는 같아야 한다.
+    if all(font.get("charset") == expected for font in fonts.values()):
         print("charset is in sync")
         return 0
 
@@ -52,7 +53,8 @@ def main() -> int:
         )
         return 1
 
-    font["charset"] = expected
+    for font in fonts.values():
+        font["charset"] = expected
     MOD_JSON.write_text(json.dumps(mod, indent=4, ensure_ascii=False) + "\n", encoding="utf-8")
     print(f"charset updated ({len(needed_codepoints())} codepoints)")
     return 0

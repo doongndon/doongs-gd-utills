@@ -1,3 +1,6 @@
+# v1.4.0
+ - Gold headings stay gold instead of turning into plain white text
+
 # v1.3.0
  - Added a **Check for updates** button that installs the newest release from GitHub
 
