@@ -1,3 +1,6 @@
+# v2.0.1
+ - The update button could stop responding entirely after one press. It holds onto the download now, and always says something back
+
 # v2.0.0
  - Letters now carry a black outline and are drawn a third larger, so Korean reads at the same weight as the game's own lettering
  - Added the mod manager's own screens and the buttons that were still English

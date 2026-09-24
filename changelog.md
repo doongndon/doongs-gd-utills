@@ -1,3 +1,6 @@
+# v1.6.1
+ - The update button could stop responding entirely after one press. It holds onto the download now, and always says something back
+
 # v1.6.0
  - The update button now follows a tag of its own, so the Korean patch sharing this repository cannot point it at the wrong release
 
