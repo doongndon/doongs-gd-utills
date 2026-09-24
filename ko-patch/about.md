@@ -1,11 +1,26 @@
 # Korean Patch
 
-Translates Geometry Dash into Korean, drawn in a pixel font built from **Neo둥근모** — a
-TrueType revival of the DOS-era Dunggeunmo bitmap font.
+Translates Geometry Dash into Korean, drawn in a bundled font that carries a black
+outline like the game's own lettering.
 
 Text is swapped at the single point every label in the game passes through, so menus,
 popups and buttons are all covered by the same path. Anything without a translation is
 left in English, untouched.
+
+## Coverage
+
+Every one of the 4,872 strings in Geometry Dash 2.2 is covered: the 547 achievements and
+their descriptions, the official level names, every settings page with its help text,
+every editor trigger, the vault dialogue, the loading screens and the endscreen quips.
+
+The string list is not from memory. It is the dump published by GDL, the Russian
+localisation project, which pulled it out of the game itself. Working from that is what
+makes coverage countable rather than a guess.
+
+Repeated sentences are templates rather than 4,872 separate lines: one rule covers every
+"Complete '<level>' in Normal mode", every shard rank, every Path of <element>. Strings
+holding a number or a name are templates too, since a label carrying one never matches as
+fixed text.
 
 Translations live in `translations/ko.json`. Adding a line there is all it takes to cover
 one more piece of text.

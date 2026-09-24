@@ -1,3 +1,6 @@
+# v3.0.0
+ - The whole game is Korean now. All 4,872 strings in 2.2: every achievement and its description, the official level names, every settings page, every editor trigger, the vault dialogue and the loading screens
+
 # v2.1.0
  - Text the game breaks across two lines is now recognised, so wrapped buttons and achievement descriptions translate too
  - Added the achievement screen's categories, the level stats window and the Visual settings
