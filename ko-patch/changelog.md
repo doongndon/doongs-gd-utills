@@ -1,3 +1,6 @@
+# v1.7.0
+ - Fonts now carry the full common Hangul set, so Korean the mod did not write also draws
+
 # v1.6.0
  - Added 배달의민족 주아 as a second font, selectable in the settings
 

@@ -10,6 +10,10 @@ left in English, untouched.
 Translations live in `translations/ko.json`. Adding a line there is all it takes to cover
 one more piece of text.
 
+Both fonts carry the whole common Hangul set, not only the characters the translations
+happen to use, so Korean that this mod did not write - a level someone named in Korean,
+say - still draws.
+
 Titles keep their gold. GD draws headings in a gold font and body text in a white one, so
 the bundled font is baked in both colours and a translated label keeps whichever its
 original used.
