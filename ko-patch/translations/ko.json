@@ -9160,7 +9160,20 @@
         "<cr>Hall of Fame:</c> Epic levels (as seen in GD 2.1)\n": "<cr>명예의 전당:</c> 에픽 레벨 (GD 2.1에서 보던 것)\n",
         "<cp>Settings:</c> Opens the mod settings": "<cp>설정:</c> 이 모드의 설정을 엽니다",
         "All of the filtering is done <cg>client-side</c>.\n": "거르기는 모두 <cg>내 기기에서</c> 이루어집니다.\n",
-        "<cg>BetterInfo has updated!</c>\n": "<cg>BetterInfo가 갱신되었습니다!</c>\n"
+        "<cg>BetterInfo has updated!</c>\n": "<cg>BetterInfo가 갱신되었습니다!</c>\n",
+        "Downloading Loader Resources": "로더 자료를 내려받는 중",
+        "Downloaded Loader Resources": "로더 자료를 내려받았습니다",
+        "Loading Loader Resources": "로더 자료를 읽는 중",
+        "Verifying Loader Resources": "로더 자료를 살피는 중",
+        "Failed Loader Resources": "로더 자료를 읽지 못했습니다",
+        "Downloading Geode Resources": "Geode 자료를 내려받는 중",
+        "Downloaded Geode Resources": "Geode 자료를 내려받았습니다",
+        "Failed to Download Geode Resources": "Geode 자료를 내려받지 못했습니다",
+        "Error updating resources": "자료를 갱신하지 못했습니다",
+        "Switching to fallback custom loading layer": "예비 로딩 화면으로 바꿉니다",
+        "The game will be loaded as normal, but please be aware ": "게임은 평소처럼 켜지지만, 다음을 알아 두세요 ",
+        "You will have to install resources manually by downloading resources.zip ": "resources.zip 을 내려받아 손수 넣으셔야 합니다 ",
+        "from the latest release on GitHub: ": "GitHub 의 최신 배포판에서: "
     },
     "patterns": {
         "Complete '{}' in Practice mode": "'{}' 연습 모드로 완료하기",
