@@ -1,3 +1,9 @@
+# v3.8.0
+ - Fixed "이 Collect 5 Fire Shards 을(를) 열려면 Cube". Korean puts the words in a different order than English, so a template can now number its blanks - {0} and {1} - and fill them out of order
+ - A piece cut out of a sentence is now translated too, not just looked up whole, so "Collect 5 Fire Shards" comes out Korean inside the unlock message
+ - "2 weeks 전" is now "2주 전"
+ - A sentence whose line breaks were flattened to spaces before it reached us now matches its template
+
 # v3.7.0
  - Fixed "Increase Maximum Levels" coming out as "레벨 Increase Maximum개". A short template like "{} Levels" is meant to catch "3 Levels", but the blank accepts anything, so it swallowed the whole option name. A blank in a short template now refuses a run of English words
  - EditorMusic, Lasso Select, Bendy Duration Lines, Level Thumbnails and PersistenceAPI translated

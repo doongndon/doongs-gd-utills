@@ -3,6 +3,8 @@
 #include <algorithm>
 #include <cctype>
 #include <functional>
+#include <string>
+#include <vector>
 
 using namespace geode::prelude;
 
@@ -34,26 +36,84 @@ namespace {
         return true;
     }
 
-    // "{} Levels" 같은 짧은 틀은 빈칸이 숫자 자리다. 그런데 빈칸은 무엇이든
-    // 받아들이므로 "Increase Maximum Levels" 가 통째로 걸려 화면에
-    // "레벨 Increase Maximum개" 가 나왔다. 자물쇠가 헐거우면 열쇠가 아닌 것도
-    // 들어간다. 틀에 남은 글자가 몇 자 안 되는데 빈칸에 영어 낱말이 둘 이상
-    // 들어앉았다면, 숫자가 올 자리에 문장이 밀려든 것이다.
-    bool isEnglishPhrase(std::string_view text) {
-        bool letter = false;
-        bool space = false;
-        for (unsigned char byte : text) {
-            if (byte == ' ') space = true;
-            else if (std::isalpha(byte)) letter = true;
+    // 셈하는 말. 번역문에서 빈칸 뒤에 이런 말이 붙어 있으면 그 빈칸은 숫자
+    // 자리다.
+    constexpr std::string_view COUNTERS[] = {
+        "개", "명", "곡", "번", "쪽", "점", "초", "분", "일", "해", "달",
+        "시간", "층", "줄", "칸", "가지", "도", "위",
+    };
+
+    // 숫자, 또는 아직 숫자가 채워지지 않은 자리표(%i, %.2f 같은 것).
+    bool isNumeric(std::string_view text) {
+        if (text.size() >= 2 && text.front() == '%') {
+            std::size_t i = 1;
+            while (i < text.size()
+                   && (std::isdigit(static_cast<unsigned char>(text[i])) || text[i] == '.'
+                       || text[i] == '-' || text[i] == '+' || text[i] == ' ' || text[i] == '#')) {
+                ++i;
+            }
+            return i + 1 == text.size() && std::isalpha(static_cast<unsigned char>(text[i]));
         }
-        return letter && space;
+        bool digit = false;
+        for (unsigned char byte : text) {
+            if (std::isdigit(byte)) digit = true;
+            else if (byte != ',' && byte != '.' && byte != '-' && byte != '+' && byte != ' ') {
+                return false;
+            }
+        }
+        return digit;
     }
 
-    std::size_t literalLength(std::vector<std::string> const& segments) {
-        std::size_t total = 0;
-        for (auto const& segment : segments) total += segment.size();
-        return total;
+    // "{} Levels" 의 빈칸은 숫자 자리인데, 빈칸은 무엇이든 받아들인다. 그래서
+    // "Increase Maximum Levels" 가 통째로 걸려 화면에 "레벨 Increase Maximum개"
+    // 가 나왔다. 자물쇠가 헐거우면 열쇠가 아닌 것도 들어간다.
+    //
+    // 어느 빈칸이 숫자 자리인지는 번역문이 이미 말해 주고 있다. 뒤에 "개" 나
+    // "명" 이 붙어 있으면 세는 자리다. 그 자리에는 숫자만 들인다.
+    bool wantsNumber(std::string const& replacement, std::size_t after) {
+        if (after < replacement.size() && replacement[after] == ' ') ++after;
+        std::string_view const rest(replacement.data() + after, replacement.size() - after);
+        for (auto const& counter : COUNTERS) {
+            if (rest.starts_with(counter)) return true;
+        }
+        return false;
     }
+
+    // 번역문의 빈칸 하나. 한국어는 영어와 말의 차례가 다르므로 {0} {1} 처럼
+    // 번호를 붙여 자리를 바꿔 넣을 수 있어야 한다. "Collect 5 Fire Shards to
+    // unlock this Cube!" 를 차례대로 채우면 "이 Collect 5 Fire Shards 을(를)
+    // 열려면 Cube" 가 된다. 번호가 없으면 예전처럼 차례대로 채운다.
+    struct Slot {
+        std::size_t at;
+        std::size_t length;
+        std::size_t index;
+    };
+
+    std::vector<Slot> slotsOf(std::string const& replacement) {
+        std::vector<Slot> slots;
+        std::size_t next = 0;
+        for (std::size_t i = 0; i + 1 < replacement.size(); ++i) {
+            if (replacement[i] != '{') continue;
+            std::size_t j = i + 1;
+            while (j < replacement.size() && std::isdigit(static_cast<unsigned char>(replacement[j]))) {
+                ++j;
+            }
+            if (j >= replacement.size() || replacement[j] != '}') continue;
+            std::size_t index = next;
+            if (j > i + 1) {
+                index = static_cast<std::size_t>(std::stoul(replacement.substr(i + 1, j - i - 1)));
+            }
+            else {
+                ++next;
+            }
+            slots.push_back(Slot{ .at = i, .length = j - i + 1, .index = index });
+            i = j;
+        }
+        return slots;
+    }
+
+    // 틀 안에서 또 틀을 찾다가 제자리를 도는 일이 없게 한 겹만 허락한다.
+    thread_local int g_depth = 0;
 }
 
 namespace kopatch {
@@ -82,6 +142,12 @@ namespace kopatch {
                 continue;
             }
             bool const isKorean = containsHangul(text);
+            // 줄바꿈이 공백으로 바뀌어 들어오는 자리가 있어 그 꼴도 함께 담는다.
+            if (english.find('\n') != std::string::npos) {
+                std::string flat(english);
+                std::ranges::replace(flat, '\n', ' ');
+                m_table.emplace(flat, Entry{ .text = text, .korean = isKorean });
+            }
             m_table.emplace(english, Entry{ .text = std::move(text), .korean = isKorean });
         }
     }
@@ -100,6 +166,15 @@ namespace kopatch {
                 continue;  // {} 가 없으면 틀이 아니라 그냥 문장이다
             }
             bool const isKorean = containsHangul(to);
+            if (match.find('\n') != std::string::npos) {
+                std::string flat(match);
+                std::ranges::replace(flat, '\n', ' ');
+                m_patterns.push_back(Pattern{
+                    .segments = split(flat),
+                    .replacement = to,
+                    .korean = isKorean,
+                });
+            }
             m_patterns.push_back(Pattern{
                 .segments = std::move(segments),
                 .replacement = std::move(to),
@@ -195,6 +270,12 @@ namespace kopatch {
     }
 
     std::optional<Entry> Translator::applyPatterns(std::string_view text) const {
+        if (g_depth > 1) {
+            return std::nullopt;
+        }
+        ++g_depth;
+        struct Unwind { ~Unwind() { --g_depth; } } const unwind;
+
         for (auto const& pattern : m_patterns) {
             auto const& segments = pattern.segments;
 
@@ -235,29 +316,36 @@ namespace kopatch {
             if (!std::ranges::all_of(captures, isPlainAscii)) {
                 continue;
             }
-            if (literalLength(segments) < 20
-                && std::ranges::any_of(captures, isEnglishPhrase)) {
+            auto const slots = slotsOf(pattern.replacement);
+
+            // 세는 자리에 문장이 밀려들었는지 번역문을 보고 가린다.
+            bool wrongKind = false;
+            for (auto const& slot : slots) {
+                if (slot.index < captures.size()
+                    && wantsNumber(pattern.replacement, slot.at + slot.length)
+                    && !isNumeric(captures[slot.index])) {
+                    wrongKind = true;
+                    break;
+                }
+            }
+            if (wrongKind) {
                 continue;
             }
 
             std::string result;
             result.reserve(pattern.replacement.size() + text.size());
             std::size_t start = 0;
-            std::size_t index = 0;
-            for (auto at = pattern.replacement.find(PLACEHOLDER); at != std::string::npos;
-                 at = pattern.replacement.find(PLACEHOLDER, start)) {
-                result.append(pattern.replacement, start, at - start);
-                if (index < captures.size()) {
+            for (auto const& slot : slots) {
+                result.append(pattern.replacement, start, slot.at - start);
+                if (slot.index < captures.size()) {
                     // 떼어낸 조각도 번역표를 거친다. "Fire Gauntlet" 이 "Fire
-                    // 건틀릿" 처럼 반만 한국어로 남는 것을 막아 준다.
-                    auto const known = m_table.find(captures[index]);
-                    result.append(
-                        known != m_table.end() ? std::string_view(known->second.text)
-                                               : captures[index]
-                    );
+                    // 건틀릿" 처럼 반만 한국어로 남는 것을 막아 주고, "Collect 5
+                    // Fire Shards" 처럼 조각 자체가 틀에 걸리는 문장도 한국어가
+                    // 된다.
+                    auto const piece = this->lookup(captures[slot.index]);
+                    result.append(piece ? std::string_view(piece->text) : captures[slot.index]);
                 }
-                ++index;
-                start = at + PLACEHOLDER.size();
+                start = slot.at + slot.length;
             }
             result.append(pattern.replacement, start, std::string::npos);
 
