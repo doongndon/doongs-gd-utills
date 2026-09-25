@@ -1,3 +1,7 @@
+# v5.13.0
+ - **The errors Geode shows when something goes wrong are Korean now.** 117 of them. You saw "Unable to read entry (code -3)" once - that is exactly the moment where English is no help, and now it says 항목을 읽지 못했습니다 (코드 -3). Opening, reading and unzipping a .geode file, loading and saving settings, checking for and downloading an update
+ - 16 more from Globed, Death Tracker, BetterInfo, Level Grind and Custom Death Sound - the leftovers that are built with fmt rather than handed straight to a label
+
 # v5.12.0
  - **625 strings that were plainly on screen and still in English.** I went back over the source of all 138 installed mods, kept only what is handed to a label, a button or a popup, and matched it against the table. 857 came back untranslated; 625 of them are Korean now. What is left is internal - node ids, test popups, the contributors' nicknames
  - The big ones were Level Grind (171), Death Tracker (109), Gauntlets Deluxe (96), Prism Menu (74), Better Gauntlets (67), Git Editor, GD Account Switcher, Chroma Icons and Custom Death Sound
