@@ -1,3 +1,8 @@
+# v5.8.0
+ - 55 more, from twelve mods I had nothing for. ninXout keeps a copy of the whole mod index in a repository, one mod.json per mod, and matcool keeps all of his own mods in a single one - which is why searching for any of them by name never found a thing
+ - Nearly all of it is LevelInfo, which puts a dozen facts about a level on screen and gives each one a toggle and an explanation: 요청한 별, 추천 순위, 물체 수 (저사양), 편집기 시간 (복사 포함), 원본 번호. Also Zoom, Separate Dual Icons, High Graphics and Circle Tool
+ - 119 of the 141 installed mods have now been read from their source. The 22 left have nothing public anywhere, and those are what the Copy button is for
+
 # v5.7.0
  - 399 strings from the mods I had written off as having no source. There were 59 of them; there are now 38. The trick was searching GitHub for the mod's ID rather than its name - a mod.json is the one file that carries the ID, so the search lands on the repository directly. Several were only lost because the author had renamed their account
  - Which brings in the whole of Death Tracker's settings and backups, Better Editor Trail's forty-odd toggles, Trigger ID Search, Better Gauntlets, BetterVisuals' render and filter settings, Custom Wave Trail, Trigger Visualizer, Automatic Quests, Quick Practice, Named Editor Groups, Customize Popup Animation, Advanced Follow Presets, To-Do List, Quick Move Buttons and Git Editor
