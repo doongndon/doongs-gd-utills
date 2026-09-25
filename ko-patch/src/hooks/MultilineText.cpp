@@ -6,6 +6,7 @@
 #include <string_view>
 #include <vector>
 
+#include "Collector.hpp"
 #include "KoreanFont.hpp"
 #include "Translator.hpp"
 
@@ -138,6 +139,9 @@ class $modify(KoreanMultiline, MultilineBitmapFont) {
                         translator.pixelFont(), kopatch::wantsGold(font ? font : ""));
                     useFont = fontPath.c_str();
                 }
+            }
+            else {
+                kopatch::collector::note(source);
             }
         }
 

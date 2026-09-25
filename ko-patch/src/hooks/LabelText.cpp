@@ -1,6 +1,7 @@
 #include <Geode/Geode.hpp>
 #include <Geode/modify/CCLabelBMFont.hpp>
 
+#include "Collector.hpp"
 #include "Gemini.hpp"
 #include "KoreanFont.hpp"
 #include "Translator.hpp"
@@ -132,8 +133,10 @@ class $modify(KoreanLabel, CCLabelBMFont) {
             return;
         }
 
-        // 표에도 없고 물어본 적도 없다. 답은 나중에 오므로 일단 원문을 그대로
-        // 띄우고, 도착하면 그때 바꿔 끼운다.
+        // 표에도 없고 배운 적도 없다. 남은 할 일로 적어 둔다.
+        kopatch::collector::note(text);
+
+        // 답은 나중에 오므로 일단 원문을 그대로 띄우고, 도착하면 그때 바꿔 끼운다.
         if (kopatch::gemini::enabled() && kopatch::gemini::worthAsking(text)) {
             kopatch::gemini::request(
                 std::string(text),

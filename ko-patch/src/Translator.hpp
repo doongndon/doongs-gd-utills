@@ -37,6 +37,9 @@ namespace kopatch {
         // "Buttons 저장" 이 되어 버린다.
         void protectModNames();
 
+        // 남이 지은 이름인가. 미번역 목록에도 섞이지 않게 한다.
+        bool isProtected(std::string_view text) const { return m_protected.contains(text); }
+
         void setEnabled(bool enabled) { m_enabled = enabled; }
         bool enabled() const { return m_enabled && !m_table.empty(); }
 

@@ -8,7 +8,7 @@
     },
     "id": "doongndon.ko-patch",
     "name": "Korean Patch",
-    "version": "v4.0.0",
+    "version": "v4.1.0",
     "developers": [
         "doongndon"
     ],
@@ -69,6 +69,24 @@
             "name": "Gemini model",
             "description": "Change this if Google retires the model and requests start failing.",
             "default": "gemini-2.0-flash"
+        },
+        "collect-title": {
+            "type": "title",
+            "name": "Collecting what is missing"
+        },
+        "collect-enabled": {
+            "type": "bool",
+            "name": "Note down untranslated text",
+            "description": "Every piece of English that reaches the screen with no translation is kept in a list. Some installed mods do not publish their source, so the only way to find their text is to see it. Play through the menus you care about, then press Copy below and send the list on.",
+            "default": false
+        },
+        "collect-copy": {
+            "type": "button",
+            "name": "Copy the collected text",
+            "description": "Writes the list to config/missing.txt and copies as much of it as the clipboard will hold.",
+            "buttons": {
+                "copy": "Copy"
+            }
         },
         "update-title": {
             "type": "title",

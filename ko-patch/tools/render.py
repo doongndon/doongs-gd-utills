@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Translator.cpp 가 실제로 내놓는 한국어를 그대로 만들어 본다. 빈칸까지 채운다."""
-import importlib.util, re, sys
+import importlib.util, pathlib, re, sys
 
-spec = importlib.util.spec_from_file_location("cov", "coverage.py")
+HERE = pathlib.Path(__file__).parent
+spec = importlib.util.spec_from_file_location("cov", HERE / "coverage.py")
 cov = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(cov)
 SLOT = re.compile(r"\{([0-9]*)\}")

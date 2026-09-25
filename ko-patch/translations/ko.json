@@ -992,6 +992,7 @@
         "Collected User Coins:": "모은 유저 코인:",
         "Collected your first User Coin!": "첫 유저 코인을 모았다!",
         "Collecting scrap metal": "고철 모으는 중",
+        "Collecting what is missing": "빠진 글 모으기",
         "Collision": "충돌",
         "Collision Block Setup": "충돌 블록 설정",
         "Collision State": "충돌 상태",
@@ -1108,6 +1109,7 @@
         "Copy obj/grp\nto clipboard": "물체/묶음을\n복사하기",
         "Copy object string to clipboard when copying in the editor.": "편집기에서 복사할 때 오브젝트 문자열을 클립보드에도 복사합니다.",
         "Copy tab to\nclipboard": "칸을\n복사하기",
+        "Copy the collected text": "모은 글 복사",
         "Copy to Clipboard": "클립보드에 복사",
         "Copy+\nColor": "복사+\n색상",
         "Copy+Color": "복사+색상",
@@ -1869,6 +1871,7 @@
         "Event Link": "사건 연결",
         "Events are pretty random": "이벤트는 꽤 제멋대로다",
         "Every move YOU make": "네가 하는 모든 움직임을",
+        "Every piece of English that reaches the screen with no translation is kept in a list. Some installed mods do not publish their source, so the only way to find their text is to see it. Play through the menus you care about, then press Copy below and send the list on.": "번역 없이 화면에 오른 영어를 하나하나 목록에 담아 둡니다. 설치된 모드 가운데 소스를 공개하지 않은 것이 있어, 그 글은 실제로 떠 봐야만 알 수 있습니다. 보고 싶은 메뉴를 한 바퀴 돌아본 뒤 아래 복사를 누르고 그 목록을 보내 주세요.",
         "Everywhere Else": "그 밖의 모든 곳",
         "Example": "보기",
         "Example:": "보기:",
@@ -3705,6 +3708,8 @@
         "Not what I was hoping for...": "내가 바라던 건 아닌데...",
         "Not yet": "아직",
         "Note": "참고",
+        "Note down untranslated text": "번역 안 된 글 적어 두기",
+        "Nothing collected yet": "아직 모은 것이 없습니다",
         "Nothing found": "찾은 것이 없습니다",
         "Nothing happened!": "아무 일도 없었습니다!",
         "Nothing happened.": "아무 일도 일어나지 않았다.",
@@ -6234,6 +6239,7 @@
         "Would be nice to get some energy": "기운을 좀 얻으면 좋겠는데",
         "Would you like to show comment IDs next to comments?": "댓글 옆에 댓글 ID 를 보여 줄까요?",
         "Wow it magically opened!": "우와 마법처럼 열렸네!",
+        "Writes the list to config/missing.txt and copies as much of it as the clipboard will hold.": "목록을 config/missing.txt 에 쓰고, 클립보드에 담기는 만큼 복사합니다.",
         "Wrong button": "단추를 잘못 눌렀어",
         "Wrong file format. It must be a .json file!": "파일 형식이 맞지 않습니다. .json 파일이어야 합니다!",
         "Wrong way!": "길이 틀렸어!",
@@ -7221,6 +7227,7 @@
         "Collect <cy>{}</c> <cl>Diamonds</c> so I know you're legit, then we can talk.": "<cl>다이아몬드</c> <cy>{}</c>개를 모아 와 네가 진짜임을 보이면, 그때 이야기하자.",
         "{} to {} of {} / {}": "{} ~ {} / 모두 {} / {}",
         "{}{} to {} of {}": "{}{} ~ {} / 모두 {}",
-        "{} to {} of max. {}": "{} ~ {} / 최대 {}"
+        "{} to {} of max. {}": "{} ~ {} / 최대 {}",
+        "Copied {} of {} lines - all of them are in config/missing.txt": "{} / {} 줄을 복사했습니다 - 전부는 config/missing.txt 에 있습니다"
     }
 }

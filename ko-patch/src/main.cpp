@@ -1,6 +1,7 @@
 #include <Geode/Geode.hpp>
 #include <Geode/modify/MenuLayer.hpp>
 
+#include "Collector.hpp"
 #include "Gemini.hpp"
 #include "Translator.hpp"
 #include "Updater.hpp"
@@ -40,6 +41,12 @@ $on_mod(Loaded) {
     listenForSettingChanges<bool>("gemini-enabled", [applyGemini](bool) { applyGemini(); });
     listenForSettingChanges<std::string>("gemini-key", [applyGemini](std::string const&) { applyGemini(); });
     listenForSettingChanges<std::string>("gemini-model", [applyGemini](std::string const&) { applyGemini(); });
+
+    kopatch::collector::setEnabled(mod->getSettingValue<bool>("collect-enabled"));
+    listenForSettingChanges<bool>("collect-enabled", [](bool on) {
+        kopatch::collector::setEnabled(on);
+    });
+    kopatch::collector::listenForButton();
 
     translator.protectModNames();
 

@@ -144,8 +144,11 @@ def main():
     missing = [k for k in keys if translate(k, exact, patterns) is None]
     print(f"{len(keys) - len(missing)}/{len(keys)} covered, {len(missing)} missing")
     out = pathlib.Path(__file__).parent / "missing.json"
-    out.write_text(json.dumps(missing, indent=1, ensure_ascii=False), encoding="utf-8")
-    print("wrote", out)
+    if missing:
+        out.write_text(json.dumps(missing, indent=1, ensure_ascii=False), encoding="utf-8")
+        print("wrote", out)
+    else:
+        out.unlink(missing_ok=True)
 
 
 if __name__ == "__main__":

@@ -1,3 +1,7 @@
+# v4.1.0
+ - A new setting: "번역 안 된 글 적어 두기". Turn it on, walk through the menus you care about, then press "모은 글 복사". Every piece of English that reached the screen with no translation is written to config/missing.txt and copied to the clipboard - paste it and I can translate exactly what you saw. It is how to reach the mods that never published their source
+ - The list leaves out save keys, sprite names, URLs and other people's mod names, so what is left is text a person actually reads
+
 # v4.0.0
  - 29 of the game's own texts turned out never to have been translated at all. A template meant for "1 to 10 of 50" was quietly catching them - "Move this level to the top of the levels list?" became "Move this level~the top / 총 the levels list?" - and the coverage count was reading that as translated. The trigger help for Move, Rotate, Pickup, Keyframe, Count, SFX, Shock Line, Radial Blur, Grayscale, Pinch, Motion Blur, Hue Shift, Sepia and Touch, the Groups and Colour panels, the quest explainer and the terms of use are all Korean now
  - A template can mark a blank as digits-only, so it stops swallowing sentences
