@@ -1,3 +1,7 @@
+# v4.4.0
+ - The official level names now say what they mean instead of spelling out the English sound. 스테레오 광란, 다시 궤도 위로, 극지의 혼령, 메마름, 기지 또 기지, 놓지 못해, 도약, 시간 기계, 순환, 엇걸음, 난장 펑크, 만물 이론, 전기 인간의 모험, 클럽 걸음, 전기역학, 육각의 힘, 폭주 연산, 기하의 지배자, 교착, 손가락 질주 - and Meltdown, SubZero and the Tower with them
+ - The names carry through everywhere they are used: the achievements built from them ("극지의 혼령!"), the coin goals, the completion lines
+
 # v4.3.0
  - Demons In Between, Click Sounds and Edit Tools translated. 85 of your 120 enabled mods now have their text in the table
 
