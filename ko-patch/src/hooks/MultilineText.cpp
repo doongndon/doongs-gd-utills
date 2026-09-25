@@ -28,6 +28,14 @@ namespace {
     //
     // 자로 재지 못하는 자에게 종이를 맡기지 않는다. 줄은 우리가 나눠서 건넨다.
     // 라벨을 하나 만들어 실제로 재 보고, 한계를 넘기 직전에서 끊는다.
+    // 글꼴 한 줄의 높이. 배율을 맞추는 데 쓴다.
+    int lineHeight(char const* font) {
+        if (!font) return 0;
+        auto* probe = CCLabelBMFont::create(" ", font);
+        if (!probe || !probe->getConfiguration()) return 0;
+        return probe->getConfiguration()->m_nCommonHeight;
+    }
+
     std::string wrapToWidth(
         std::string const& text, char const* font, float scale, float maxWidth
     ) {
@@ -139,6 +147,15 @@ class $modify(KoreanMultiline, MultilineBitmapFont) {
                     fontPath = kopatch::ownFont(
                         translator.pixelFont(), kopatch::wantsGold(font ? font : ""));
                     useFont = fontPath.c_str();
+
+                    // 글꼴이 바뀌면 한 줄의 높이도 바뀐다. 같은 배율로 두면
+                    // 글씨가 작아 보이므로, 높이가 달라진 만큼 배율을 되돌린다.
+                    SplitGuard const guard;
+                    int const before = lineHeight(font);
+                    int const after = lineHeight(useFont);
+                    if (before > 0 && after > 0) {
+                        scale *= static_cast<float>(before) / static_cast<float>(after);
+                    }
                 }
             }
             else {

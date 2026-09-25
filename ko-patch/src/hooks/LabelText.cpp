@@ -28,6 +28,8 @@ class $modify(KoreanLabel, CCLabelBMFont) {
         // setFntFile 이 내부에서 다시 setString 을 불러서 무한히 되도는 것을 막는다.
         bool m_swappingFont = false;
         bool m_usingOwnFont = false;
+        // 글꼴을 바꾸며 곱해 둔 배율. 되돌릴 때 그만큼 나눈다.
+        float m_fontScale = 1.f;
         // 조각을 이어 붙여 문장을 만드는 중인 라벨. 한 번 들키면 다시는
         // 번역하지 않는다.
         bool m_assembling = false;
@@ -45,12 +47,26 @@ class $modify(KoreanLabel, CCLabelBMFont) {
             // 우리 글꼴로 덮여서 원래 무엇이었는지 알 수 없다.
             std::string const current = m_sFntFile;
 
+            // 글꼴마다 한 줄의 높이가 다르다. 우리 글꼴이 게임 글꼴보다 낮으면
+            // 같은 배율로 그려도 글씨가 작아 보인다. 자를 바꾸면 눈금도 바꿔야
+            // 길이가 그대로이듯, 글꼴을 바꾸면 배율도 그만큼 되돌려 놓는다.
+            int const before = this->getConfiguration()
+                ? this->getConfiguration()->m_nCommonHeight : 0;
+
             m_fields->m_swappingFont = true;
             this->setFntFile(
                 kopatch::ownFont(translator.pixelFont(), kopatch::wantsGold(current)).c_str());
             m_fields->m_swappingFont = false;
             m_fields->m_usingOwnFont = true;
             m_fields->m_originalFont = current;
+
+            int const after = this->getConfiguration()
+                ? this->getConfiguration()->m_nCommonHeight : 0;
+            if (before > 0 && after > 0 && before != after) {
+                float const fit = static_cast<float>(before) / static_cast<float>(after);
+                m_fields->m_fontScale = fit;
+                this->setScale(this->getScale() * fit);
+            }
         }
 
         m_fields->m_english = english;
@@ -73,6 +89,10 @@ class $modify(KoreanLabel, CCLabelBMFont) {
             this->setFntFile(m_fields->m_originalFont.c_str());
             m_fields->m_swappingFont = false;
             m_fields->m_usingOwnFont = false;
+            if (m_fields->m_fontScale > 0.f && m_fields->m_fontScale != 1.f) {
+                this->setScale(this->getScale() / m_fields->m_fontScale);
+                m_fields->m_fontScale = 1.f;
+            }
         }
 
         CCLabelBMFont::setString(restored.c_str(), needUpdateLabel);
@@ -80,6 +100,15 @@ class $modify(KoreanLabel, CCLabelBMFont) {
 
     void setString(char const* text, bool needUpdateLabel) {
         auto const& translator = kopatch::Translator::get();
+
+        // createBatched 로 만든 라벨은 제 텍스처 아틀라스가 없다. 다른 곳에 묶여
+        // 그려지기 때문이다. 거기에 글꼴을 갈아 끼우려 하면 없는 아틀라스를 만지다
+        // 게임이 터진다. 레벨 안의 글자 오브젝트가 그렇게 만들어지는데, 그것은
+        // 어차피 레벨을 만든 사람이 쓴 글이라 번역할 것도 아니다.
+        if (!this->getTextureAtlas()) {
+            CCLabelBMFont::setString(text, needUpdateLabel);
+            return;
+        }
 
         // 여러 줄짜리 글은 MultilineBitmapFont 가 조각내어 이리로 보낸다.
         // 조각은 문장이 아니라 토막이라 표에 걸리면 안 된다. 그쪽은 쪼개지기

@@ -1,3 +1,8 @@
+# v5.0.0
+ - Fixed a crash when entering a level that has a text object in it. A label GD draws in a shared batch has no texture of its own, and swapping its font reached for one that was not there. Those are the level creator's own words anyway, so the patch leaves them alone now
+ - Korean is drawn at the size the English was. The bundled font's line is shorter than the game's, so swapping fonts at the same scale made the text shrink; the scale is now corrected by exactly that difference
+ - The Insane difficulty achievements: 결의, 광기의 문턱, 미쳐 가는 중, 광기, 제정신 보류 중, 목소리가 들려, 머리가 아파, 넌 미쳤어, 광기 너머
+
 # v4.9.0
  - Names are left in English now. A level called "Silence" was coming out "무음", because a level name, a song title and a username go through the same label as everything else, and the table happened to hold that word. The official level names go with them - Stereo Madness, Polargeist, Deadlocked - which is what players call them anyway. They still read correctly inside a sentence: 'Stereo Madness' 연습 모드로 완료하기
  - The icon kit's tab words that collided the most (Play, Waves, Robots, Random, Install) are out of the table for the same reason
