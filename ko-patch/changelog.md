@@ -1,3 +1,7 @@
+# v4.8.0
+ - 65 more, from a second collector run: the loading screens (Geode 자료를 읽는 중), the icon kit's own names (큐브 95, 죽음 효과 2, 비행선 불꽃), the date on a level (2026년 8월 1일), the chest and quest timers (22시간, 12일), 주간 #475, and Globed's loading line
+ - None of these were in the string list either
+
 # v4.7.0
  - The collected list no longer leaks your API key. A string setting's value passes through a label like any other text, so the Gemini key was being written into it. Anything long with no spaces and a mix of letters and digits is now refused
  - The list was also unreadable: Geode draws a line by adding one word at a time, so " in the", " in the settings", " in the settings picks" all went in separately. Only the finished sentence is kept now
