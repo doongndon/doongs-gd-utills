@@ -7638,10 +7638,10 @@
         "Found the secret by solving the 'cod3breaker' puzzle in the Vault of Secrets": "비밀의 금고에서 'cod3breaker' 수수께끼를 풀어 비밀을 찾음",
         "Steal the Keymaster's coin by solving the 'glubfub' puzzle in the Vault of Secrets": "비밀의 금고에서 'glubfub' 수수께끼를 풀어 열쇠지기의 코인 훔치기",
         "Stole the Keymaster's coin by solving the 'glubfub' puzzle in the Vault of Secrets": "비밀의 금고에서 'glubfub' 수수께끼를 풀어 열쇠지기의 코인을 훔침",
-        "Steal the Vault Keeper's coin by entering 'sparky' into the Vault": "금고에 'sparky' 를 넣어 금고지기의 코인 훔치기",
-        "Stole the Vault Keeper's coin by entering 'sparky' into the Vault": "금고에 'sparky' 를 넣어 금고지기의 코인을 훔침",
-        "Steal the Vault Keeper's icon by entering 'spooky' into the Vault": "금고에 'spooky' 를 넣어 금고지기의 아이콘 훔치기",
-        "Stole the Vault Keeper's icon by entering 'spooky' into the Vault": "금고에 'spooky' 를 넣어 금고지기의 아이콘을 훔침",
+        "Steal the Vault Keeper's coin by entering 'sparky' into the Vault": "금고에 'sparky' 라고 넣어 금고지기의 코인 훔치기",
+        "Stole the Vault Keeper's coin by entering 'sparky' into the Vault": "금고에 'sparky' 라고 넣어 금고지기의 코인을 훔침",
+        "Steal the Vault Keeper's icon by entering 'spooky' into the Vault": "금고에 'spooky' 라고 넣어 금고지기의 아이콘 훔치기",
+        "Stole the Vault Keeper's icon by entering 'spooky' into the Vault": "금고에 'spooky' 라고 넣어 금고지기의 아이콘을 훔침",
         "Peaceful Demon": "피스풀 데몬",
         "Mild Demon": "마일드 데몬",
         "Silent Demon": "사일런트 데몬",
@@ -9079,11 +9079,11 @@
         "Players ({})": "플레이어 ({})",
         "Public Rooms ({} Rooms)": "열린 방 ({}개)",
         "Received error from the server: <cy>{}</c>": "서버에서 오류를 받았습니다: <cy>{}</c>",
-        "Find the secret by entering '{}' into the Vault of Secrets": "비밀의 금고에 '{}' 을(를) 넣어 비밀 찾기",
-        "Found the secret by entering '{}' into the Vault of Secrets": "비밀의 금고에 '{}' 을(를) 넣어 비밀을 찾음",
-        "Find the secret by entering '{}' into the Chamber of Time": "시간의 방에 '{}' 을(를) 넣어 비밀 찾기",
-        "Found the secret by entering '{}' into the Chamber of Time": "시간의 방에 '{}' 을(를) 넣어 비밀을 찾음",
-        "Find the secret by entering '{}' into the Vault": "금고에 '{}' 을(를) 넣어 비밀 찾기",
-        "Found the secret by entering '{}' into the Vault": "금고에 '{}' 을(를) 넣어 비밀을 찾음"
+        "Find the secret by entering '{}' into the Vault of Secrets": "비밀의 금고에 '{}' 라고 넣어 비밀 찾기",
+        "Found the secret by entering '{}' into the Vault of Secrets": "비밀의 금고에 '{}' 라고 넣어 비밀을 찾음",
+        "Find the secret by entering '{}' into the Chamber of Time": "시간의 방에 '{}' 라고 넣어 비밀 찾기",
+        "Found the secret by entering '{}' into the Chamber of Time": "시간의 방에 '{}' 라고 넣어 비밀을 찾음",
+        "Find the secret by entering '{}' into the Vault": "금고에 '{}' 라고 넣어 비밀 찾기",
+        "Found the secret by entering '{}' into the Vault": "금고에 '{}' 라고 넣어 비밀을 찾음"
     }
 }
