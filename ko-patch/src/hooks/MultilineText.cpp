@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "Collector.hpp"
+#include "ColorTags.hpp"
 #include "KoreanFont.hpp"
 #include "Translator.hpp"
 
@@ -145,6 +146,22 @@ class $modify(KoreanMultiline, MultilineBitmapFont) {
             }
         }
 
+        // GD 는 <cg>...</c> 가 덮는 범위를 바이트로 세어 두었다가 글자 번호로
+        // 쓴다. 영어는 한 글자가 한 바이트라 두 수가 같지만, 한글은 세 바이트라
+        // 색이 세 배 길게 번진다. "상자" 여섯 바이트가 "상자를 10" 여섯 글자를
+        // 칠해 버린 것이 그것이다.
+        //
+        // 그래서 색표를 우리가 떼어 내고, 글자를 다 그린 뒤에 우리 손으로
+        // 칠한다. 자가 잘못됐으면 자를 빼앗는 편이 낫다.
+        kopatch::colortags::Parsed parsed;
+        bool paint = false;
+        if (!disableColor && kopatch::containsHangul(source)
+            && kopatch::colortags::hasTags(source)) {
+            parsed = kopatch::colortags::parse(source);
+            source = parsed.plain;
+            paint = !parsed.spans.empty();
+        }
+
         if (kopatch::containsHangul(source)) {
             source = wrapToWidth(source, useFont, scale, width);
         }
@@ -152,7 +169,14 @@ class $modify(KoreanMultiline, MultilineBitmapFont) {
         text = source;
 
         SplitGuard const guard;
-        return MultilineBitmapFont::initWithFont(
-            useFont, text, scale, width, anchor, height, disableColor);
+        if (!MultilineBitmapFont::initWithFont(
+                useFont, text, scale, width, anchor, height, disableColor)) {
+            return false;
+        }
+
+        if (paint) {
+            kopatch::colortags::apply(this, parsed.plain, parsed.spans);
+        }
+        return true;
     }
 };

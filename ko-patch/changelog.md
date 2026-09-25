@@ -1,3 +1,6 @@
+# v4.6.0
+ - Coloured words no longer smear across the line. "상자를 10" was green where only "상자" should have been: GD measures how far a <cg> tag reaches in bytes and then paints that many letters, and a Hangul letter is three bytes, so every colour ran three times too far. Every coloured Korean sentence in the game had this. The patch now takes the tags off before handing the text over and paints the letters itself, counting letters
+
 # v4.5.0
  - The official level names are spelled by sound again - 스테레오 매드니스, 폴라가이스트, 지오메트리컬 도미네이터. They are what players call the levels to each other
 
