@@ -1,3 +1,6 @@
+# v5.2.0
+ - 81 more sentences that carry colour tags in them, which my earlier sweep of the mods' source had thrown away as unreadable. Better Unlock Info's whole set of hints - 이 물건은 <cj>금고</c> 에 <cg>lenny</c> 라고 넣으면 얻을 수 있습니다, 열쇠 50개 상자, 무료 유튜브 상자 - Eclipse's safe mode notice, BetterEdit's and Backups' confirm dialogs, Demons In Between's level info, and the AREDL and Pemonlist explainers
+
 # v5.1.0
  - Level names stopped being spelled out inside sentences. "Completed 'Can't Let Go' in Normal mode" was coming out "'캔트 렛 고' 일반 모드로 완료함", because a name pulled out of a sentence was looked up in the table directly and the table never saw the keep-in-English list. A level name is a name in the middle of a sentence too. The apostrophe-less and double-exclamation spellings GD also uses are on that list now, 540 forms in all
  - Korean lines are centred. GD measures a line's width in bytes to decide where to put it, so a Hangul line measured as nearly nothing and got placed too far right. Every line is now re-placed by its real width after it is drawn
