@@ -1,0 +1,55 @@
+#!/usr/bin/env python3
+"""번역이 끝난 척하는 문장을 찾는다.
+
+덮었다고 세는 것만으로는 모자라다. 엉뚱한 틀에 걸려 나온 한국어도 덮인 것으로
+세어지기 때문이다. 그래서 4,872개를 전부 실제로 그려 보고, 한국어 한가운데에
+영어가 그대로 서 있는 것을 골라낸다. 편집기 칸 이름처럼 영어로 두어야 하는 말은
+아래 목록으로 넘긴다.
+"""
+
+import importlib.util
+import json
+import pathlib
+import re
+
+HERE = pathlib.Path(__file__).parent
+spec = importlib.util.spec_from_file_location("render", HERE / "render.py")
+render = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(render)
+
+WORD = re.compile(r"\b[A-Za-z]{3,}\b")
+TAG = re.compile(r"<[^>]*>")
+
+# 화면에 영어로 적혀 있는 칸 이름과 고유명사. 번역하면 오히려 못 찾는다.
+KEEP = set(
+    "geometry dash robtop newgrounds geode qolmod fps tps png api url json apx hsv "
+    "ldm cbf gddl aredl pointercrate pemonlist argon dashauth spotify discord luma "
+    "allium jukebox accept com creative commons games itemid sfxgroup fadein fadeout "
+    "maintime groupid spawngid targetpos refchannel offx offy dualdir uselum wavew "
+    "timeoff maxsize prox curve even dist mode ord extra preview playback reversed "
+    "lock instant anim shine speed animate only frame offset single points particle "
+    "toggle trigger easing target direction dynamic small step aim follow move time "
+    "next free copy and paste counter attempts left right align blending vertex the "
+    "www audio listen group center ccw close ref unique start end ignore volume rgb "
+    "spawn hold dual haxxor".split()
+)
+
+
+def main() -> None:
+    exact, patterns = render.cov.load()
+    keys = json.loads((HERE / "gd-strings.json").read_text(encoding="utf-8")).keys()
+    suspect = []
+    for key in keys:
+        out = render.render(key, exact, patterns)
+        if not out or not any("가" <= c <= "힣" for c in out):
+            continue
+        left = [w for w in WORD.findall(TAG.sub("", out)) if w.lower() not in KEEP]
+        if len(left) >= 3:
+            suspect.append((key, out, left[:6]))
+    print(f"{len(suspect)} suspect")
+    for key, out, left in suspect:
+        print(f"  {left}\n    {key[:70]!r}\n    -> {out[:100]!r}")
+
+
+if __name__ == "__main__":
+    main()
