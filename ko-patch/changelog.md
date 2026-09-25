@@ -1,3 +1,7 @@
+# v5.10.0
+ - 27 more, from five further mods: Editor Pulse Preview, Menu Physics, Search Song by Name, 2048, and the one that shows Jesus when you nearly hit a spike - which has a longer settings page than you would expect, down to a sensitivity slider for how close the two hitboxes have to be
+ - That is 45 of the 59 mods that had no source. Of the fourteen left, four are Geode and my own two, so ten really have nothing public anywhere. Those are what the Copy button is for, and it reads them straight out of the running game
+
 # v5.9.0
  - 78 more, from eight further mods whose source I found by ID: Rainbow Icon's whole set of knobs (무지개 속도, 무지개 채도, 무지개 하드스트릭, and the two preset explanations that list what each number means), Custom Death Sound, Prism, CleanStartpos, Texture Workshop, Better Easings Menu and Silly API
  - 40 of the 59 mods that had no source now have one. The 19 left are Geode itself, my own two, and 16 that genuinely have nothing public anywhere
