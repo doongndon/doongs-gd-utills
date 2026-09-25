@@ -8,6 +8,7 @@
 
 #include <algorithm>
 #include <cctype>
+#include <memory>
 #include <set>
 #include <vector>
 
@@ -163,6 +164,16 @@ namespace kopatch::collector {
                 if (!setting) continue;
                 take(setting->getDisplayName());
                 if (auto const description = setting->getDescription()) take(*description);
+
+                // 고르는 칸의 보기와 버튼의 글자도 화면에 뜬다.
+                if (auto const options = std::dynamic_pointer_cast<StringSettingV3>(setting)) {
+                    if (auto const list = options->getEnumOptions()) {
+                        for (auto const& option : *list) take(option);
+                    }
+                }
+                if (auto const button = std::dynamic_pointer_cast<ButtonSettingV3>(setting)) {
+                    for (auto const& [name, label] : button->getButtons()) take(label);
+                }
             }
         }
         log::info("swept {} untranslated mod strings", added);
