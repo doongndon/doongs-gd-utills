@@ -3,7 +3,7 @@
  - Korean is drawn at the size the English was. The bundled font's line is shorter than the game's, so swapping fonts at the same scale made the text shrink; the scale is now corrected by exactly that difference
  - The Insane difficulty achievements: 결의, 광기의 문턱, 미쳐 가는 중, 광기, 제정신 보류 중, 목소리가 들려, 머리가 아파, 넌 미쳤어, 광기 너머
  - The achievement screen can now be read in one press. The Copy button walks the game's own achievement table first, so all 546 titles and descriptions come out at once instead of fifty-five pages of scrolling
- - 155 more strings, read out of the source of Geode itself and of every installed mod that has one, rather than waiting for them to appear on screen: Geode's own mod manager (최근 갱신순, 설치 안 됨, 충돌하는 모드, 안전 모드), and the description and settings of 85 mods
+ - 194 more strings, read out of the source of Geode itself and of every installed mod that has one, rather than waiting for them to appear on screen: Geode's own mod manager (최근 갱신순, 설치 안 됨, 충돌하는 모드, 안전 모드), the description and settings of 85 mods, and Globed's rooms (방 만들기, 방 비밀번호, 즐겨 쓸 서버 고르기)
 
 # v4.9.0
  - Names are left in English now. A level called "Silence" was coming out "무음", because a level name, a song title and a username go through the same label as everything else, and the table happened to hold that word. The official level names go with them - Stereo Madness, Polargeist, Deadlocked - which is what players call them anyway. They still read correctly inside a sentence: 'Stereo Madness' 연습 모드로 완료하기
