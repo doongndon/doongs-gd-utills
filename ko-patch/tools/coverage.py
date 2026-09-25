@@ -117,6 +117,9 @@ def apply_patterns(text, patterns):
             continue
         if not all(is_plain_ascii(c) for c in captures):
             continue
+        # 빈칸에 담기는 것은 값이지 꾸밈이 아니다. Translator.cpp 와 같은 규칙.
+        if any("<c" in c or "</c>" in c for c in captures):
+            continue
         if any(n and i < len(captures) and not is_numeric(captures[i])
                for i, n in enumerate(numeric)):
             continue
@@ -137,7 +140,8 @@ def translate(text, exact, patterns):
     hit = lookup(text, exact, patterns)
     if hit is not None:
         return hit
-    if "\n" not in text:
+    # 줄바꿈이 딱 하나일 때만 편다. Translator.cpp 와 같은 규칙이다.
+    if text.count("\n") != 1:
         return None
     return lookup(text.replace("\n", " "), exact, patterns)
 
