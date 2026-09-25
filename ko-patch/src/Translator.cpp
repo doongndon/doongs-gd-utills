@@ -46,6 +46,23 @@ namespace {
     // {} 자리에 들어간 원문은 우리가 만든 글자가 아니다. 아틀라스에 없는 글자가
     // 섞여 있으면 화면에서 그 부분이 빈칸이 되므로, 확실히 그릴 수 있는 범위일
     // 때만 바꾼다.
+    // 조각 하나가 담아도 되는 색표는 한 벌뿐이다. 여는 표와 닫는 표의
+    // 수가 다르거나 닫는 표가 둘 이상이면 문장을 삼킨 것이다.
+    bool tooManyTags(std::string_view capture) {
+        std::size_t opens = 0;
+        std::size_t closes = 0;
+        for (std::size_t i = capture.find('<'); i != std::string_view::npos;
+             i = capture.find('<', i + 1)) {
+            auto const end = capture.find('>', i);
+            if (end == std::string_view::npos) break;
+            auto const tag = capture.substr(i + 1, end - i - 1);
+            if (tag == "/c") ++closes;
+            else if (tag.size() >= 2 && tag[0] == 'c'
+                     && (tag.size() == 2 || tag[1] == '-')) ++opens;
+        }
+        return closes > 1 || opens != closes;
+    }
+
     bool isPlainAscii(std::string_view text) {
         for (unsigned char byte : text) {
             if (byte < 0x20 || byte > 0x7E) {
@@ -457,12 +474,12 @@ namespace kopatch {
             if (!std::ranges::all_of(captures, isPlainAscii)) {
                 continue;
             }
-            // 빈칸에 담기는 것은 값이지 꾸밈이 아니다. 거둬들인 조각 안에
-            // 색표가 들어 있다면 그 틀은 제 자리보다 멀리까지 삼킨 것이다.
-            if (std::ranges::any_of(captures, [](std::string_view capture) {
-                    return capture.find("</c>") != std::string_view::npos
-                        || capture.find("<c") != std::string_view::npos;
-                })) {
+            // 빈칸에 담기는 것은 값이다. 값 하나가 제 색을 입고 오는 것은
+            // 흔한 일이라 (상점의 "<cl>마나 오브</c>" 가 그렇다) 막으면 안 된다.
+            // 다만 한 조각 안에 색표가 여러 벌 들어 있다면 그것은 값이 아니라
+            // 여러 문장이고, 그 틀은 제 자리보다 멀리까지 삼킨 것이다.
+            // (BetterInfo 의 기록 창이 그렇게 한 줄로 뭉개졌다.)
+            if (std::ranges::any_of(captures, tooManyTags)) {
                 continue;
             }
             auto const slots = slotsOf(pattern.replacement);

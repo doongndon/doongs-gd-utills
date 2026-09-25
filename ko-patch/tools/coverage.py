@@ -10,6 +10,21 @@ KO = pathlib.Path(__file__).parent.parent / "translations" / "ko.json"
 ALL = pathlib.Path(__file__).parent / "gd-strings.json"
 
 
+TAG = re.compile(r"<(/?c[a-z0-9-]*)>")
+
+
+def too_many_tags(capture):
+    """조각 하나가 담아도 되는 색표는 한 벌뿐. Translator.cpp 와 같은 규칙."""
+    opens = closes = 0
+    for m in TAG.finditer(capture):
+        tag = m.group(1)
+        if tag == "/c":
+            closes += 1
+        elif tag[0] == "c" and (len(tag) == 2 or tag[1] == "-"):
+            opens += 1
+    return closes > 1 or opens != closes
+
+
 BLANK = re.compile(r"\{(#?)\}")
 
 
@@ -117,8 +132,9 @@ def apply_patterns(text, patterns):
             continue
         if not all(is_plain_ascii(c) for c in captures):
             continue
-        # 빈칸에 담기는 것은 값이지 꾸밈이 아니다. Translator.cpp 와 같은 규칙.
-        if any("<c" in c or "</c>" in c for c in captures):
+        # 값 하나가 제 색을 입고 오는 것은 막지 않는다. 색표가 여러 벌이면
+        # 문장을 삼킨 것이다. Translator.cpp 와 같은 규칙.
+        if any(too_many_tags(c) for c in captures):
             continue
         if any(n and i < len(captures) and not is_numeric(captures[i])
                for i, n in enumerate(numeric)):

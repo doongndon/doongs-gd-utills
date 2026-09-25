@@ -1,3 +1,10 @@
+# v5.14.0
+ - **The shop's buy dialog was English again, and that was my doing.** v5.11.0 started throwing away any pattern whose blank had picked up a colour tag, to stop BetterInfo's record popup collapsing into one line. But a value often arrives wearing its own colour - the shop says "for 2,000 <cl>Mana Orbs</c>" - and the rule was throwing those away too. A blank may now carry one balanced colour tag; two or more still means the pattern reached past its own sentence
+ - The nine quest names. 오브 탐색가, 별 탐색가, 코인 탐색가, then 수집가, then 달인
+ - The Tower's path achievements. 불의 대가, 얼음의 대가, 그림자의 대가 and the rest - twenty-one of them were falling through a catch-all pattern and coming out as "Fire 마스터"
+ - Mythic was 미식 - the word for good eating. It is 미틱 now
+ - 124 mod names are on the keep-in-English list, and 33 mod descriptions are Korean
+
 # v5.13.0
  - **The errors Geode shows when something goes wrong are Korean now.** 117 of them. You saw "Unable to read entry (code -3)" once - that is exactly the moment where English is no help, and now it says 항목을 읽지 못했습니다 (코드 -3). Opening, reading and unzipping a .geode file, loading and saving settings, checking for and downloading an update
  - 16 more from Globed, Death Tracker, BetterInfo, Level Grind and Custom Death Sound - the leftovers that are built with fmt rather than handed straight to a label
