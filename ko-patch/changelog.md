@@ -1,3 +1,6 @@
+# v5.4.0
+ - 74 more of the mods' coloured sentences, which is most of what was left of them. Globed's settings now explain themselves in Korean - every one of its toggles has a paragraph under it and all of them were English - along with its room notices, its Discord linking screen and its emote help. Also edit-tools' four tool explanations, Object Groups' two remaining errors, GDDL's warning about your API key, QOLMod's safe mode lines, and BetterInfo's help page
+
 # v5.3.0
  - Found the game's real achievement list - all 547 of them, with the game's own internal names next to them (geometry.ach.stars18, geometry.ach.lists01). Steam holds it, because these are Steam achievements too, and somebody keeps a copy of every Steam game's achievement database on GitHub. The list I had been checking against held 292 and was from 2.1
  - Checking the table against it: 537 of the 547 titles and 539 of the 547 descriptions were already there. The 10 that were not are now: 스웩, 5,000개나 모으라고!?, 리스트 보상 받기, 더 많은 게임 단추 누르기!, 온라인 레벨에 별점 매기기, and the three coin goals written with double quotes instead of single
