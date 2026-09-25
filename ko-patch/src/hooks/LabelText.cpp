@@ -100,7 +100,6 @@ class $modify(KoreanLabel, CCLabelBMFont) {
         std::string restored = m_fields->m_english;
         restored += text + m_fields->m_korean.size();
 
-        m_fields->m_assembling = true;
         m_fields->m_english.clear();
         m_fields->m_korean.clear();
 
@@ -115,6 +114,28 @@ class $modify(KoreanLabel, CCLabelBMFont) {
             }
         }
 
+        // 덧붙은 결과가 그 자체로 온전한 문장일 수도 있다. Tinker 와
+        // BetterEdit 은 편집기의 물체 수 라벨을 **읽어서** 그 뒤에
+        // " | LDM: 0 (0%)" 을 이어 붙인다. 우리가 앞부분을 한국어로 바꿔 둔
+        // 뒤였으므로 한국어 뒤에 영어가 붙은 꼴이 되고, 조각을 쌓는 것과
+        // 구별되지 않는다. 다만 이어 붙은 그 문장이 표에 통째로 있다.
+        //
+        // 그래서 되돌린 문장을 한 번 찾아본다. 찾으면 그것이 문장이었다는
+        // 뜻이니 다시 한국어로 올리고, 못 찾으면 그제서야 조각으로 보고
+        // 이 라벨에서 손을 뗀다.
+        if (!m_fields->m_assembling) {
+            if (auto const entry = kopatch::Translator::get().translate(restored)) {
+                if (entry->korean) {
+                    this->applyKorean(restored, entry->text, needUpdateLabel);
+                }
+                else {
+                    CCLabelBMFont::setString(entry->text.c_str(), needUpdateLabel);
+                }
+                return;
+            }
+        }
+
+        m_fields->m_assembling = true;
         CCLabelBMFont::setString(restored.c_str(), needUpdateLabel);
     }
 

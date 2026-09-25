@@ -1,4 +1,5 @@
 # v5.2.0
+ - The editor's object count line is Korean again. It was the one line in the whole editor that stayed English, and the reason is that Tinker and BetterEdit both **read** that label and write it back with " | LDM: 0 (0%)" on the end. We had already made it Korean, so what came back looked exactly like the one thing the patch refuses to touch - Korean with English growing on the end, which is how Geode builds a line word by word. The patch now checks whether the joined sentence is itself in the table before giving up on the label, and it is
  - 81 more sentences that carry colour tags in them, which my earlier sweep of the mods' source had thrown away as unreadable. Better Unlock Info's whole set of hints - 이 물건은 <cj>금고</c> 에 <cg>lenny</c> 라고 넣으면 얻을 수 있습니다, 열쇠 50개 상자, 무료 유튜브 상자 - Eclipse's safe mode notice, BetterEdit's and Backups' confirm dialogs, Demons In Between's level info, and the AREDL and Pemonlist explainers
 
 # v5.1.0

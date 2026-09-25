@@ -8945,7 +8945,11 @@
         "<cg>Select</c> a playlist by typing its name at the top.\n": "위에 이름을 적어 재생목록을 <cg>고르세요</c>.\n",
         "All actions will then be applied to <co>that playlist</c>.\n\n": "그 뒤의 모든 일은 <co>그 재생목록</c> 에 적용됩니다.\n\n",
         "Type <cp>\"all\"</c>, then press <cj>load</c> to load all songs again.": "<cp>\"all\"</c> 이라고 적고 <cj>불러오기</c> 를 누르면 노래를 모두 다시 읽습니다.",
-        "### One or more <cj>songs</c> had issues loading!\n": "### <cj>노래</c> 하나 이상을 불러오는 데 문제가 있었습니다!\n"
+        "### One or more <cj>songs</c> had issues loading!\n": "### <cj>노래</c> 하나 이상을 불러오는 데 문제가 있었습니다!\n",
+        "<cr>WARNING: This overwrites the current APX save.</c>\n": "<cr>경고: 지금 APX 저장을 덮어씁니다.</c>\n",
+        "<cr>WARNING: This overwrites the current APX save.</c>": "<cr>경고: 지금 APX 저장을 덮어씁니다.</c>",
+        "Put <cy>.ogg</c>, <cy>.mp3</c>, or <cy>.wav</c> files in this folder:\n\n": "<cy>.ogg</c>, <cy>.mp3</c>, <cy>.wav</c> 파일을 이 폴더에 넣으세요:\n\n",
+        "When editing a run, the arrow next to <cy>Start %</c> takes you back to the run list.": "구간을 손볼 때 <cy>시작 %</c> 옆 화살표를 누르면 구간 목록으로 돌아갑니다."
     },
     "patterns": {
         "Complete '{}' in Practice mode": "'{}' 연습 모드로 완료하기",
@@ -9785,6 +9789,26 @@
         "<co>Original Difficulty</c>: {}": "<co>원래 난이도</c>: {}",
         "Are you sure you want to rename <cy>{}</c> to <cy>{}</c>?": "<cy>{}</c> 의 이름을 <cy>{}</c> 로 바꾸시겠습니까?",
         "Are you sure you want to <cy>convert</c> <cj>{}</c> into a <cl>More Icons</c> <cg>{}</c>?": "<cj>{}</c> 을(를) <cl>More Icons</c> <cg>{}</c> 로 <cy>바꾸시겠습니까</c>?",
-        "\n<cr>This will overwrite the existing custom {}!</c>": "\n<cr>이미 있는 나만의 {} 을(를) 덮어씁니다!</c>"
+        "\n<cr>This will overwrite the existing custom {}!</c>": "\n<cr>이미 있는 나만의 {} 을(를) 덮어씁니다!</c>",
+        "Attempts in run: <cy>{}</c>": "이 구간의 시도: <cy>{}</c>",
+        "Attempts in session: <cy>{}</c>": "이 판의 시도: <cy>{}</c>",
+        "Best: <cy>{}</c>": "최고: <cy>{}</c>",
+        "Current: <cy>{}</c>": "지금: <cy>{}</c>",
+        "Currently found: <cy>{}</c>": "지금 찾은 것: <cy>{}</c>",
+        "Matching attempts: <cy>{}</c>": "맞는 시도: <cy>{}</c>",
+        "Replay path attempts: <cr>{}</c>": "재생 경로의 시도: <cr>{}</c>",
+        "ID conflicts: <cy>{}</c>": "번호 충돌: <cy>{}</c>",
+        "File: <cy>{}</c>": "파일: <cy>{}</c>",
+        "Import: <cy>{}</c>": "가져오기: <cy>{}</c>",
+        "Delete <cy>{}</c> selected attempt(s)?": "고른 시도 <cy>{}</c>개를 지울까요?",
+        "Delete attempts ending from <cy>{}</c> to <cy>{}</c>?": "<cy>{}</c> 부터 <cy>{}</c> 까지에서 끝난 시도를 지울까요?",
+        "Exported successfully as:\n<cy>{}</c>": "다음 이름으로 내보냈습니다:\n<cy>{}</c>",
+        "<cy>{}</c>  total loaded attempts": "<cy>{}</c>  불러온 시도 전체",
+        "<cy>{}</c>  attempts still alive": "<cy>{}</c>  아직 살아 있는 시도",
+        "<cy>{}</c>  attempts that died": "<cy>{}</c>  죽은 시도",
+        "<cy>{}</c>  alive percent": "<cy>{}</c>  살아 있는 비율",
+        "<cy>{}</c>  dead percent": "<cy>{}</c>  죽은 비율",
+        "Music: {}": "음악: {}",
+        "SFX: {}": "효과음: {}"
     }
 }
