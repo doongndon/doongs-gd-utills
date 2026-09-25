@@ -9077,7 +9077,19 @@
         "They will be enabled in a future <cb>update</c> :)": "다음 <cb>갱신</c> 때 켜질 예정입니다 :)",
         "Select <cy>two corner objects</c>. Fills the area between them with copies using the current fill settings": "<cy>모서리 물체 두 개</c> 를 고르세요. 지금 채우기 설정대로 그 사이를 복제로 채웁니다",
         "<cy>Total submissions:</c> ": "<cy>전체 제출 수:</c> ",
-        " Submitting <cy>another rating</c> will <cr>overwrite</c> the previous one!": " <cy>다른 등급</c> 을 내면 앞서 낸 것을 <cr>덮어씁니다</c>!"
+        " Submitting <cy>another rating</c> will <cr>overwrite</c> the previous one!": " <cy>다른 등급</c> 을 내면 앞서 낸 것을 <cr>덮어씁니다</c>!",
+        "Swag": "스웩",
+        "You want me to collect 5,000!?": "5,000개나 모으라고!?",
+        "Claim a List reward": "리스트 보상 받기",
+        "Click on the More Games button!": "더 많은 게임 단추 누르기!",
+        "Clicked on the More Games button!": "더 많은 게임 단추를 누름!",
+        "Crash at over 95% on a main level in Normal mode": "메인 레벨을 일반 모드에서 95% 넘겨서 죽기",
+        "Crashed at over 95% on a main level in Normal mode": "메인 레벨을 일반 모드에서 95% 넘겨서 죽음",
+        "Rate the Stars of an online level": "온라인 레벨에 별점 매기기",
+        "Review \"Geometry Dash\" and let us know what you think": "\"Geometry Dash\" 를 평가하고 어떻게 생각하시는지 알려 주세요",
+        "Reviewed \"Geometry Dash\" and let us know what you think": "\"Geometry Dash\" 를 평가하고 생각을 알려 줌",
+        "Added a friend": "친구 한 명을 추가함",
+        "Followed a creator": "제작자 한 명을 팔로우함"
     },
     "patterns": {
         "Complete '{}' in Practice mode": "'{}' 연습 모드로 완료하기",
@@ -9957,6 +9969,9 @@
         "Please disable <co>{}</c> in <cj>Eclipse Menu</c> and restart the level to be able to take thumbnails.": "미리보기를 찍으려면 <cj>Eclipse 메뉴</c> 에서 <co>{}</c> 을(를) 끄고 레벨을 다시 시작하세요.",
         "Incompatible Geometry Dash server URL: <cr>{}</c> (expected <cy>{}</c>)": "맞지 않는 Geometry Dash 서버 주소입니다: <cr>{}</c> (<cy>{}</c> 이어야 합니다)",
         "Are you sure you want to <cr>{}</c> this user?": "이 사용자를 정말 <cr>{}</c> 하시겠습니까?",
-        "{}: <cy>client initiated disconnect</c>": "{}: <cy>내 쪽에서 연결을 끊었습니다</c>"
+        "{}: <cy>client initiated disconnect</c>": "{}: <cy>내 쪽에서 연결을 끊었습니다</c>",
+        "Collect all 3 Secret Coins on \"{}\"": "\"{}\"의 시크릿 코인 3개 모두 모으기",
+        "Collected all 3 Secret Coins on \"{}\"": "\"{}\"의 시크릿 코인 3개 모두 모음",
+        "Added {#} friends": "친구 {}명을 추가함"
     }
 }

@@ -37,11 +37,14 @@ KEEP = set(
 
 def achievements(exact, patterns) -> int:
     """업적은 게임의 문자열 목록이 아니라 따로 있는 표에서 나온다. 그래서 4,872개를
-    다 덮어도 업적은 영어로 남을 수 있다. 이름과 설명, 이룬 뒤의 설명까지 본다."""
+    다 덮어도 업적은 영어로 남을 수 있다. 이름과 설명을 모두 본다.
+
+    표는 스팀이 들고 있는 게임의 업적 목록에서 왔다. 게임이 말하는 546개와 수가
+    맞으므로, 게임 밖에서 구할 수 있는 것 가운데 이것이 진짜다."""
     data = json.loads((HERE / "achievements.json").read_text(encoding="utf-8"))
     missing = []
     for item in data:
-        for field in ("name", "description", "achievedDescription"):
+        for field in ("title", "name", "description", "achievedDescription"):
             text = item.get(field)
             if text and render.render(text, exact, patterns) is None:
                 missing.append((item["id"], field, text))
