@@ -35,8 +35,25 @@ KEEP = set(
 )
 
 
+def achievements(exact, patterns) -> int:
+    """업적은 게임의 문자열 목록이 아니라 따로 있는 표에서 나온다. 그래서 4,872개를
+    다 덮어도 업적은 영어로 남을 수 있다. 이름과 설명, 이룬 뒤의 설명까지 본다."""
+    data = json.loads((HERE / "achievements.json").read_text(encoding="utf-8"))
+    missing = []
+    for item in data:
+        for field in ("name", "description", "achievedDescription"):
+            text = item.get(field)
+            if text and render.render(text, exact, patterns) is None:
+                missing.append((item["id"], field, text))
+    print(f"{len(missing)} achievement strings untranslated")
+    for ident, field, text in missing:
+        print(f"  {ident} {field}: {text!r}")
+    return len(missing)
+
+
 def main() -> None:
     exact, patterns = render.cov.load()
+    achievements(exact, patterns)
     keys = json.loads((HERE / "gd-strings.json").read_text(encoding="utf-8")).keys()
     suspect = []
     for key in keys:

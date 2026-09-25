@@ -1,3 +1,7 @@
+# v4.2.0
+ - Achievements are fixed. "Polargeist!" stayed English because the achievement titles do not come from the game's string list at all - they come from a table of their own, which the coverage count never looked at. All 292 achievements are now checked, name, goal and the line you get once you have it: 876 strings, none left
+ - Eclipse Menu, Icon Kit Switcher, Editor History, Layout Generator, Art Importer, Better Unlock Info, Level Storage API and the Cheat API
+
 # v4.1.0
  - A new setting: "번역 안 된 글 적어 두기". Turn it on, walk through the menus you care about, then press "모은 글 복사". Every piece of English that reached the screen with no translation is written to config/missing.txt and copied to the clipboard - paste it and I can translate exactly what you saw. It is how to reach the mods that never published their source
  - The list leaves out save keys, sprite names, URLs and other people's mod names, so what is left is text a person actually reads
