@@ -179,6 +179,36 @@ namespace kopatch::collector {
         log::info("swept {} untranslated mod strings", added);
     }
 
+    // 지금 화면에 떠 있는 것을 통째로 읽는다. 모으기를 켜기 전에 이미
+    // 그려진 글은 훅을 지나간 적이 없으므로, 이 훑기만이 그것을 잡는다.
+    void sweepScene() {
+        std::size_t added = 0;
+        auto take = [&added](std::string value) {
+            if (value.empty() || kopatch::containsHangul(value)) return;
+            if (looksLikeSecret(value)) return;
+            if (Translator::get().translate(value)) return;
+            if (seen().insert(std::move(value)).second) ++added;
+        };
+
+        auto walk = [&take](auto&& self, CCNode* node) -> void {
+            if (!node) return;
+            if (auto* label = typeinfo_cast<CCLabelBMFont*>(node)) {
+                if (char const* text = label->getString()) take(text);
+            }
+            else if (auto* ttf = typeinfo_cast<CCLabelTTF*>(node)) {
+                if (char const* text = ttf->getString()) take(text);
+            }
+            auto* children = node->getChildren();
+            if (!children) return;
+            for (auto* child : CCArrayExt<CCNode*>(children)) {
+                self(self, child);
+            }
+        };
+
+        walk(walk, CCDirector::sharedDirector()->getRunningScene());
+        log::info("swept {} untranslated strings off the screen", added);
+    }
+
     std::string flush() {
         g_sinceWrite = 0;
 
@@ -206,6 +236,7 @@ namespace kopatch::collector {
             .listen([](std::string_view) {
                 sweepAchievements();
                 sweepMods();
+                sweepScene();
                 auto const text = flush();
                 if (text.empty()) {
                     Notification::create(

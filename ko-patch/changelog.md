@@ -2,6 +2,7 @@
  - The particle editor, which was not in the string list at all: 방출기, 생성 지연, 시작 크기, 끝 크기, 시작 회전, 끝 회전, 방사 가속, 접선 가속, 초당 회전, 반지름 방식, 시작 반지름 = 끝. These 53 are written from the editor itself rather than read off a source, so they are the one part of the table with nothing to check against
  - The options rows the list skipped: 노래 맞추기, 품질 낮추기, 높은 소리 품질, 스파이더 순간이동 색 바꾸기, 대시 불꽃 색 바꾸기, 빠른 키
  - The Copy button also takes a setting's dropdown choices and its button labels, not only its name and explanation
+ - The Copy button now also reads whatever is on the screen at the moment it is pressed. Turning collecting on does nothing for text that was already drawn, because that text went past the hook before the switch was flipped - this catches it
 
 # v5.0.0
  - Fixed a crash when entering a level that has a text object in it. A label GD draws in a shared batch has no texture of its own, and swapping its font reached for one that was not there. Those are the level creator's own words anyway, so the patch leaves them alone now
