@@ -2,6 +2,7 @@
 #include <Geode/modify/MultilineBitmapFont.hpp>
 
 #include <algorithm>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -113,6 +114,64 @@ namespace {
 
         return out;
     }
+
+    // 화면에 나오는 여러 줄 글 가운데는 줄을 하나씩 이어 붙여 만든 것이
+    // 많다. BetterInfo 의 레벨 기록처럼 어떤 줄은 있고 어떤 줄은 없는 글은
+    // 통째로는 결코 표에 걸리지 않는다. 그럴 때는 줄마다 따로 찾는다.
+    struct ByLine {
+        std::string text;
+        bool korean = false;
+    };
+
+    std::optional<ByLine> translateByLine(std::string const& text) {
+        if (text.find('\n') == std::string::npos) return std::nullopt;
+
+        auto const& translator = kopatch::Translator::get();
+        ByLine out;
+        bool any = false;
+
+        std::size_t start = 0;
+        while (true) {
+            std::size_t const end = std::min(text.find('\n', start), text.size());
+            std::string_view const line(text.data() + start, end - start);
+
+            if (auto const entry = translator.translate(line)) {
+                out.text += entry->text;
+                any = true;
+                if (entry->korean) out.korean = true;
+            }
+            else {
+                out.text.append(line);
+                if (!line.empty()) kopatch::collector::note(line);
+            }
+
+            if (end >= text.size()) break;
+            out.text += '\n';
+            start = end + 1;
+        }
+
+        return any ? std::optional<ByLine>(std::move(out)) : std::nullopt;
+    }
+
+    // GD 는 한 줄의 너비도 바이트로 잰다. 한글 줄은 거의 0 으로 셈해지므로,
+    // 그 숫자로 줄을 놓으면 가운데가 맞지 않고 오른쪽으로 밀린다. 글자를 다
+    // 그린 뒤에 줄마다 제 실제 너비를 보고 다시 놓는다.
+    //
+    // 줄의 앵커를 정렬 방향에 맞추고 같은 축 위에 세우면, 가운데 정렬이든
+    // 왼쪽 정렬이든 한 줄로 끝난다.
+    void realign(cocos2d::CCNode* node, float anchorX) {
+        if (!node) return;
+        auto* children = node->getChildren();
+        if (!children) return;
+
+        float const axis = node->getContentSize().width * anchorX;
+        for (auto* child : CCArrayExt<CCNode*>(children)) {
+            auto* line = typeinfo_cast<CCLabelBMFont*>(child);
+            if (!line) continue;
+            line->setAnchorPoint({ anchorX, line->getAnchorPoint().y });
+            line->setPositionX(axis);
+        }
+    }
 }
 
 // 여러 줄짜리 글은 라벨 하나가 아니다. MultilineBitmapFont 가 문장을 조각내어
@@ -141,25 +200,33 @@ class $modify(KoreanMultiline, MultilineBitmapFont) {
 
         // 이미 한글인 글은 다른 한국어 패치가 먼저 바꿔 놓은 것이다.
         if (!kopatch::containsHangul(source)) {
+            bool korean = false;
+
             if (auto const entry = translator.translate(source)) {
                 source = entry->text;
-                if (entry->korean && translator.ownFont()) {
-                    fontPath = kopatch::ownFont(
-                        translator.pixelFont(), kopatch::wantsGold(font ? font : ""));
-                    useFont = fontPath.c_str();
-
-                    // 글꼴이 바뀌면 한 줄의 높이도 바뀐다. 같은 배율로 두면
-                    // 글씨가 작아 보이므로, 높이가 달라진 만큼 배율을 되돌린다.
-                    SplitGuard const guard;
-                    int const before = lineHeight(font);
-                    int const after = lineHeight(useFont);
-                    if (before > 0 && after > 0) {
-                        scale *= static_cast<float>(before) / static_cast<float>(after);
-                    }
-                }
+                korean = entry->korean;
+            }
+            else if (auto const byLine = translateByLine(source)) {
+                source = byLine->text;
+                korean = byLine->korean;
             }
             else {
                 kopatch::collector::note(source);
+            }
+
+            if (korean && translator.ownFont()) {
+                fontPath = kopatch::ownFont(
+                    translator.pixelFont(), kopatch::wantsGold(font ? font : ""));
+                useFont = fontPath.c_str();
+
+                // 글꼴이 바뀌면 한 줄의 높이도 바뀐다. 같은 배율로 두면
+                // 글씨가 작아 보이므로, 높이가 달라진 만큼 배율을 되돌린다.
+                SplitGuard const guard;
+                int const before = lineHeight(font);
+                int const after = lineHeight(useFont);
+                if (before > 0 && after > 0) {
+                    scale *= static_cast<float>(before) / static_cast<float>(after);
+                }
             }
         }
 
@@ -189,6 +256,10 @@ class $modify(KoreanMultiline, MultilineBitmapFont) {
         if (!MultilineBitmapFont::initWithFont(
                 useFont, text, scale, width, anchor, height, disableColor)) {
             return false;
+        }
+
+        if (kopatch::containsHangul(source)) {
+            realign(this, anchor.x);
         }
 
         if (paint) {

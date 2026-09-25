@@ -42,10 +42,18 @@ class $modify(KoreanLabel, CCLabelBMFont) {
     void applyKorean(std::string const& english, std::string const& korean, bool needUpdateLabel) {
         auto const& translator = kopatch::Translator::get();
 
+        // 영어가 차지하던 너비. 단추는 영어에 맞춰 만들어졌으므로 이것이
+        // 우리에게 허락된 자리다.
+        float english_width = 0.f;
+
         if (translator.ownFont() && !m_fields->m_usingOwnFont) {
             // 어느 글꼴을 쓰고 있었는지는 바꾸기 전에 봐야 한다. 바꾸고 나면
             // 우리 글꼴로 덮여서 원래 무엇이었는지 알 수 없다.
             std::string const current = m_sFntFile;
+
+            // 자리를 재려면 먼저 영어를 그 글꼴로 올려 놓아야 한다.
+            CCLabelBMFont::setString(english.c_str(), true);
+            english_width = this->getContentSize().width;
 
             // 글꼴마다 한 줄의 높이가 다르다. 우리 글꼴이 게임 글꼴보다 낮으면
             // 같은 배율로 그려도 글씨가 작아 보인다. 자를 바꾸면 눈금도 바꿔야
@@ -72,6 +80,18 @@ class $modify(KoreanLabel, CCLabelBMFont) {
         m_fields->m_english = english;
         m_fields->m_korean = korean;
         CCLabelBMFont::setString(korean.c_str(), needUpdateLabel);
+
+        // 한글은 같은 뜻을 더 넓게 적는 일이 많다. 단추는 영어에 맞춰 잘려
+        // 있으므로, 넘치면 넘친 만큼 줄여서 그 안에 앉힌다. 글씨를 줄일지언정
+        // 단추 밖으로 나가지는 않는다. GD 도 제 글자에는 같은 일을 한다.
+        if (english_width > 1.f) {
+            float const now = this->getContentSize().width * m_fields->m_fontScale;
+            if (now > english_width) {
+                float const shrink = english_width / now;
+                this->setScale(this->getScale() * shrink);
+                m_fields->m_fontScale *= shrink;
+            }
+        }
     }
 
     // 우리가 바꿔 놓은 글자 뒤에 영어가 덧붙고 있다. 이 라벨은 문장이 아니라

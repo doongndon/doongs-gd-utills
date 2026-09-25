@@ -482,7 +482,11 @@ namespace kopatch {
                     // 건틀릿" 처럼 반만 한국어로 남는 것을 막아 주고, "Collect 5
                     // Fire Shards" 처럼 조각 자체가 틀에 걸리는 문장도 한국어가
                     // 된다.
-                    auto const piece = this->lookup(captures[slot.index]);
+                    // translate 를 거쳐야 한다. lookup 은 영어로 두기로 한
+                    // 이름 목록을 보지 않으므로, 여기서 lookup 을 부르면
+                    // "'Can't Let Go' 일반 모드로 완료함" 이 "'캔트 렛 고'" 가
+                    // 되어 버린다. 레벨 이름은 문장 안에서도 이름이다.
+                    auto const piece = this->translate(captures[slot.index]);
                     result.append(piece ? std::string_view(piece->text) : captures[slot.index]);
                 }
                 start = slot.at + slot.length;
