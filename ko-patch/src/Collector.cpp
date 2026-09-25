@@ -144,6 +144,30 @@ namespace kopatch::collector {
         log::info("swept {} untranslated achievement strings", added);
     }
 
+    // 설치된 모드마다 자기 설명과 설정 이름을 들고 있다. 화면에 뜨기를
+    // 기다릴 것 없이 한 번에 읽는다. 소스가 없는 모드도 이렇게는 읽힌다.
+    void sweepMods() {
+        std::size_t added = 0;
+        auto take = [&added](std::string value) {
+            if (value.empty() || kopatch::containsHangul(value)) return;
+            if (looksLikeSecret(value)) return;
+            if (Translator::get().translate(value)) return;
+            if (seen().insert(std::move(value)).second) ++added;
+        };
+
+        for (auto* mod : Loader::get()->getAllMods()) {
+            if (!mod) continue;
+            if (auto const description = mod->getDescription()) take(*description);
+            for (auto const& key : mod->getSettingKeys()) {
+                auto const setting = mod->getSetting(key);
+                if (!setting) continue;
+                take(setting->getDisplayName());
+                if (auto const description = setting->getDescription()) take(*description);
+            }
+        }
+        log::info("swept {} untranslated mod strings", added);
+    }
+
     std::string flush() {
         g_sinceWrite = 0;
 
@@ -170,6 +194,7 @@ namespace kopatch::collector {
         ButtonSettingPressedEventV3(Mod::get(), "collect-copy")
             .listen([](std::string_view) {
                 sweepAchievements();
+                sweepMods();
                 auto const text = flush();
                 if (text.empty()) {
                     Notification::create(
