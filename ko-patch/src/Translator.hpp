@@ -21,6 +21,7 @@ namespace kopatch {
     // "Complete '{}' in Normal mode" 처럼 {} 자리에 무엇이 와도 걸리게 한다.
     struct Pattern {
         std::vector<std::string> segments;  // 원문을 {} 로 자른 조각들
+        std::vector<bool> numeric;          // {#} 로 적은 자리는 숫자만 받는다
         std::string replacement;            // {} 가 그대로 남아 있는 번역문
         bool korean = false;
     };

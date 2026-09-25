@@ -11,17 +11,36 @@ using namespace geode::prelude;
 namespace {
     constexpr std::string_view PLACEHOLDER = "{}";
 
-    // 틀 문장에서 {} 로 잘라낸 조각들. 앞뒤가 비어 있을 수도 있다.
-    std::vector<std::string> split(std::string const& pattern) {
+    // 틀 문장을 빈칸으로 자른 조각들. 앞뒤가 비어 있을 수도 있다. 빈칸은 {} 가
+    // 보통이고, {#} 은 "여기에는 숫자만" 이라는 뜻이다. "{} to {} of {}" 는
+    // "1 to 10 of 50" 을 위한 틀인데 빈칸이 아무것이나 받는 바람에 "Move this
+    // level to the top of the levels list?" 까지 삼켰다. 숫자 자리라고 적어 두면
+    // 그런 일이 없다.
+    struct Split {
         std::vector<std::string> segments;
+        std::vector<bool> numeric;
+    };
+
+    Split split(std::string const& pattern) {
+        Split out;
         std::size_t start = 0;
-        for (auto at = pattern.find(PLACEHOLDER); at != std::string::npos;
-             at = pattern.find(PLACEHOLDER, start)) {
-            segments.push_back(pattern.substr(start, at - start));
-            start = at + PLACEHOLDER.size();
+        for (std::size_t i = 0; i + 1 < pattern.size(); ++i) {
+            if (pattern[i] != '{') continue;
+            bool digits = false;
+            std::size_t end = 0;
+            if (pattern[i + 1] == '}') end = i + 2;
+            else if (i + 2 < pattern.size() && pattern[i + 1] == '#' && pattern[i + 2] == '}') {
+                digits = true;
+                end = i + 3;
+            }
+            else continue;
+            out.segments.push_back(pattern.substr(start, i - start));
+            out.numeric.push_back(digits);
+            start = end;
+            i = end - 1;
         }
-        segments.push_back(pattern.substr(start));
-        return segments;
+        out.segments.push_back(pattern.substr(start));
+        return out;
     }
 
     // {} 자리에 들어간 원문은 우리가 만든 글자가 아니다. 아틀라스에 없는 글자가
@@ -258,22 +277,25 @@ namespace kopatch {
             if (match.empty() || to.empty()) {
                 continue;
             }
-            auto segments = split(match);
-            if (segments.size() < 2) {
-                continue;  // {} 가 없으면 틀이 아니라 그냥 문장이다
+            auto cut = split(match);
+            if (cut.segments.size() < 2) {
+                continue;  // 빈칸이 없으면 틀이 아니라 그냥 문장이다
             }
             bool const isKorean = containsHangul(to);
             if (match.find('\n') != std::string::npos) {
                 std::string flat(match);
                 std::ranges::replace(flat, '\n', ' ');
+                auto flatCut = split(flat);
                 m_patterns.push_back(Pattern{
-                    .segments = split(flat),
+                    .segments = std::move(flatCut.segments),
+                    .numeric = std::move(flatCut.numeric),
                     .replacement = to,
                     .korean = isKorean,
                 });
             }
             m_patterns.push_back(Pattern{
-                .segments = std::move(segments),
+                .segments = std::move(cut.segments),
+                .numeric = std::move(cut.numeric),
                 .replacement = std::move(to),
                 .korean = isKorean,
             });
@@ -415,9 +437,17 @@ namespace kopatch {
             }
             auto const slots = slotsOf(pattern.replacement);
 
-            // 세는 자리에 문장이 밀려들었는지 번역문을 보고 가린다.
+            // 세는 자리에 문장이 밀려들었는지 가린다. 틀에 {#} 이라 적혀 있거나,
+            // 번역문에서 빈칸 뒤에 세는 말이 붙어 있으면 숫자 자리다.
             bool wrongKind = false;
+            for (std::size_t i = 0; i < captures.size() && i < pattern.numeric.size(); ++i) {
+                if (pattern.numeric[i] && !isNumeric(captures[i])) {
+                    wrongKind = true;
+                    break;
+                }
+            }
             for (auto const& slot : slots) {
+                if (wrongKind) break;
                 if (slot.index < captures.size()
                     && wantsNumber(pattern.replacement, slot.at + slot.length)
                     && !isNumeric(captures[slot.index])) {

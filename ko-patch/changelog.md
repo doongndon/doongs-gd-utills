@@ -1,3 +1,8 @@
+# v4.0.0
+ - 29 of the game's own texts turned out never to have been translated at all. A template meant for "1 to 10 of 50" was quietly catching them - "Move this level to the top of the levels list?" became "Move this level~the top / 총 the levels list?" - and the coverage count was reading that as translated. The trigger help for Move, Rotate, Pickup, Keyframe, Count, SFX, Shock Line, Radial Blur, Grayscale, Pinch, Motion Blur, Hue Shift, Sepia and Touch, the Groups and Colour panels, the quest explainer and the terms of use are all Korean now
+ - A template can mark a blank as digits-only, so it stops swallowing sentences
+ - The shop dialog and the buy confirmations
+
 # v3.9.0
  - Korean particles now pick themselves. "큐브 을(를)" reads "큐브를" and "비행선 을(를)" reads "비행선을" - the patch looks at the last letter that actually lands in the sentence, through the colour tags, and chooses. Numbers too: 1개를, 2개를
  - "5 불 조각 모으기" is now "불 조각 5개 모으기"
