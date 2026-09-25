@@ -1820,7 +1820,7 @@
         "DROP THE BEAT": "비트 드롭",
         "DUN DUN DUN!": "두구 두구 두구!",
         "Daily": "일일",
-        "Daily Chest": "일일 보상",
+        "Daily Chest": "일일 상자",
         "Daily Level": "일일 레벨",
         "Daily Levels": "일일 레벨",
         "Dark side of the moon?": "달의 뒷면인가?",
@@ -9757,7 +9757,13 @@
         "Enable Tile Animations": "타일 움직임 켜기",
         "Adds a short slide animation when tiles move, plus a small pop when tiles merge.": "타일이 움직일 때 살짝 미끄러지고, 합쳐질 때 작게 튀어 오릅니다.",
         "Buttons in Game": "게임 안 버튼",
-        "Enable or Disable buttons showing in the game (excl New Game).": "게임 안에 버튼을 보일지 정합니다 (새 게임은 빼고)."
+        "Enable or Disable buttons showing in the game (excl New Game).": "게임 안에 버튼을 보일지 정합니다 (새 게임은 빼고).",
+        "Small Chest": "작은 상자",
+        "Large Chest": "큰 상자",
+        "Big Chest": "큰 상자",
+        "Small Treasure Chest": "작은 보물 상자",
+        "Large Treasure Chest": "큰 보물 상자",
+        "Large": "크게"
     },
     "patterns": {
         "Complete '{}' in Practice mode": "'{}' 연습 모드로 완료하기",

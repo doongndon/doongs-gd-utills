@@ -31,7 +31,8 @@ def load():
         data["exact"][name] = name  # 이름이 표보다 앞선다
     exact = dict(data["exact"])
     for source, korean in data["exact"].items():
-        if "\n" in source:
+        # 줄바꿈이 딱 하나일 때만 편다. Translator.cpp 와 같은 규칙이다.
+        if source.count("\n") == 1:
             exact.setdefault(source.replace("\n", " "), korean)
     patterns = []
     for source, korean in data["patterns"].items():
@@ -39,7 +40,7 @@ def load():
         if cut is None:
             continue
         patterns.append(cut + (korean,))
-        if "\n" in source:
+        if source.count("\n") == 1:
             flat = split_pattern(source.replace("\n", " "))
             if flat:
                 patterns.append(flat + (korean,))

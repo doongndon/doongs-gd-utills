@@ -1,6 +1,8 @@
 #include <Geode/Geode.hpp>
 #include <Geode/modify/CCLabelBMFont.hpp>
 
+#include <algorithm>
+
 #include "Collector.hpp"
 #include "Gemini.hpp"
 #include "KoreanFont.hpp"
@@ -83,12 +85,18 @@ class $modify(KoreanLabel, CCLabelBMFont) {
         CCLabelBMFont::setString(korean.c_str(), needUpdateLabel);
 
         // 한글은 같은 뜻을 더 넓게 적는 일이 많다. 단추는 영어에 맞춰 잘려
-        // 있으므로, 넘치면 넘친 만큼 줄여서 그 안에 앉힌다. 글씨를 줄일지언정
-        // 단추 밖으로 나가지는 않는다. GD 도 제 글자에는 같은 일을 한다.
+        // 있으므로, 넘치면 줄여서 그 안에 앉힌다.
+        //
+        // 다만 끝까지 줄이지는 않는다. "Tags" 두 글자가 "갈래" 가 되면 한글이
+        // 더 넓어 배율이 뚝 떨어지는데, 그 라벨은 사실 넘칠 자리도 아니었다.
+        // 밖으로 조금 나가는 것보다 못 읽을 만큼 작아지는 것이 나쁘다.
+        // 그래서 눈에 띄게 넘칠 때만 손대고, 줄여도 4분의 3까지만 줄인다.
+        constexpr float ALLOW = 1.05f;  // 이만큼까지는 넘쳐도 둔다
+        constexpr float FLOOR = 0.75f;  // 이보다 더 작게는 만들지 않는다
         if (english_width > 1.f) {
             float const now = this->getContentSize().width * m_fields->m_fontScale;
-            if (now > english_width) {
-                float const shrink = english_width / now;
+            if (now > english_width * ALLOW) {
+                float const shrink = std::max(FLOOR, english_width / now);
                 this->setScale(this->getScale() * shrink);
                 m_fields->m_fontScale *= shrink;
             }

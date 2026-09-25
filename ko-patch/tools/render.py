@@ -99,6 +99,9 @@ def render(text, exact, patterns, depth=0):
             continue
         if not all(cov.is_plain_ascii(c) for c in caps):
             continue
+        # 빈칸에 담기는 것은 값이지 꾸밈이 아니다. Translator.cpp 와 같은 규칙.
+        if any("<c" in c or "</c>" in c for c in caps):
+            continue
         if any(n and i < len(caps) and not cov.is_numeric(caps[i])
                for i, n in enumerate(numeric)):
             continue

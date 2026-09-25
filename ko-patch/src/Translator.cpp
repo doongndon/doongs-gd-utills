@@ -392,7 +392,16 @@ namespace kopatch {
         // "Disable Trigger\nOrb Scale" 은 표에 적힌 "Disable Trigger Orb Scale"
         // 과 다른 문자열이 된다. 같은 말인데 표가 못 알아보는 셈이라, 줄바꿈을
         // 띄어쓰기로 펴서 한 번 더 찾아본다.
-        if (text.find('\n') == std::string_view::npos) {
+        // 줄바꿈이 딱 하나일 때만 편다. 그 하나는 단추에 글자가 길어 GD 가
+        // 끼워 넣은 줄바꿈이고, 편 문장은 여전히 한 문장이다.
+        //
+        // 여러 줄짜리 글을 펴면 안 된다. 펴는 순간 모든 줄이 한 줄이 되고,
+        // 끝이 {} 로 열린 틀 하나가 그 전부를 삼켜 버린다. BetterInfo 의
+        // 기록 창이 그렇게 "시도 (일반): 14 Attempts (practice): 197 ..." 하고
+        // 한 줄로 뭉개졌다. 첫 줄만 한국어가 되고 나머지는 그 안에 갇힌다.
+        auto const firstBreak = text.find('\n');
+        if (firstBreak == std::string_view::npos
+            || text.find('\n', firstBreak + 1) != std::string_view::npos) {
             return std::nullopt;
         }
 
@@ -446,6 +455,14 @@ namespace kopatch {
                 continue;
             }
             if (!std::ranges::all_of(captures, isPlainAscii)) {
+                continue;
+            }
+            // 빈칸에 담기는 것은 값이지 꾸밈이 아니다. 거둬들인 조각 안에
+            // 색표가 들어 있다면 그 틀은 제 자리보다 멀리까지 삼킨 것이다.
+            if (std::ranges::any_of(captures, [](std::string_view capture) {
+                    return capture.find("</c>") != std::string_view::npos
+                        || capture.find("<c") != std::string_view::npos;
+                })) {
                 continue;
             }
             auto const slots = slotsOf(pattern.replacement);

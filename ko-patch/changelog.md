@@ -1,3 +1,10 @@
+# v5.11.0
+ - **BetterInfo's record popup came out as one long line with only its first row in Korean.** The patch flattens a line break into a space and looks again, because GD breaks a long button label across two lines and the table only holds the unbroken sentence. On a six-line block that turns the whole thing into one line - and then a pattern ending in an open blank swallowed all of it, leaving row one Korean and the rest sealed inside. Flattening now only happens when there is exactly one line break, which is the case it was written for
+ - A blank in a pattern can no longer swallow a colour tag either. What goes in a blank is a value, not markup, so a tag turning up inside one means the pattern reached past its own sentence
+ - 작게 상자 and Large 상자 are 작은 상자 and 큰 상자. Both came of taking the chest's size word out of the sentence and translating it alone, where "Small" is the word for doing something smally
+ - Korean is not shrunk into illegibility any more. "Tags" is two letters in Korean and two Korean letters are wider than four Latin ones, so 갈래 was being shrunk to fit a width it was never going to overflow. Shrinking now starts only past 5% over and stops at three quarters
+ - The loading screen tip is centred. GD places it by measuring the English, so any other text sits off to one side
+
 # v5.10.0
  - 27 more, from five further mods: Editor Pulse Preview, Menu Physics, Search Song by Name, 2048, and the one that shows Jesus when you nearly hit a spike - which has a longer settings page than you would expect, down to a sensitivity slider for how close the two hitboxes have to be
  - That is 45 of the 59 mods that had no source. Of the fourteen left, four are Geode and my own two, so ten really have nothing public anywhere. Those are what the Copy button is for, and it reads them straight out of the running game
