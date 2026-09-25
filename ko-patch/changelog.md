@@ -1,4 +1,6 @@
 # v5.4.0
+ - **Fixes v5.3.0, where most of the game went back to English.** v5.3.0 kept a label's English by writing the Korean with GD's "don't update the label" flag, which draws the Korean but leaves the stored string English. Anything that later made the label lay itself out again - a width, an alignment, a font - rebuilt it from the stored string, and the Korean vanished. Some labels never re-laid out, which is why only some of the game reverted
+ - The English is kept a different way now: the Korean is written normally, and the label simply answers in English when a mod asks what it says. Drawing and naming are two different questions and they now have two different answers, so nothing can rebuild the Korean away
  - 74 more of the mods' coloured sentences, which is most of what was left of them. Globed's settings now explain themselves in Korean - every one of its toggles has a paragraph under it and all of them were English - along with its room notices, its Discord linking screen and its emote help. Also edit-tools' four tool explanations, Object Groups' two remaining errors, GDDL's warning about your API key, QOLMod's safe mode lines, and BetterInfo's help page
 
 # v5.3.0
