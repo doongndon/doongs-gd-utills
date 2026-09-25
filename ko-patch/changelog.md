@@ -1,3 +1,8 @@
+# v5.6.0
+ - **Fixes the crash in v5.5.0.** Hooking getString was the mistake. CCLabelBMFont inherits CCLabelProtocol as a second base, so getString has a separate eight-byte thunk that shifts `this` before jumping - and eight bytes is not enough room for a hook. Writing one there overwrote whatever followed, and the game eventually tried to run it (SIGILL, non-virtual thunk to CCLabelBMFont::getString)
+ - The end screen keeps working all the same, by a route that touches nothing: translation is simply switched off while that screen is being built, so GD and NodeIDs both see the English they expect, and the whole screen is translated in one pass once they are done
+ - Multi-line text is only re-aligned when there is more than one line, and the lines are now squared up against the longest of them rather than against a width GD measured in bytes. A single line is left exactly where GD put it
+
 # v5.5.0
  - The loading screen tip is Korean now. All 62 of GD's tips were in the table the whole time - 가시는 친구가 아닙니다. 점프하는 걸 잊지 마세요, 프로그래머는 자는 중입니다, 저 큰 녀석을 깨우지 마세요. They came out English because the tip is picked and written before this mod is loaded: Geode loads 141 mods one after another and we are somewhere in the middle of that queue, and the hook only catches text written after it exists
  - So the patch now re-writes every label on the screen the moment it loads. Same words back into the same label, which is enough to send them through the hook. Anything drawn before us gets a second chance

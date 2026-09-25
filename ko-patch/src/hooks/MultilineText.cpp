@@ -164,12 +164,35 @@ namespace {
         auto* children = node->getChildren();
         if (!children) return;
 
-        float const axis = node->getContentSize().width * anchorX;
+        std::vector<CCLabelBMFont*> lines;
         for (auto* child : CCArrayExt<CCNode*>(children)) {
-            auto* line = typeinfo_cast<CCLabelBMFont*>(child);
-            if (!line) continue;
-            line->setAnchorPoint({ anchorX, line->getAnchorPoint().y });
-            line->setPositionX(axis);
+            if (auto* line = typeinfo_cast<CCLabelBMFont*>(child)) lines.push_back(line);
+        }
+        // 한 줄뿐이면 나눌 일도 맞출 일도 없다. GD 가 놓은 자리를 그대로 둔다.
+        if (lines.size() < 2) return;
+
+        // 가장 긴 줄은 GD 가 그나마 바르게 놓았을 줄이다. 그 줄을 기준으로
+        // 나머지를 맞춘다. 상자 전체를 옮기지 않으므로, 맞추려다 오히려
+        // 어긋나게 만드는 일이 없다.
+        CCLabelBMFont* widest = lines.front();
+        float widestSize = 0.f;
+        for (auto* line : lines) {
+            float const size = line->getContentSize().width * line->getScaleX();
+            if (size > widestSize) {
+                widestSize = size;
+                widest = line;
+            }
+        }
+
+        auto edge = [anchorX](CCLabelBMFont* line) {
+            float const size = line->getContentSize().width * line->getScaleX();
+            return line->getPositionX() + (anchorX - line->getAnchorPoint().x) * size;
+        };
+
+        float const target = edge(widest);
+        for (auto* line : lines) {
+            if (line == widest) continue;
+            line->setPositionX(line->getPositionX() + (target - edge(line)));
         }
     }
 }

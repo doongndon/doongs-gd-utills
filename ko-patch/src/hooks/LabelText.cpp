@@ -140,20 +140,13 @@ class $modify(KoreanLabel, CCLabelBMFont) {
         CCLabelBMFont::setString(restored.c_str(), needUpdateLabel);
     }
 
-    // 다른 모드들이 GD 의 노드를 그 라벨에 적힌 영어로 알아본다. NodeIDs 는
-    // 끝 화면에서 "Attempts" 로 시작하는 라벨을 세어 가며 그 수만큼 뒤로 밀어
-    // "button-menu" 라는 이름을 붙이는데, 우리가 그 글자를 "시도" 로 바꾸면
-    // 세는 수가 어긋나 엉뚱한 라벨이 button-menu 가 된다. 그러면 Eclipse 가
-    // 거기에 자기 표시를 붙이려다 게임이 터진다.
+    // getString 은 후킹하면 안 된다. CCLabelBMFont 는 CCLabelProtocol 도 함께
+    // 물려받으므로 getString 에는 this 를 옮겨 주는 8 바이트짜리 썽크가 따로
+    // 있는데, 그 8 바이트 안에는 훅이 들어갈 자리가 없다. 밀어 넣으면 썽크
+    // 뒤의 남의 코드를 덮어쓰고, 게임은 그 자리를 명령으로 읽다 죽는다.
+    // (SIGILL, non-virtual thunk to CCLabelBMFont::getString)
     //
-    // 그래서 물어보는 쪽에는 영어를 돌려준다. 그려지는 것은 한국어 그대로다.
-    // 글자를 바꾸는 일과, 그 라벨이 무엇인지 알아보는 일을 갈라 놓는 셈이다.
-    char const* getString() {
-        if (!m_fields->m_english.empty()) {
-            return m_fields->m_english.c_str();
-        }
-        return CCLabelBMFont::getString();
-    }
+    // 끝 화면 이름 어긋남은 다른 길로 고친다. EndLevel.cpp 를 보라.
 
     void setString(char const* text, bool needUpdateLabel) {
         auto const& translator = kopatch::Translator::get();
