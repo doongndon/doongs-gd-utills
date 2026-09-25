@@ -123,17 +123,14 @@ namespace kopatch::collector {
             auto* entry = typeinfo_cast<CCDictionary*>(object);
             if (!entry) continue;
 
-            CCDictElement* element = nullptr;
-            CCDICT_FOREACH(entry, element) {
-                char const* key = element->getStrKey();
-                if (!key) continue;
+            for (auto const& [key, field] : CCDictionaryExt<std::string, CCObject*>(entry)) {
                 std::string_view const name(key);
                 // 이름과 설명만. 나머지는 그림 파일 이름이나 식별자다.
                 if (name.find("itle") == std::string_view::npos
                     && name.find("escription") == std::string_view::npos) {
                     continue;
                 }
-                auto* text = typeinfo_cast<CCString*>(element->getObject());
+                auto* text = typeinfo_cast<CCString*>(field);
                 if (!text) continue;
 
                 std::string value(text->getCString());
