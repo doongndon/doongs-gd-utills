@@ -46,13 +46,23 @@ class $modify(KoreanLabel, CCLabelBMFont) {
         // 우리에게 허락된 자리다.
         float english_width = 0.f;
 
+        // 먼저 영어를 올린다. 라벨이 "원래 적힌 글" 로 기억하는 것은 이것이고,
+        // getString 이 돌려주는 것도 이것이다. 한국어는 그 뒤에 needUpdateLabel
+        // 을 끈 채 올리므로 화면에는 한국어가 그려지되 기억은 영어로 남는다.
+        //
+        // 다른 모드들이 GD 의 노드를 그 라벨에 적힌 영어로 알아본다. NodeIDs 는
+        // 끝 화면에서 "Attempts" 로 시작하는 라벨을 세어 가며 그 수만큼 뒤로
+        // 밀어 "button-menu" 라는 이름을 붙이는데, 우리가 그 글자를 "시도" 로
+        // 바꾸면 세는 수가 어긋나 엉뚱한 라벨이 button-menu 가 된다. 그러면
+        // Eclipse 가 거기에 자기 표시를 붙이려다 게임이 터진다. 우리가 글자를
+        // 바꾸었다는 이유로 남의 모드가 터지는 일은 없어야 한다.
+        CCLabelBMFont::setString(english.c_str(), needUpdateLabel);
+
         if (translator.ownFont() && !m_fields->m_usingOwnFont) {
             // 어느 글꼴을 쓰고 있었는지는 바꾸기 전에 봐야 한다. 바꾸고 나면
             // 우리 글꼴로 덮여서 원래 무엇이었는지 알 수 없다.
             std::string const current = m_sFntFile;
 
-            // 자리를 재려면 먼저 영어를 그 글꼴로 올려 놓아야 한다.
-            CCLabelBMFont::setString(english.c_str(), true);
             english_width = this->getContentSize().width;
 
             // 글꼴마다 한 줄의 높이가 다르다. 우리 글꼴이 게임 글꼴보다 낮으면
@@ -79,7 +89,9 @@ class $modify(KoreanLabel, CCLabelBMFont) {
 
         m_fields->m_english = english;
         m_fields->m_korean = korean;
-        CCLabelBMFont::setString(korean.c_str(), needUpdateLabel);
+        // needUpdateLabel 을 꺼서 올린다. 그려지는 것만 한국어가 되고, 라벨이
+        // 기억하는 글과 getString 이 돌려주는 글은 영어로 남는다.
+        CCLabelBMFont::setString(korean.c_str(), false);
 
         // 한글은 같은 뜻을 더 넓게 적는 일이 많다. 단추는 영어에 맞춰 잘려
         // 있으므로, 넘치면 넘친 만큼 줄여서 그 안에 앉힌다. 글씨를 줄일지언정
