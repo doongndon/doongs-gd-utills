@@ -1,3 +1,6 @@
+# v4.3.0
+ - Demons In Between, Click Sounds and Edit Tools translated. 85 of your 120 enabled mods now have their text in the table
+
 # v4.2.0
  - Achievements are fixed. "Polargeist!" stayed English because the achievement titles do not come from the game's string list at all - they come from a table of their own, which the coverage count never looked at. All 292 achievements are now checked, name, goal and the line you get once you have it: 876 strings, none left
  - Eclipse Menu, Icon Kit Switcher, Editor History, Layout Generator, Art Importer, Better Unlock Info, Level Storage API and the Cheat API
