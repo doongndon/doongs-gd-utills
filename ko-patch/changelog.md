@@ -1,3 +1,13 @@
+# v5.12.0
+ - **625 strings that were plainly on screen and still in English.** I went back over the source of all 138 installed mods, kept only what is handed to a label, a button or a popup, and matched it against the table. 857 came back untranslated; 625 of them are Korean now. What is left is internal - node ids, test popups, the contributors' nicknames
+ - The big ones were Level Grind (171), Death Tracker (109), Gauntlets Deluxe (96), Prism Menu (74), Better Gauntlets (67), Git Editor, GD Account Switcher, Chroma Icons and Custom Death Sound
+ - Mods that build a sentence out of pieces are now held as the finished sentence, not the pieces. Git Editor glues "Undo just the changes from commit \"" to the name and then to "\"? Later commits are preserved." - none of the three ever reaches a label on its own
+ - **Mythic was 미식**, which is the word for fine dining. It is 미틱 now, in all seven places
+ - One word, one meaning: group was 그룹, 묶음 and 모둠 in different corners of the table, and object was both 오브젝트 and 물체. Group is 그룹 everywhere and object is 오브젝트 everywhere
+ - Three entries in the table could never match anything. fmt writes a numbered blank as {0}, our patterns only know {}, so a pattern written with the numbered kind was dead on arrival - including the one that warns a mod has been deprecated
+ - The coverage checker was lying by the same margin. It had the new line-break rule on the table side only, so it counted strings as covered that the game would never translate. Matching it to the real rule uncovered the terms-of-use notice, which is four lines long and now has all four
+ - The checker also fills a blank in before looking, because a string straight out of the source still has {} in it and no pattern that counts things will accept a brace where a number belongs
+
 # v5.11.0
  - **BetterInfo's record popup came out as one long line with only its first row in Korean.** The patch flattens a line break into a space and looks again, because GD breaks a long button label across two lines and the table only holds the unbroken sentence. On a six-line block that turns the whole thing into one line - and then a pattern ending in an open blank swallowed all of it, leaving row one Korean and the rest sealed inside. Flattening now only happens when there is exactly one line break, which is the case it was written for
  - A blank in a pattern can no longer swallow a colour tag either. What goes in a blank is a value, not markup, so a tag turning up inside one means the pattern reached past its own sentence
