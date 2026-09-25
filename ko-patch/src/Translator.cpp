@@ -114,6 +114,102 @@ namespace {
 
     // 틀 안에서 또 틀을 찾다가 제자리를 도는 일이 없게 한 겹만 허락한다.
     thread_local int g_depth = 0;
+
+    // 한국어 조사는 앞말의 받침에 따라 갈린다. 빈칸에 무엇이 들어올지 모르니
+    // 표에는 "을(를)" 처럼 둘 다 적어 두고, 채운 뒤에 고른다. "큐브 을(를)" 이
+    // 아니라 "큐브를" 이 되도록.
+    struct Particle {
+        std::string_view both;     // 표에 적힌 꼴
+        std::string_view withEnd;  // 받침이 있을 때
+        std::string_view noEnd;    // 받침이 없을 때
+    };
+
+    constexpr Particle PARTICLES[] = {
+        { "을(를)", "을", "를" }, { "를(을)", "을", "를" },
+        { "이(가)", "이", "가" }, { "가(이)", "이", "가" },
+        { "은(는)", "은", "는" }, { "는(은)", "은", "는" },
+        { "와(과)", "과", "와" }, { "과(와)", "과", "와" },
+        { "으로(로)", "으로", "로" }, { "로(으로)", "으로", "로" },
+    };
+
+    // 0 = 받침 없음, 1 = 받침 있음, 2 = 알 수 없음(그대로 두기)
+    int endsWithConsonant(std::string const& text, std::size_t before) {
+        // 조사 앞의 공백과 <...> 꼬리표를 건너뛴다. 색깔 표시가 사이에 끼어 있다.
+        std::size_t at = before;
+        for (;;) {
+            while (at > 0 && text[at - 1] == ' ') --at;
+            if (at > 0 && text[at - 1] == '>') {
+                auto const open = text.rfind('<', at - 1);
+                if (open == std::string::npos) break;
+                at = open;
+                continue;
+            }
+            break;
+        }
+        if (at == 0) return 2;
+
+        // 마지막 글자 하나를 UTF-8 에서 거꾸로 떼어낸다.
+        std::size_t start = at - 1;
+        while (start > 0 && (static_cast<unsigned char>(text[start]) & 0xC0) == 0x80) --start;
+        auto const length = at - start;
+        unsigned int code = 0;
+        unsigned char const first = static_cast<unsigned char>(text[start]);
+        if (length == 1) code = first;
+        else if (length == 2) code = first & 0x1F;
+        else if (length == 3) code = first & 0x0F;
+        else if (length == 4) code = first & 0x07;
+        else return 2;
+        for (std::size_t i = 1; i < length; ++i) {
+            code = (code << 6) | (static_cast<unsigned char>(text[start + i]) & 0x3F);
+        }
+
+        if (code >= 0xAC00 && code <= 0xD7A3) {
+            return (code - 0xAC00) % 28 == 0 ? 0 : 1;
+        }
+        if (code >= '0' && code <= '9') {
+            // 영 일 이 삼 사 오 육 칠 팔 구
+            constexpr int HAS_END[] = { 1, 1, 0, 1, 0, 0, 1, 1, 1, 0 };
+            return HAS_END[code - '0'];
+        }
+        return 2;
+    }
+
+    // ㄹ 받침 뒤에서는 "으로" 가 아니라 "로" 를 쓴다.
+    bool endsWithRieul(std::string const& text, std::size_t before) {
+        std::size_t at = before;
+        while (at > 0 && text[at - 1] == ' ') --at;
+        if (at < 3) return false;
+        std::size_t start = at - 1;
+        while (start > 0 && (static_cast<unsigned char>(text[start]) & 0xC0) == 0x80) --start;
+        if (at - start != 3) return false;
+        unsigned int code = static_cast<unsigned char>(text[start]) & 0x0F;
+        code = (code << 6) | (static_cast<unsigned char>(text[start + 1]) & 0x3F);
+        code = (code << 6) | (static_cast<unsigned char>(text[start + 2]) & 0x3F);
+        if (code < 0xAC00 || code > 0xD7A3) return false;
+        return (code - 0xAC00) % 28 == 8;  // ㄹ
+    }
+
+    void chooseParticles(std::string& text) {
+        for (auto const& particle : PARTICLES) {
+            for (auto at = text.find(particle.both); at != std::string::npos;
+                 at = text.find(particle.both, at)) {
+                int const kind = endsWithConsonant(text, at);
+                if (kind == 2) {
+                    at += particle.both.size();
+                    continue;
+                }
+                std::string_view pick = kind == 1 ? particle.withEnd : particle.noEnd;
+                if (particle.withEnd == "으로" && kind == 1 && endsWithRieul(text, at)) {
+                    pick = particle.noEnd;
+                }
+                // 조사 앞의 공백도 함께 거둔다. "큐브 를" 이 아니라 "큐브를".
+                std::size_t begin = at;
+                while (begin > 0 && text[begin - 1] == ' ') --begin;
+                text.replace(begin, at + particle.both.size() - begin, pick);
+                at = begin + pick.size();
+            }
+        }
+    }
 }
 
 namespace kopatch {
@@ -142,6 +238,7 @@ namespace kopatch {
                 continue;
             }
             bool const isKorean = containsHangul(text);
+            chooseParticles(text);
             // 줄바꿈이 공백으로 바뀌어 들어오는 자리가 있어 그 꼴도 함께 담는다.
             if (english.find('\n') != std::string::npos) {
                 std::string flat(english);
@@ -348,6 +445,7 @@ namespace kopatch {
                 start = slot.at + slot.length;
             }
             result.append(pattern.replacement, start, std::string::npos);
+            chooseParticles(result);
 
             return Entry{ .text = std::move(result), .korean = pattern.korean };
         }

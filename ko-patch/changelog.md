@@ -1,3 +1,7 @@
+# v3.9.0
+ - Korean particles now pick themselves. "큐브 을(를)" reads "큐브를" and "비행선 을(를)" reads "비행선을" - the patch looks at the last letter that actually lands in the sentence, through the colour tags, and chooses. Numbers too: 1개를, 2개를
+ - "5 불 조각 모으기" is now "불 조각 5개 모으기"
+
 # v3.8.0
  - Fixed "이 Collect 5 Fire Shards 을(를) 열려면 Cube". Korean puts the words in a different order than English, so a template can now number its blanks - {0} and {1} - and fill them out of order
  - A piece cut out of a sentence is now translated too, not just looked up whole, so "Collect 5 Fire Shards" comes out Korean inside the unlock message
