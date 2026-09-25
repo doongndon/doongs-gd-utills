@@ -1,3 +1,7 @@
+# v3.6.0
+ - The other 43 installed mods translated: Object Groups, Globed, GDDL Integration, Backups, PlatformerSaves, More Object Info, Attempt Replay, Allium, Achievements Reimagined, Integrated Demonlist, Misc Bugfixes, Requested Ratings, Save Buttons, Fake Rate, GDShare, Geometrize2GD, OMG, Better Progression, Infinity Particles, Auto Like, Auto Rate, Improved Transform Controls, Icon On Sliders, Improved Playtest, Named Editor Layers, Recent Objects and the rest
+ - 7,024 entries now
+
 # v3.5.0
  - Fixed Korean popup text running off the edge of the screen. GD decides where to break a line by walking the sentence one byte at a time and asking the font how wide that byte is; a Hangul letter is three bytes and none of them are in the font's table, so every Korean sentence measured as zero wide and never wrapped. The patch now measures the sentence with a real label and breaks the lines itself before handing it over
  - GDUtils and More Icons translated, and 43 more installed mods read for their text
