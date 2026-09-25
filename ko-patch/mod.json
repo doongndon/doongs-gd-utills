@@ -8,7 +8,7 @@
     },
     "id": "doongndon.ko-patch",
     "name": "Korean Patch",
-    "version": "v4.6.0",
+    "version": "v4.7.0",
     "developers": [
         "doongndon"
     ],
@@ -77,7 +77,7 @@
         "collect-enabled": {
             "type": "bool",
             "name": "Note down untranslated text",
-            "description": "Every piece of English that reaches the screen with no translation is kept in a list. Some installed mods do not publish their source, so the only way to find their text is to see it. Play through the menus you care about, then press Copy below and send the list on.",
+            "description": "Every piece of English that reaches the screen with no translation is kept in a list. Some installed mods do not publish their source, so the only way to find their text is to see it. Play through the menus you care about, then press Copy below and send the list on. Level names, song titles, usernames and comments will be in there too - they are not for translating, so ignore them.",
             "default": false
         },
         "collect-copy": {

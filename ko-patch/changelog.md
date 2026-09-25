@@ -1,3 +1,8 @@
+# v4.7.0
+ - The collected list no longer leaks your API key. A string setting's value passes through a label like any other text, so the Gemini key was being written into it. Anything long with no spaces and a mix of letters and digits is now refused
+ - The list was also unreadable: Geode draws a line by adding one word at a time, so " in the", " in the settings", " in the settings picks" all went in separately. Only the finished sentence is kept now
+ - 63 more strings, found from that list: the List reward and Insane difficulty achievements, "Chest History", "Creator Contest", "Music Artist", "Hue:", and the descriptions of the mods in your list
+
 # v4.6.0
  - Coloured words no longer smear across the line. "상자를 10" was green where only "상자" should have been: GD measures how far a <cg> tag reaches in bytes and then paints that many letters, and a Hangul letter is three bytes, so every colour ran three times too far. Every coloured Korean sentence in the game had this. The patch now takes the tags off before handing the text over and paints the letters itself, counting letters
 
