@@ -1,3 +1,7 @@
+# v5.9.0
+ - 78 more, from eight further mods whose source I found by ID: Rainbow Icon's whole set of knobs (무지개 속도, 무지개 채도, 무지개 하드스트릭, and the two preset explanations that list what each number means), Custom Death Sound, Prism, CleanStartpos, Texture Workshop, Better Easings Menu and Silly API
+ - 40 of the 59 mods that had no source now have one. The 19 left are Geode itself, my own two, and 16 that genuinely have nothing public anywhere
+
 # v5.8.0
  - 55 more, from twelve mods I had nothing for. ninXout keeps a copy of the whole mod index in a repository, one mod.json per mod, and matcool keeps all of his own mods in a single one - which is why searching for any of them by name never found a thing
  - Nearly all of it is LevelInfo, which puts a dozen facts about a level on screen and gives each one a toggle and an explanation: 요청한 별, 추천 순위, 물체 수 (저사양), 편집기 시간 (복사 포함), 원본 번호. Also Zoom, Separate Dual Icons, High Graphics and Circle Tool
