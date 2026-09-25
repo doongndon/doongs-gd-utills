@@ -1,3 +1,7 @@
+# v4.9.0
+ - Names are left in English now. A level called "Silence" was coming out "무음", because a level name, a song title and a username go through the same label as everything else, and the table happened to hold that word. The official level names go with them - Stereo Madness, Polargeist, Deadlocked - which is what players call them anyway. They still read correctly inside a sentence: 'Stereo Madness' 연습 모드로 완료하기
+ - The icon kit's tab words that collided the most (Play, Waves, Robots, Random, Install) are out of the table for the same reason
+
 # v4.8.0
  - 65 more, from a second collector run: the loading screens (Geode 자료를 읽는 중), the icon kit's own names (큐브 95, 죽음 효과 2, 비행선 불꽃), the date on a level (2026년 8월 1일), the chest and quest timers (22시간, 12일), 주간 #475, and Globed's loading line
  - None of these were in the string list either

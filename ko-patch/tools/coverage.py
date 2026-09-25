@@ -26,6 +26,9 @@ def split_pattern(source):
 
 def load():
     data = json.loads(KO.read_text(encoding="utf-8"))
+    # 번역하지 않기로 한 이름들. 덮은 것으로 세되 글자는 그대로 둔다.
+    for name in data.get("names", []):
+        data["exact"].setdefault(name, name)
     exact = dict(data["exact"])
     for source, korean in data["exact"].items():
         if "\n" in source:

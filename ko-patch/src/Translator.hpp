@@ -59,11 +59,14 @@ namespace kopatch {
     private:
         void loadExact(matjson::Value const& section);
         void loadPatterns(matjson::Value const& section);
+        void loadNames(matjson::Value const& section);
         std::optional<Entry> lookup(std::string_view text) const;
         std::optional<Entry> applyPatterns(std::string_view text) const;
 
         geode::utils::StringMap<Entry> m_table;
         geode::utils::StringSet m_protected;
+        // 표에 적어 둔, 번역하지 않을 이름들
+        geode::utils::StringSet m_keepEnglish;
         std::vector<Pattern> m_patterns;
         bool m_enabled = true;
         bool m_ownFont = true;

@@ -51,8 +51,19 @@ def achievements(exact, patterns) -> int:
     return len(missing)
 
 
+def keep_english(path) -> set:
+    import json as _json
+    table = _json.loads(path.read_text(encoding="utf-8"))
+    return set(table.get("names", []))
+
+
 def main() -> None:
     exact, patterns = render.cov.load()
+    # 그대로 두기로 한 이름은 문장 안에 남아 있어도 빠진 것이 아니다.
+    names = keep_english(HERE.parent / "translations" / "ko.json")
+    for name in names:
+        for word in TAG.sub("", name).split():
+            KEEP.add(word.lower())
     achievements(exact, patterns)
     keys = json.loads((HERE / "gd-strings.json").read_text(encoding="utf-8")).keys()
     suspect = []

@@ -268,6 +268,17 @@ namespace kopatch {
         }
     }
 
+    // 이름은 번역하지 않는다. 레벨과 노래와 사람의 이름은 뜻을 옮길 것이 아니라
+    // 부르는 말이고, 그것들은 다른 글자와 똑같은 라벨을 지나가므로 표에 우연히
+    // 같은 낱말이 있으면 엉뚱하게 바뀐다. "Silence" 라는 레벨이 "무음" 이 되는 식이다.
+    void Translator::loadNames(matjson::Value const& section) {
+        for (auto const& entry : section) {
+            if (!entry.isString()) continue;
+            auto name = entry.asString().unwrapOrDefault();
+            if (!name.empty()) m_keepEnglish.emplace(std::move(name));
+        }
+    }
+
     void Translator::loadPatterns(matjson::Value const& section) {
         for (auto const& [match, korean] : section) {
             if (!korean.isString()) {
@@ -315,6 +326,7 @@ namespace kopatch {
     void Translator::load() {
         m_table.clear();
         m_patterns.clear();
+        m_keepEnglish.clear();
 
         auto json = file::readJson(Mod::get()->getResourcesDir() / "ko.json");
         if (json.isErr()) {
@@ -329,18 +341,19 @@ namespace kopatch {
         }
 
         for (auto const& [name, section] : root) {
-            if (!section.isObject()) {
-                continue;
-            }
-            if (name == "exact") {
+            if (name == "exact" && section.isObject()) {
                 this->loadExact(section);
             }
-            else if (name == "patterns") {
+            else if (name == "patterns" && section.isObject()) {
                 this->loadPatterns(section);
+            }
+            else if (name == "names" && section.isArray()) {
+                this->loadNames(section);
             }
         }
 
-        log::info("loaded {} translations and {} patterns", m_table.size(), m_patterns.size());
+        log::info("loaded {} translations, {} patterns, {} names left alone",
+                  m_table.size(), m_patterns.size(), m_keepEnglish.size());
     }
 
     void Translator::protectModNames() {
@@ -367,7 +380,7 @@ namespace kopatch {
 
     std::optional<Entry> Translator::translate(std::string_view text) const {
         // 남이 만든 모드의 이름과 제작자 이름은 건드리지 않는다.
-        if (m_protected.contains(text)) {
+        if (m_keepEnglish.contains(text) || m_protected.contains(text)) {
             return std::nullopt;
         }
 
