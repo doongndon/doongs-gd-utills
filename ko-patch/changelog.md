@@ -5,6 +5,7 @@
  - The Copy button also reads every installed mod's description and settings straight out of the mods themselves, so the ones with no public source are no longer invisible
  - The achievement screen can now be read in one press. The Copy button walks the game's own achievement table first, so all 546 titles and descriptions come out at once instead of fifty-five pages of scrolling
  - 1,231 more strings, read out of the source of Geode itself and of the 85 installed mods that have one, rather than waiting for them to appear on screen. Geode's mod manager (최근 갱신순, 설치 안 됨, 충돌하는 모드, 안전 모드); every mod's description and settings; Globed's rooms, voice chat and moderation (방 만들기, 음성 대화, 거리 음성); Eclipse Menu and QOLMod's hacks (자동 클릭, 코인 자동 줍기, 금고 모두 열기, 초당 클릭 수); Attempt Playback's whole manager; Demons In Between's 25 tiers; More Object Info's portal and ring names (중력 전환 포털, 분홍 점프 패드); BetterInfo's filters; GDDL, Jukebox, Object Workshop, Level Thumbnails, Object Groups and the rest
+ - The single words that had been slipping through because they are one word long: the months, the medal tiers (청동, 은, 금, 백금, 다이아), the easing curves (2차, 3차, 사인, 탄성, 베지어), 연결됨, 연결 끊김, 기다리는 중, 관전, 배율, 마찰, 경사
  - The 33 vault achievements, which were never in the string list at all: 금고에 'lenny' 를 넣어 비밀 찾기, 비밀의 금고에서 'glubfub' 수수께끼를 풀어 열쇠지기의 코인 훔치기, 메인 메뉴에서 플레이어 750명 부수기
 
 # v4.9.0
