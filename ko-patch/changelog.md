@@ -1,3 +1,8 @@
+# v5.7.0
+ - 399 strings from the mods I had written off as having no source. There were 59 of them; there are now 38. The trick was searching GitHub for the mod's ID rather than its name - a mod.json is the one file that carries the ID, so the search lands on the repository directly. Several were only lost because the author had renamed their account
+ - Which brings in the whole of Death Tracker's settings and backups, Better Editor Trail's forty-odd toggles, Trigger ID Search, Better Gauntlets, BetterVisuals' render and filter settings, Custom Wave Trail, Trigger Visualizer, Automatic Quests, Quick Practice, Named Editor Groups, Customize Popup Animation, Advanced Follow Presets, To-Do List, Quick Move Buttons and Git Editor
+ - GD's How to Play, found in an open-source rewrite of the game: 화면을 누르면 점프합니다, 누르고 있으면 위로 납니다, 점프 링은 그 위에 올라섰을 때 작동합니다
+
 # v5.6.0
  - **Fixes the crash in v5.5.0.** Hooking getString was the mistake. CCLabelBMFont inherits CCLabelProtocol as a second base, so getString has a separate eight-byte thunk that shifts `this` before jumping - and eight bytes is not enough room for a hook. Writing one there overwrote whatever followed, and the game eventually tried to run it (SIGILL, non-virtual thunk to CCLabelBMFont::getString)
  - The end screen keeps working all the same, by a route that touches nothing: translation is simply switched off while that screen is being built, so GD and NodeIDs both see the English they expect, and the whole screen is translated in one pass once they are done
