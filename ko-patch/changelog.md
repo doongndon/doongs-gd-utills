@@ -1,3 +1,7 @@
+# v3.7.0
+ - Fixed "Increase Maximum Levels" coming out as "레벨 Increase Maximum개". A short template like "{} Levels" is meant to catch "3 Levels", but the blank accepts anything, so it swallowed the whole option name. A blank in a short template now refuses a run of English words
+ - EditorMusic, Lasso Select, Bendy Duration Lines, Level Thumbnails and PersistenceAPI translated
+
 # v3.6.0
  - The other 43 installed mods translated: Object Groups, Globed, GDDL Integration, Backups, PlatformerSaves, More Object Info, Attempt Replay, Allium, Achievements Reimagined, Integrated Demonlist, Misc Bugfixes, Requested Ratings, Save Buttons, Fake Rate, GDShare, Geometrize2GD, OMG, Better Progression, Infinity Particles, Auto Like, Auto Rate, Improved Transform Controls, Icon On Sliders, Improved Playtest, Named Editor Layers, Recent Objects and the rest
  - 7,024 entries now

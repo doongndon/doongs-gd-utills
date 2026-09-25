@@ -1,6 +1,7 @@
 #include "Translator.hpp"
 
 #include <algorithm>
+#include <cctype>
 #include <functional>
 
 using namespace geode::prelude;
@@ -31,6 +32,27 @@ namespace {
             }
         }
         return true;
+    }
+
+    // "{} Levels" 같은 짧은 틀은 빈칸이 숫자 자리다. 그런데 빈칸은 무엇이든
+    // 받아들이므로 "Increase Maximum Levels" 가 통째로 걸려 화면에
+    // "레벨 Increase Maximum개" 가 나왔다. 자물쇠가 헐거우면 열쇠가 아닌 것도
+    // 들어간다. 틀에 남은 글자가 몇 자 안 되는데 빈칸에 영어 낱말이 둘 이상
+    // 들어앉았다면, 숫자가 올 자리에 문장이 밀려든 것이다.
+    bool isEnglishPhrase(std::string_view text) {
+        bool letter = false;
+        bool space = false;
+        for (unsigned char byte : text) {
+            if (byte == ' ') space = true;
+            else if (std::isalpha(byte)) letter = true;
+        }
+        return letter && space;
+    }
+
+    std::size_t literalLength(std::vector<std::string> const& segments) {
+        std::size_t total = 0;
+        for (auto const& segment : segments) total += segment.size();
+        return total;
     }
 }
 
@@ -211,6 +233,10 @@ namespace kopatch {
                 continue;
             }
             if (!std::ranges::all_of(captures, isPlainAscii)) {
+                continue;
+            }
+            if (literalLength(segments) < 20
+                && std::ranges::any_of(captures, isEnglishPhrase)) {
                 continue;
             }
 
