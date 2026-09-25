@@ -1,3 +1,7 @@
+# v3.5.0
+ - Fixed Korean popup text running off the edge of the screen. GD decides where to break a line by walking the sentence one byte at a time and asking the font how wide that byte is; a Hangul letter is three bytes and none of them are in the font's table, so every Korean sentence measured as zero wide and never wrapped. The patch now measures the sentence with a real label and breaks the lines itself before handing it over
+ - GDUtils and More Icons translated, and 43 more installed mods read for their text
+
 # v3.4.0
  - QOLMod translated whole: every module name, every description, every popup, the keybind and shortcut editors, the colour and gradient pickers
  - Object Workshop, Jukebox, Overcharged Main Levels, Golden Best, Named Editor Layers, Editor Trail in Game, Robot/Ship Fire Color, Texture Loader, Editor Level ID API and matcool's editor mods
