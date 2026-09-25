@@ -1,6 +1,7 @@
 #include "Collector.hpp"
 
 #include <Geode/Geode.hpp>
+#include <Geode/binding/AchievementManager.hpp>
 #include <Geode/loader/SettingV3.hpp>
 #include <Geode/utils/file.hpp>
 #include <Geode/utils/general.hpp>
@@ -111,6 +112,41 @@ namespace kopatch::collector {
         }
     }
 
+    void sweepAchievements() {
+        auto* manager = AchievementManager::sharedState();
+        if (!manager) return;
+        auto* all = manager->getAllAchievements();
+        if (!all) return;
+
+        std::size_t added = 0;
+        for (auto* object : CCArrayExt<CCObject*>(all)) {
+            auto* entry = typeinfo_cast<CCDictionary*>(object);
+            if (!entry) continue;
+
+            CCDictElement* element = nullptr;
+            CCDICT_FOREACH(entry, element) {
+                char const* key = element->getStrKey();
+                if (!key) continue;
+                std::string_view const name(key);
+                // 이름과 설명만. 나머지는 그림 파일 이름이나 식별자다.
+                if (name.find("itle") == std::string_view::npos
+                    && name.find("escription") == std::string_view::npos) {
+                    continue;
+                }
+                auto* text = typeinfo_cast<CCString*>(element->getObject());
+                if (!text) continue;
+
+                std::string value(text->getCString());
+                if (value.empty() || kopatch::containsHangul(value)) continue;
+                if (Translator::get().translate(value)) continue;  // 이미 표에 있다
+
+                // 모으기를 켜지 않았어도 이 훑기는 담는다. 일부러 누른 것이므로.
+                if (seen().insert(std::move(value)).second) ++added;
+            }
+        }
+        log::info("swept {} untranslated achievement strings", added);
+    }
+
     std::string flush() {
         g_sinceWrite = 0;
 
@@ -136,6 +172,7 @@ namespace kopatch::collector {
     void listenForButton() {
         ButtonSettingPressedEventV3(Mod::get(), "collect-copy")
             .listen([](std::string_view) {
+                sweepAchievements();
                 auto const text = flush();
                 if (text.empty()) {
                     Notification::create(

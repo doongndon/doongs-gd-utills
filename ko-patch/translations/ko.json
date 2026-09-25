@@ -5665,6 +5665,7 @@
         "Supporter-Only Feature": "후원자 전용 기능",
         "Surprise": "놀라움",
         "Swap both selected object types": "고른 두 오브젝트의 종류를 맞바꾸기",
+        "Sweeps the game's own achievement table first - all of them, without scrolling - then writes the list to config/missing.txt and copies as much of it as the clipboard will hold.": "먼저 게임이 들고 있는 업적 표를 통째로 훑습니다. 한 쪽씩 넘기지 않아도 전부 나옵니다. 그다음 목록을 config/missing.txt 에 쓰고, 클립보드에 담기는 만큼 복사합니다.",
         "Swift click": "눌렀다 바로 떼기",
         "Swing": "스윙",
         "Swing Fire": "스윙 불꽃",

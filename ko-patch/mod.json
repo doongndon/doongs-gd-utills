@@ -83,7 +83,7 @@
         "collect-copy": {
             "type": "button",
             "name": "Copy the collected text",
-            "description": "Writes the list to config/missing.txt and copies as much of it as the clipboard will hold.",
+            "description": "Sweeps the game's own achievement table first - all of them, without scrolling - then writes the list to config/missing.txt and copies as much of it as the clipboard will hold.",
             "buttons": {
                 "copy": "Copy"
             }

@@ -15,6 +15,10 @@ namespace kopatch::collector {
 
     std::size_t count();
 
+    // 게임이 들고 있는 업적 표를 통째로 훑는다. 546개를 한 쪽씩 넘겨 보지 않아도
+    // 이름과 설명이 한 번에 나온다.
+    void sweepAchievements();
+
     // config/missing.txt 에 쓰고, 그 내용을 돌려준다.
     std::string flush();
 
