@@ -1,3 +1,8 @@
+# v5.5.0
+ - The loading screen tip is Korean now. All 62 of GD's tips were in the table the whole time - 가시는 친구가 아닙니다. 점프하는 걸 잊지 마세요, 프로그래머는 자는 중입니다, 저 큰 녀석을 깨우지 마세요. They came out English because the tip is picked and written before this mod is loaded: Geode loads 141 mods one after another and we are somewhere in the middle of that queue, and the hook only catches text written after it exists
+ - So the patch now re-writes every label on the screen the moment it loads. Same words back into the same label, which is enough to send them through the hook. Anything drawn before us gets a second chance
+ - 13 more lines from Geode's loading screen. Half of them were in the table and half were not, because the two halves are the same sentence with a different noun - Geode Resources and Loader Resources
+
 # v5.4.0
  - **Fixes v5.3.0, where most of the game went back to English.** v5.3.0 kept a label's English by writing the Korean with GD's "don't update the label" flag, which draws the Korean but leaves the stored string English. Anything that later made the label lay itself out again - a width, an alignment, a font - rebuilt it from the stored string, and the Korean vanished. Some labels never re-laid out, which is why only some of the game reverted
  - The English is kept a different way now: the Korean is written normally, and the label simply answers in English when a mod asks what it says. Drawing and naming are two different questions and they now have two different answers, so nothing can rebuild the Korean away
