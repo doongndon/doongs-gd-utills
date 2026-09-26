@@ -1,3 +1,7 @@
+# v5.24.2
+ - Scoped the achievement left-edge correction to achievement cells and achievement notifications. General translated labels keep their original layout position.
+ - Fixed achievement conditions that still slid beneath the icon after v5.24.1, while preventing ordinary menu labels such as “Mode” from drifting.
+
 # v5.24.1
  - Fixed achievement condition labels drifting left into the lock and completion icons when the label was already using the bundled Korean font.
  - English width is now measured on every translation path, including recycled achievement-list labels, so the existing width and anchor correction can always run.
