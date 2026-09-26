@@ -1,3 +1,7 @@
+# v5.24.4
+ - Fixed achievement descriptions still being drawn underneath the lock and completion icons when the Korean sentence was not wider than the English one.
+ - Achievement labels now check the actual icon bounds and move only when their rendered area overlaps an icon.
+
 # v5.24.3
  - Fixed recycled achievement rows keeping the previous row's reduced text scale, which made later titles and conditions too small or misaligned.
  - Achievement alignment now still has an English width reference when the bundled font is turned off, so texture packs that provide Korean glyphs do not let conditions slide beneath the lock or completion icon.

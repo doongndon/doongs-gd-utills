@@ -4,6 +4,7 @@
 #include <Geode/binding/AchievementCell.hpp>
 
 #include <algorithm>
+#include <vector>
 
 #include "Collector.hpp"
 #include "Gemini.hpp"
@@ -30,6 +31,92 @@ namespace {
             }
         }
         return false;
+    }
+
+    struct WorldBounds {
+        float left;
+        float right;
+        float bottom;
+        float top;
+    };
+
+    WorldBounds worldBounds(CCNode* node) {
+        auto const size = node->getContentSize();
+        auto const anchor = node->getAnchorPoint();
+        auto const bottomLeft = node->convertToWorldSpace({
+            -anchor.x * size.width,
+            -anchor.y * size.height
+        });
+        auto const topRight = node->convertToWorldSpace({
+            (1.f - anchor.x) * size.width,
+            (1.f - anchor.y) * size.height
+        });
+        return {
+            std::min(bottomLeft.x, topRight.x),
+            std::max(bottomLeft.x, topRight.x),
+            std::min(bottomLeft.y, topRight.y),
+            std::max(bottomLeft.y, topRight.y)
+        };
+    }
+
+    void collectAchievementSprites(CCNode* node, std::vector<CCSprite*>& sprites) {
+        if (auto* sprite = typeinfo_cast<CCSprite*>(node)) {
+            sprites.push_back(sprite);
+        }
+
+        auto* children = node->getChildren();
+        if (!children) return;
+        for (auto* child : CCArrayExt<CCNode*>(children)) {
+            collectAchievementSprites(child, sprites);
+        }
+    }
+
+    void clearAchievementIconOverlap(CCLabelBMFont* label) {
+        CCNode* container = nullptr;
+        for (auto* node = label->getParent(); node; node = node->getParent()) {
+            if (typeinfo_cast<AchievementCell*>(node)
+                || typeinfo_cast<AchievementBar*>(node)) {
+                container = node;
+                break;
+            }
+        }
+        if (!container || !label->isVisible()) return;
+
+        auto const text = worldBounds(label);
+        std::vector<CCSprite*> sprites;
+        collectAchievementSprites(container, sprites);
+
+        float requiredShift = 0.f;
+        for (auto* sprite : sprites) {
+            if (!sprite->isVisible()) continue;
+
+            auto const icon = worldBounds(sprite);
+            auto const iconWidth = icon.right - icon.left;
+            auto const iconHeight = icon.top - icon.bottom;
+
+            // AchievementCell 안의 작은 스프라이트만 아이콘 후보로 본다.
+            // 배경 판넬이나 테두리까지 장애물로 취급하면 글자를 화면
+            // 오른쪽 끝까지 밀어 버린다.
+            if (iconWidth < 8.f || iconWidth > 120.f
+                || iconHeight < 8.f || iconHeight > 120.f) {
+                continue;
+            }
+            if (text.top <= icon.bottom || text.bottom >= icon.top) continue;
+            if (text.left >= icon.right) continue;
+
+            requiredShift = std::max(requiredShift, icon.right - text.left + 3.f);
+        }
+
+        if (requiredShift <= 0.f) return;
+
+        auto* parent = label->getParent();
+        if (!parent) return;
+        auto const worldPosition = parent->convertToWorldSpace(label->getPosition());
+        auto const localPosition = parent->convertToNodeSpace({
+            worldPosition.x + requiredShift,
+            worldPosition.y
+        });
+        label->setPositionX(localPosition.x);
     }
 }
 
@@ -175,6 +262,14 @@ class $modify(KoreanLabel, CCLabelBMFont) {
             if (grew > 0.5f) {
                 this->setPositionX(m_fields->m_baselineX + grew);
             }
+        }
+
+        // 업적 화면의 배치는 글자 폭만 보고 정해지지 않는다. 아이콘이
+        // 라벨의 왼쪽 영역 위에 그려지는 행도 있어서, 영어보다 넓어지지
+        // 않은 문장도 아이콘 아래에 숨을 수 있다. 실제 스프라이트의
+        // 오른쪽 경계를 보고 겹칠 때만 최소한으로 민다.
+        if (isAchievementLabel(this)) {
+            clearAchievementIconOverlap(this);
         }
     }
 
