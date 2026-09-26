@@ -84,6 +84,11 @@ namespace {
 }
 
 class $modify(KoreanLoadingLayer, LoadingLayer) {
+    void centreLoadingText(float) {
+        float const width = CCDirector::sharedDirector()->getWinSize().width;
+        centreLabels(this, width / 2.f, width * MIDDLE_SLACK);
+    }
+
     bool init(bool fromReload) {
         if (!LoadingLayer::init(fromReload)) {
             return false;
@@ -91,6 +96,10 @@ class $modify(KoreanLoadingLayer, LoadingLayer) {
 
         float const width = CCDirector::sharedDirector()->getWinSize().width;
         centreLabels(this, width / 2.f, width * MIDDLE_SLACK);
+        // Geode가 모드를 읽는 동안 하단 상태 문구와 팁을 계속 갱신한다.
+        // init 직후 한 번만 재면 첫 문장의 폭에 고정되어, 번역된 문구나
+        // 모드 수가 바뀐 뒤에는 가운데에서 벗어난다.
+        this->schedule(schedule_selector(KoreanLoadingLayer::centreLoadingText), 0.1f);
         return true;
     }
 };
