@@ -1,3 +1,7 @@
+# v5.24.3
+ - Fixed recycled achievement rows keeping the previous row's reduced text scale, which made later titles and conditions too small or misaligned.
+ - Achievement alignment now still has an English width reference when the bundled font is turned off, so texture packs that provide Korean glyphs do not let conditions slide beneath the lock or completion icon.
+
 # v5.24.2
  - Scoped the achievement left-edge correction to achievement cells and achievement notifications. General translated labels keep their original layout position.
  - Fixed achievement conditions that still slid beneath the icon after v5.24.1, while preventing ordinary menu labels such as “Mode” from drifting.
