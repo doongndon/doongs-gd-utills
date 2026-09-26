@@ -387,12 +387,14 @@ namespace kopatch {
         log::info("leaving {} mod names and developers alone", m_protected.size());
     }
 
-    std::optional<Entry> Translator::lookup(std::string_view text) const {
+    std::optional<Entry> Translator::lookup(
+        std::string_view text, std::string_view origin
+    ) const {
         auto const found = m_table.find(text);
         if (found != m_table.end()) {
             return found->second;
         }
-        return this->applyPatterns(text);
+        return this->applyPatterns(text, origin);
     }
 
     std::optional<Entry> Translator::translate(std::string_view text) const {
@@ -405,29 +407,35 @@ namespace kopatch {
             return entry;
         }
 
-        // 단추에 글자가 길면 GD 가 줄을 바꿔 넣는다. 그 줄바꿈은 글자의 일부라
-        // "Disable Trigger\nOrb Scale" 은 표에 적힌 "Disable Trigger Orb Scale"
-        // 과 다른 문자열이 된다. 같은 말인데 표가 못 알아보는 셈이라, 줄바꿈을
-        // 띄어쓰기로 펴서 한 번 더 찾아본다.
-        // 줄바꿈이 딱 하나일 때만 편다. 그 하나는 단추에 글자가 길어 GD 가
-        // 끼워 넣은 줄바꿈이고, 편 문장은 여전히 한 문장이다.
+        // 자리가 좁으면 GD 가 글 안에 줄바꿈을 끼워 넣는다. 그 줄바꿈은 글의
+        // 일부가 되어 버려서, 표에 적힌 한 줄짜리 문장과 다른 글이 된다.
+        // 같은 말인데 표가 못 알아보는 셈이다. 그래서 줄바꿈을 띄어쓰기로
+        // 펴서 한 번 더 찾아본다.
         //
-        // 여러 줄짜리 글을 펴면 안 된다. 펴는 순간 모든 줄이 한 줄이 되고,
-        // 끝이 {} 로 열린 틀 하나가 그 전부를 삼켜 버린다. BetterInfo 의
-        // 기록 창이 그렇게 "시도 (일반): 14 Attempts (practice): 197 ..." 하고
-        // 한 줄로 뭉개졌다. 첫 줄만 한국어가 되고 나머지는 그 안에 갇힌다.
-        auto const firstBreak = text.find('\n');
-        if (firstBreak == std::string_view::npos
-            || text.find('\n', firstBreak + 1) != std::string_view::npos) {
+        // 상점 창이 그랬다. "Wave" 는 짧아 한 줄에 들어가니 표에 걸렸지만,
+        // "Main Color" 는 길어 GD 가 한 번 더 끊는 바람에 줄바꿈이 둘이 되어
+        // 그대로 영어로 남았다.
+        //
+        // 다만 펴 놓고 아무렇게나 맞추면 안 된다. 여러 문단짜리 글을 펴면
+        // 한 줄이 되고, 끝이 {} 로 열린 틀 하나가 그 전부를 삼킬 수 있다.
+        // BetterInfo 의 기록 창이 그렇게 뭉개졌었다.
+        //
+        // 그래서 편 글로 맞춘 뒤에는 거둬들인 조각이 원래 글에서 줄을
+        // 넘나들지 않았는지 본다. 넘나들었다면 그것은 자리가 좁아 끼워 넣은
+        // 줄바꿈이 아니라 글쓴이가 나눠 놓은 줄이고, 그 틀은 제 문장보다
+        // 멀리까지 삼킨 것이다.
+        if (text.find('\n') == std::string_view::npos) {
             return std::nullopt;
         }
 
         std::string flattened(text);
         std::ranges::replace(flattened, '\n', ' ');
-        return this->lookup(flattened);
+        return this->lookup(flattened, text);
     }
 
-    std::optional<Entry> Translator::applyPatterns(std::string_view text) const {
+    std::optional<Entry> Translator::applyPatterns(
+        std::string_view text, std::string_view origin
+    ) const {
         if (g_depth > 1) {
             return std::nullopt;
         }
@@ -472,6 +480,16 @@ namespace kopatch {
                 continue;
             }
             if (!std::ranges::all_of(captures, isPlainAscii)) {
+                continue;
+            }
+            // 편 글로 맞춘 것이라면, 거둬들인 조각이 원래 글에서 줄을 넘나들지
+            // 않았는지 본다. 펴면서 줄바꿈 하나가 빈칸 하나로 바뀔 뿐 길이는
+            // 그대로이므로, 조각이 원래 글에도 그대로 들어 있으면 줄을 넘지
+            // 않은 것이다. 넘었다면 그 틀은 제 문장보다 멀리까지 삼킨 것이다.
+            if (!origin.empty()
+                && std::ranges::any_of(captures, [origin](std::string_view capture) {
+                       return origin.find(capture) == std::string_view::npos;
+                   })) {
                 continue;
             }
             // 빈칸에 담기는 것은 값이다. 값 하나가 제 색을 입고 오는 것은

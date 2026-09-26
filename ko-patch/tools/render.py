@@ -88,7 +88,7 @@ def captures_for(text, segments):
     return out or None
 
 
-def render(text, exact, patterns, depth=0):
+def render(text, exact, patterns, depth=0, origin=None):
     if text in exact:
         return choose_particles(exact[text])
     if depth > 1:
@@ -102,6 +102,9 @@ def render(text, exact, patterns, depth=0):
         # 값 하나가 제 색을 입고 오는 것은 막지 않는다. 색표가 여러 벌이면
         # 문장을 삼킨 것이다. Translator.cpp 와 같은 규칙.
         if any(cov.too_many_tags(c) for c in caps):
+            continue
+        # 편 글로 맞춘 것이라면, 조각이 원래 글에서 줄을 넘나들지 않아야 한다.
+        if origin is not None and any(c not in origin for c in caps):
             continue
         if any(n and i < len(caps) and not cov.is_numeric(caps[i])
                for i, n in enumerate(numeric)):
@@ -121,6 +124,10 @@ def render(text, exact, patterns, depth=0):
             last = m.end()
         out.append(korean[last:])
         return choose_particles("".join(out))
+
+    # 자리가 좁으면 GD 가 줄바꿈을 끼워 넣는다. 펴서 한 번 더 찾아본다.
+    if origin is None and "\n" in text:
+        return render(text.replace("\n", " "), exact, patterns, depth, text)
     return None
 
 

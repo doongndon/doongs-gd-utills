@@ -1969,6 +1969,7 @@
   "By default, <cy>automated backups are deleted after three newer backups have been made</c>.\n": "기본으로 <cy>자동 백업은 더 새 백업이 세 개 생기면 지워집니다</c>.\n",
   "By default, Globed will try to use the server with the <cg>lowest ping</c>, but you can manually choose your <cy>preferred server</c> if you prefer playing with different people.\n\n": "Globed은 기본으로 <cg>지연 시간이 가장 짧은</c> 서버를 쓰려 합니다. 다른 사람들과 하고 싶다면 <cy>즐겨 쓸 서버</c> 를 직접 고를 수 있습니다.\n\n",
   "By equiping icon this way it won't update on your profile until you restart the game": "이렇게 착용하면 게임을 다시 켤 때까지 프로필에 반영되지 않습니다",
+  "By sharing a level you give the rights to use the level\n(in any way) to the creators of Geometry Dash.": "레벨을 올리면 그 레벨을 (어떤 식으로든) 쓸 권리를\nGeometry Dash 를 만든 이들에게 넘기는 것입니다.",
   "By tapping \"OK\", you accept the\n<cl>Terms of Use</c> and confirm that\nyou have read the <cl>Privacy Policy</c>.": "\"확인\"을 누르면 <cl>이용 약관</c>에\n동의하고 <cl>개인정보 처리방침</c>을\n읽었음을 확인하게 됩니다.",
   "Bypass the 3x12 Button Grid settings.": "3x12 단추 격자 제한을 풉니다.",
   "Bypass the anticheat system": "속임수 막이를 우회합니다",

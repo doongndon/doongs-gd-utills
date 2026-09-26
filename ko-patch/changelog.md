@@ -1,3 +1,8 @@
+# v5.18.0
+ - **The shop's buy dialog was Korean for a Wave and English for a Main Color.** The item name goes in the middle of the sentence, so a long one makes the sentence too wide and GD breaks it a second time. That extra line break becomes part of the string, and the table no longer recognises its own sentence. The patch already unfolded one break; it now unfolds as many as there are
+ - Unfolding is guarded properly this time. After a match, every blank's content must sit inside a single line of the original. If a blank swallowed a line break it was not a break GD added for width but one the writer put there, and the pattern reached past its own sentence - which is what collapsed BetterInfo's record popup back in v5.11.0
+ - The level-sharing notice, which the old rule had been counting as covered when it was not
+
 # v5.17.0
  - **Death Tracker's whole guided tour - all 118 lines of it.** It hands them to the screen one at a time through a function of its own, `appendDialogue`, which the string harvester had never been told to look at. 그래프 화면에 오신 걸 환영합니다!
  - The harvester now also reads `setDescription` and `CCLabelTTF::create`, so the next sweep sees them too

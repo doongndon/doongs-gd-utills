@@ -46,8 +46,8 @@ def load():
         data["exact"][name] = name  # 이름이 표보다 앞선다
     exact = dict(data["exact"])
     for source, korean in data["exact"].items():
-        # 줄바꿈이 딱 하나일 때만 편다. Translator.cpp 와 같은 규칙이다.
-        if source.count("\n") == 1:
+        # 줄바꿈이 공백으로 바뀌어 들어오는 자리가 있어 그 꼴도 함께 담는다.
+        if "\n" in source:
             exact.setdefault(source.replace("\n", " "), korean)
     patterns = []
     for source, korean in data["patterns"].items():
@@ -55,7 +55,7 @@ def load():
         if cut is None:
             continue
         patterns.append(cut + (korean,))
-        if source.count("\n") == 1:
+        if "\n" in source:
             flat = split_pattern(source.replace("\n", " "))
             if flat:
                 patterns.append(flat + (korean,))
@@ -107,7 +107,7 @@ def numeric_slots(korean):
     return slots
 
 
-def apply_patterns(text, patterns):
+def apply_patterns(text, patterns, origin=None):
     for segments, numeric, korean in patterns:
         if not text.startswith(segments[0]) or not text.endswith(segments[-1]):
             continue
@@ -132,6 +132,10 @@ def apply_patterns(text, patterns):
             continue
         if not all(is_plain_ascii(c) for c in captures):
             continue
+        # 편 글로 맞춘 것이라면, 조각이 원래 글에서 줄을 넘나들지 않아야 한다.
+        # Translator.cpp 와 같은 규칙.
+        if origin is not None and any(c not in origin for c in captures):
+            continue
         # 값 하나가 제 색을 입고 오는 것은 막지 않는다. 색표가 여러 벌이면
         # 문장을 삼킨 것이다. Translator.cpp 와 같은 규칙.
         if any(too_many_tags(c) for c in captures):
@@ -146,20 +150,21 @@ def apply_patterns(text, patterns):
     return None
 
 
-def lookup(text, exact, patterns):
+def lookup(text, exact, patterns, origin=None):
     if text in exact:
         return exact[text]
-    return apply_patterns(text, patterns)
+    return apply_patterns(text, patterns, origin)
 
 
 def translate(text, exact, patterns):
     hit = lookup(text, exact, patterns)
     if hit is not None:
         return hit
-    # 줄바꿈이 딱 하나일 때만 편다. Translator.cpp 와 같은 규칙이다.
-    if text.count("\n") != 1:
+    # 자리가 좁으면 GD 가 줄바꿈을 끼워 넣는다. 펴서 한 번 더 찾아본다.
+    # Translator.cpp 와 같은 규칙이다.
+    if "\n" not in text:
         return None
-    return lookup(text.replace("\n", " "), exact, patterns)
+    return lookup(text.replace("\n", " "), exact, patterns, text)
 
 
 def main():

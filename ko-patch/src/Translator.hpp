@@ -60,8 +60,11 @@ namespace kopatch {
         void loadExact(matjson::Value const& section);
         void loadPatterns(matjson::Value const& section);
         void loadNames(matjson::Value const& section);
-        std::optional<Entry> lookup(std::string_view text) const;
-        std::optional<Entry> applyPatterns(std::string_view text) const;
+        // origin 은 text 를 펴기 전의 원래 글이다. 펴지 않았으면 text 와 같다.
+        std::optional<Entry> lookup(
+            std::string_view text, std::string_view origin = {}) const;
+        std::optional<Entry> applyPatterns(
+            std::string_view text, std::string_view origin = {}) const;
 
         geode::utils::StringMap<Entry> m_table;
         geode::utils::StringSet m_protected;
