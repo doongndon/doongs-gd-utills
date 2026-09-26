@@ -80,8 +80,9 @@ def captures_for(text, segments):
             if at < cursor:
                 return None
         else:
-            at = text.find(seg, cursor)
-            if at == -1 or not seg:
+            # 빈 조각은 그 자리에서 곧바로 걸린다. coverage.py 와 같은 규칙.
+            at = cursor if seg == "" else text.find(seg, cursor)
+            if at == -1:
                 return None
         out.append(text[cursor:at])
         cursor = at + len(seg)
@@ -129,8 +130,15 @@ def render(text, exact, patterns, depth=0, origin=None):
             if not m.group(1):
                 nxt += 1
             if index < len(caps):
-                raw = caps[index].strip(" \t\n")
-                piece = render(raw, exact, patterns, depth + 1)
+                # 먼저 있는 그대로 찾아본다. 못 찾았을 때만 앞뒤 빈칸을
+                # 떼고 다시 찾는다. Translator.cpp 와 같은 차례다.
+                whole = caps[index]
+                piece = render(whole, exact, patterns, depth + 1)
+                raw = whole
+                if piece is None:
+                    raw = whole.strip(" \t\n")
+                    if raw != whole:
+                        piece = render(raw, exact, patterns, depth + 1)
                 out.append(piece if piece is not None else raw)
             last = m.end()
         out.append(korean[last:])

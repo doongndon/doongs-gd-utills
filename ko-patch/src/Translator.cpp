@@ -74,8 +74,10 @@ namespace {
     }
 
     bool isPlainAscii(std::string_view text) {
+        // 줄바꿈은 눈감아 준다. 빈칸 둘이 붙어 있어 하나로 뭉친 조각은
+        // 원래 그 사이에 있던 줄바꿈을 그대로 담고 있을 수 있다.
         for (unsigned char byte : text) {
-            if (byte < 0x20 || byte > 0x7E) {
+            if ((byte < 0x20 || byte > 0x7E) && byte != '\n') {
                 return false;
             }
         }
@@ -476,8 +478,13 @@ namespace kopatch {
                     }
                 }
                 else {
-                    at = text.find(segment, cursor);
-                    if (at == std::string_view::npos || segment.empty()) {
+                    // 빈 조각은 그 자리에서 곧바로 걸린다. "{}{}" 처럼 빈칸 둘이
+                    // 붙어 있으면 사이를 가를 글자가 없어서다. 그 앞 빈칸은
+                    // 아무것도 못 거두고, 그 값은 통째로 다음 빈칸에 실린다.
+                    // Custom Death Sound 의 다운로드 수, Android 판의 SDK
+                    // 번호가 다 이 꼴이라 예전에는 통째로 걸러지고 있었다.
+                    at = segment.empty() ? cursor : text.find(segment, cursor);
+                    if (at == std::string_view::npos) {
                         matched = false;
                         break;
                     }
@@ -568,8 +575,17 @@ namespace kopatch {
                     // 이름 목록을 보지 않으므로, 여기서 lookup 을 부르면
                     // "'Can't Let Go' 일반 모드로 완료함" 이 "'캔트 렛 고'" 가
                     // 되어 버린다. 레벨 이름은 문장 안에서도 이름이다.
-                    auto const raw = trimmed(captures[slot.index]);
-                    auto const piece = this->translate(raw);
+                    // 먼저 있는 그대로 찾아본다. 값 그 자체가 앞뒤 빈칸까지
+                    // 뜻이라면(Globed 의 " forever" 처럼) 그대로 걸려야 맞다.
+                    // 못 찾았을 때만 앞뒤 빈칸을 떼고 다시 찾는다 - 상점 창의
+                    // " Main Color" 처럼 틀의 이음매가 남긴 진짜 군더더기는
+                    // 그렇게 걷어 낸다.
+                    std::string_view const whole = captures[slot.index];
+                    auto piece = this->translate(whole);
+                    auto const raw = piece ? whole : trimmed(whole);
+                    if (!piece && raw != whole) {
+                        piece = this->translate(raw);
+                    }
                     result.append(piece ? std::string_view(piece->text) : raw);
                 }
                 start = slot.at + slot.length;

@@ -65,7 +65,9 @@ def load():
 
 
 def is_plain_ascii(text):
-    return all(0x20 <= ord(c) <= 0x7e for c in text)
+    # 줄바꿈은 눈감아 준다. 빈칸 둘이 붙어 있어 하나로 뭉친 조각은 원래
+    # 그 사이에 있던 줄바꿈을 그대로 담고 있을 수 있다. Translator.cpp 와 같다.
+    return all(0x20 <= ord(c) <= 0x7e or c == "\n" for c in text)
 
 
 COUNTERS = ("개", "명", "곡", "번", "쪽", "점", "초", "분", "일", "해", "달",
@@ -123,10 +125,15 @@ def apply_patterns(text, patterns, origin=None):
                     ok = False
                     break
             else:
-                at = text.find(seg, cursor)
-                if at == -1 or not seg:
+                # 빈 조각은 그 자리에서 곧바로 걸린다. "{}{}" 처럼 빈칸 둘이
+                # 붙어 있으면 사이를 가를 글자가 없어서다. 그 앞 빈칸은
+                # 아무것도 못 거두고, 그 값은 통째로 다음 빈칸에 실린다.
+                # Translator.cpp 와 같은 규칙.
+                at = cursor if seg == "" else text.find(seg, cursor)
+                if at == -1:
                     ok = False
                     break
+
             captures.append(text[cursor:at])
             spans.append((cursor, at))
             cursor = at + len(seg)

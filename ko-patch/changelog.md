@@ -1,3 +1,9 @@
+# v5.23.0
+ - **A blank right next to another blank, with nothing between them, was silently rejected - the whole sentence stayed English.** `"{}{}"` has no literal text to search for between the two, and the old code treated "found nothing to search for" as "didn't match" and threw the entire template away. Eight templates were built this way and had been completely non-functional since they were added: the Custom Death Sound file popup, BetterInfo's request-limit display and page counter, Geode's own Android version string and its "N minutes ago" timestamps, GDShare's export confirmation, and Globed's room-ban notice
+ - Two blanks with no separator can't both be measured - there's nothing marking where one ends and the next begins. The earlier of the pair now always comes up empty and the later one carries both values merged together, which is why each of those eight had to have its own translation rewritten to read from the correct slot instead of two
+ - Fixed alongside it: a merged capture that happens to contain a real line break (the Sound Length line under a file's download count) was being thrown out for "containing a character that isn't plain text." Line breaks inside a value are allowed now
+ - And a second bug the first one's testing surfaced: recovering a value's own leading or trailing space - meaningful in Globed's "banned rooms **forever**" - was always trimmed away before lookup, same as it should be for a stray space left over from a template seam. The value is now looked up as-is first, and only trimmed if that fails
+
 # v5.22.0
  - 135 more strings from the list sent over: Globed's settings, click-sound and Jesus mods, Alphalaneous's UI pack, editor percentage displays, and Geode's own logging and mod-manager settings
  - 51 more level and mod names added to the keep-English list, so they stop being read as ordinary sentences
