@@ -38,6 +38,12 @@ class $modify(KoreanLabel, CCLabelBMFont) {
         std::string m_originalFont;
         std::string m_english;
         std::string m_korean;
+        // 왼쪽 끝을 지키려고 오른쪽으로 민 적이 있다면 그 전 자리를 기억해
+        // 둔다. 같은 라벨을 재활용해 다시 영어로 얹었다가 한글로 바꿔치는
+        // 목록 칸 같은 자리에서, 밀어 둔 것 위에 또 밀어 자리가 자꾸
+        // 벌어지는 것을 막는다.
+        bool m_hasBaselineX = false;
+        float m_baselineX = 0.f;
     };
 
     // 한국어를 라벨에 올린다. 글꼴 교체까지 여기서 끝낸다.
@@ -104,6 +110,30 @@ class $modify(KoreanLabel, CCLabelBMFont) {
                 float const shrink = std::max(floor, english_width / now);
                 this->setScale(this->getScale() * shrink);
                 m_fields->m_fontScale *= shrink;
+            }
+        }
+
+        // 라벨이 가운데나 오른쪽에 앵커를 두고 있으면, 넓어진 한글이 왼쪽으로도
+        // 자란다. 업적 목록의 자물쇠·체크 그림 옆 칸이 그렇다 - 그림은 GD 가
+        // 제자리에 두고, 설명 글만 한글이 되며 넓어져 왼쪽 끝이 그림 밑으로
+        // 파고든다. 앵커가 0(왼쪽)이면 글은 오른쪽으로만 자라니 손댈 일이
+        // 없지만, 그보다 크면 자란 만큼 왼쪽 끝이 밀려난 것이니 그 자란
+        // 만큼만 오른쪽으로 되민다. 글의 한가운데는 그대로 두고 왼쪽 끝만
+        // 원래 자리를 지키게 하는 셈이다.
+        float const anchorX = this->getAnchorPoint().x;
+        if (english_width > 1.f && anchorX > 0.001f) {
+            if (!m_fields->m_hasBaselineX) {
+                m_fields->m_baselineX = this->getPositionX();
+                m_fields->m_hasBaselineX = true;
+            }
+            else {
+                // 전에 밀어 둔 자리를 되돌리고 이번 값으로 다시 잰다.
+                this->setPositionX(m_fields->m_baselineX);
+            }
+            float const now = this->getContentSize().width * m_fields->m_fontScale;
+            float const grew = (now - english_width) * anchorX;
+            if (grew > 0.5f) {
+                this->setPositionX(m_fields->m_baselineX + grew);
             }
         }
     }
