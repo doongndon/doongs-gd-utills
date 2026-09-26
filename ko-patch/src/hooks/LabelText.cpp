@@ -2,6 +2,7 @@
 #include <Geode/modify/CCLabelBMFont.hpp>
 #include <Geode/binding/AchievementBar.hpp>
 #include <Geode/binding/AchievementCell.hpp>
+#include <Geode/binding/TextArea.hpp>
 
 #include <algorithm>
 #include <cmath>
@@ -81,6 +82,18 @@ namespace {
         }
     }
 
+    void collectAchievementNodes(CCNode* node, std::vector<CCNode*>& nodes) {
+        if (node) {
+            nodes.push_back(node);
+        }
+
+        auto* children = node ? node->getChildren() : nullptr;
+        if (!children) return;
+        for (auto* child : CCArrayExt<CCNode*>(children)) {
+            collectAchievementNodes(child, nodes);
+        }
+    }
+
     float achievementIconOverlapShift(CCLabelBMFont* label) {
         CCNode* container = nullptr;
         for (auto* node = label->getParent(); node; node = node->getParent()) {
@@ -118,6 +131,33 @@ namespace {
 
                 requiredShift = std::max(requiredShift, icon.right - text.left + 3.f);
             }
+
+            // 일부 GD 빌드에서는 업적 아이콘이 일반 CCSprite가 아닌 래퍼
+            // CCNode 안에 들어 있어 typeinfo_cast<CCSprite>로 잡히지 않는다.
+            // 행 안의 실제 노드 bounds도 확인하되, 글자와 배경 패널은 제외한다.
+            if (requiredShift <= 0.f) {
+                std::vector<CCNode*> nodes;
+                collectAchievementNodes(node, nodes);
+                for (auto* candidate : nodes) {
+                    if (candidate == label || !candidate->isVisible()) continue;
+                    if (typeinfo_cast<CCLabelBMFont*>(candidate)
+                        || typeinfo_cast<TextArea*>(candidate)) {
+                        continue;
+                    }
+
+                    auto const icon = worldBounds(candidate);
+                    auto const iconWidth = icon.right - icon.left;
+                    auto const iconHeight = icon.top - icon.bottom;
+                    if (iconWidth < 8.f || iconWidth > 120.f
+                        || iconHeight < 8.f || iconHeight > 120.f) {
+                        continue;
+                    }
+                    if (text.top <= icon.bottom || text.bottom >= icon.top) continue;
+                    if (text.left >= icon.right) continue;
+
+                    requiredShift = std::max(requiredShift, icon.right - text.left + 3.f);
+                }
+            }
             return requiredShift;
         };
 
@@ -125,9 +165,9 @@ namespace {
         // 게임 버전에 따라 AchievementCell 타입이 라벨의 조상으로 노출되지
         // 않는 경우가 있다. 조건 문장인 것이 이미 확인된 호출에서는 가까운
         // 부모들도 살펴 아이콘을 놓치지 않는다.
-        if (requiredShift <= 0.f && !container) {
+        if (requiredShift <= 0.f) {
             int depth = 0;
-            for (auto* node = label->getParent(); node && depth < 5;
+            for (auto* node = label->getParent(); node && depth < 8;
                  node = node->getParent(), ++depth) {
                 requiredShift = requiredShiftIn(node);
                 if (requiredShift > 0.f) break;
