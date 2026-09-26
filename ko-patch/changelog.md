@@ -1,3 +1,8 @@
+# v5.24.9
+ - Fixed quest notification labels being repositioned by achievement-list alignment.
+ - Achievement rows now keep translated conditions clear of lock and completion icons,
+   including icons wrapped in intermediate UI nodes.
+
 # v5.24.8
  - Fixed achievement icons that are wrapped in a plain CCNode and were missed by the sprite-only overlap check.
  - Achievement condition placement now falls back to the rendered bounds of nearby row nodes.
