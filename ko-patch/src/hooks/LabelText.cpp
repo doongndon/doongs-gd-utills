@@ -42,8 +42,13 @@ class $modify(KoreanLabel, CCLabelBMFont) {
         // setFntFile 이 내부에서 다시 setString 을 불러서 무한히 되도는 것을 막는다.
         bool m_swappingFont = false;
         bool m_usingOwnFont = false;
-        // 글꼴을 바꾸며 곱해 둔 배율. 되돌릴 때 그만큼 나눈다.
+        // 글꼴 높이를 맞추거나 넘침을 줄이며 곱해 둔 전체 배율.
+        // 원래 글꼴로 되돌릴 때 그만큼 나눈다.
         float m_fontScale = 1.f;
+        // 글꼴 높이를 맞춘 배율과 별개로, 이전 업적 행의 넘침을 줄인
+        // 배율. AchievementCell 은 라벨을 재활용하므로 다음 행을 그리기
+        // 전에 이것만 되돌려야 한다.
+        float m_widthScale = 1.f;
         // 조각을 이어 붙여 문장을 만드는 중인 라벨. 한 번 들키면 다시는
         // 번역하지 않는다.
         bool m_assembling = false;
@@ -62,6 +67,20 @@ class $modify(KoreanLabel, CCLabelBMFont) {
     void applyKorean(std::string const& english, std::string const& korean, bool needUpdateLabel) {
         auto const& translator = kopatch::Translator::get();
 
+        // 업적 목록은 몇 개의 라벨을 돌려 쓰며 모든 행을 그린다. 앞 행의
+        // 한국어가 너무 길어서 줄어든 배율을 그대로 두면, 뒤 행도 작게
+        // 그려지고 폭을 다시 잴 때 기준까지 틀어진다. 글꼴 자체의 높이를
+        // 맞춘 배율(m_fontScale)은 유지하고, 넘침 때문에 줄인 부분만
+        // 원상 복구한다.
+        if (m_fields->m_widthScale > 0.f && m_fields->m_widthScale != 1.f) {
+            this->setScale(this->getScale() / m_fields->m_widthScale);
+            m_fields->m_fontScale /= m_fields->m_widthScale;
+            m_fields->m_widthScale = 1.f;
+        }
+        if (m_fields->m_hasBaselineX) {
+            this->setPositionX(m_fields->m_baselineX);
+        }
+
         // 영어가 차지하던 너비. 단추는 영어에 맞춰 만들어졌으므로 이것이
         // 우리에게 허락된 자리다.
         float english_width = 0.f;
@@ -73,11 +92,7 @@ class $modify(KoreanLabel, CCLabelBMFont) {
         // 재활용하는 화면에서는 아래의 글꼴 교체 분기를 건너뛸 수 있으므로,
         // 영어 폭은 글꼴 교체 여부와 관계없이 측정해야 한다. 이미 패치
         // 글꼴을 쓰는 경우에는 현재 렌더링 배율까지 반영한다.
-        if (translator.ownFont()) {
-            // 자체 글꼴을 쓰는 라벨에서만 폭과 크기 보정을 한다. 자체 글꼴을
-            // 끈 상태의 일반 메뉴 라벨까지 위치를 옮기면 가운데 정렬이 깨진다.
-            english_width = this->getContentSize().width * m_fields->m_fontScale;
-        }
+        english_width = this->getContentSize().width * m_fields->m_fontScale;
 
         if (translator.ownFont() && !m_fields->m_usingOwnFont) {
             // 어느 글꼴을 쓰고 있었는지는 바꾸기 전에 봐야 한다. 바꾸고 나면
@@ -124,13 +139,14 @@ class $modify(KoreanLabel, CCLabelBMFont) {
         // 뒤는 절반까지 줄여서라도 제자리에 앉힌다.
         constexpr float ALLOW = 1.05f;  // 이만큼까지는 넘쳐도 둔다
         constexpr float MUCH  = 1.50f;  // 이보다 넘치면 많이 넘치는 것이다
-        if (english_width > 1.f) {
+        if (translator.ownFont() && english_width > 1.f) {
             float const now = this->getContentSize().width * m_fields->m_fontScale;
             if (now > english_width * ALLOW) {
                 float const floor = now > english_width * MUCH ? 0.5f : 0.75f;
                 float const shrink = std::max(floor, english_width / now);
                 this->setScale(this->getScale() * shrink);
                 m_fields->m_fontScale *= shrink;
+                m_fields->m_widthScale *= shrink;
             }
         }
 
@@ -180,6 +196,7 @@ class $modify(KoreanLabel, CCLabelBMFont) {
                 this->setScale(this->getScale() / m_fields->m_fontScale);
                 m_fields->m_fontScale = 1.f;
             }
+            m_fields->m_widthScale = 1.f;
         }
 
         // 덧붙은 결과가 그 자체로 온전한 문장일 수도 있다. Tinker 와
