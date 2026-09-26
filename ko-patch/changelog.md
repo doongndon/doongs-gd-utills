@@ -1,3 +1,7 @@
+# v5.24.5
+ - Fixed recycled achievement condition labels using the previous row's position, which could shift the condition text left.
+ - Position corrections now track only the movement added by the patch, so each recycled row keeps the game's current layout position.
+
 # v5.24.4
  - Fixed achievement descriptions still being drawn underneath the lock and completion icons when the Korean sentence was not wider than the English one.
  - Achievement labels now check the actual icon bounds and move only when their rendered area overlaps an icon.
