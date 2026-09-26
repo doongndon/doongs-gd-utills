@@ -31,7 +31,8 @@ KEEP = set(
     "toggle trigger easing target direction dynamic small step aim follow move time "
     "next free copy and paste counter attempts left right align blending vertex the "
     "www audio listen group center ccw close ref unique start end ignore volume rgb "
-    "spawn hold dual haxxor".split()
+    "spawn hold dual haxxor mvp rtx fmod ctrl scrollwheel rubrub robtroll robert "
+    "bpm ufo lol fnf blame toe2 ncs sfx http zip mac ios sui".split()
 )
 
 
@@ -75,7 +76,16 @@ def main() -> None:
         if not out or not any("가" <= c <= "힣" for c in out):
             continue
         left = [w for w in WORD.findall(TAG.sub("", out)) if w.lower() not in KEEP]
-        if len(left) >= 3:
+        if not left:
+            continue
+        # 긴 글은 편집기의 칸 이름을 그대로 가리키느라 영어가 섞이는 것이
+        # 맞다. 그래서 셋 이상 남았을 때만 의심한다.
+        #
+        # 짧은 글은 다르다. 이름 한 덩어리가 통째로 화면에 뜨는 자리이므로
+        # 낱말 하나만 영어로 남아도 "영혼 조각" 이 "Soul 조각" 이 된다.
+        # 따옴표로 묶인 것은 레벨 이름이니 그대로 두는 것이 맞다.
+        short = len(TAG.sub("", key).split()) <= 5 and "'" not in out
+        if len(left) >= 3 or short:
             suspect.append((key, out, left[:6]))
     print(f"{len(suspect)} suspect")
     for key, out, left in suspect:

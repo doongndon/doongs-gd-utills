@@ -1,3 +1,9 @@
+# v5.16.0
+ - **"5 minutes ago" was coming out as "5 minute 전".** A pattern was eating the plural s and handing back the English word. Every one of them - 초, 분, 시간, 일, 주, 개월, 년 - is Korean now, and they are on every level in the browser
+ - The Tower's shard words: 영혼, 동상, 독액, 어스름, 수풀, 천상. Without them the catch-all left "Soul 조각 35개 모으기"
+ - `Complete a Gauntlet` was being read as a gauntlet called "Complete a", and `Load Failed!` came out as "Failed! 불러오기". Both are written out in full now
+ - The checker that looks for English left inside a finished Korean sentence only complained at three words or more, to stay quiet about editor field names. A short string is different - one English word in a two-word name is the whole name. It now complains at one word on anything five words or shorter
+
 # v5.15.0
  - **Korean text blocks sat off to one side of their popup.** GD centres each line on the middle of the *wrapping limit*, but sizes the node to the *actual* text - measuring the paper, not the window. English fills the limit so the two nearly agree; Korean, which we wrap ourselves, is often narrower, and the block slid right by half the slack. Every block now measures where its lines really sit, takes that as its own size, and lines up from there
  - The same correction now runs on single-line blocks, which were skipped before
