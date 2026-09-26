@@ -1,3 +1,7 @@
+# v5.22.0
+ - 135 more strings from the list sent over: Globed's settings, click-sound and Jesus mods, Alphalaneous's UI pack, editor percentage displays, and Geode's own logging and mod-manager settings
+ - 51 more level and mod names added to the keep-English list, so they stop being read as ordinary sentences
+
 # v5.21.0
  - **The loading tip sat left of the logo because I measured the wrong thing.** A `TextArea`'s `contentSize` is not how wide the text is - it is the width the text is allowed to wrap at. Korean is usually narrower than that, so the middle I calculated was right of the real one and I pushed the line left by half the slack. Centring now walks down to the glyph labels that actually get drawn and measures their two ends on screen, so what gets centred is what you can see
  - The mod's own settings and its about page are Korean, along with Geode's logging and mod-manager settings and the editor percentage mods
