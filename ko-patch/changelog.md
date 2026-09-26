@@ -1,3 +1,11 @@
+# v5.24.7
+ - Fixed achievement condition labels being repositioned by the game after the Korean patch moved them.
+ - Achievement conditions are now identified directly and rechecked after the achievement row finishes laying itself out.
+
+# v5.24.6
+ - Fixed loading and menu tips drifting after their text is updated while Geode loads mods.
+ - Tips are now re-centered from their rendered text width throughout the loading screen.
+
 # v5.24.5
  - Fixed recycled achievement condition labels using the previous row's position, which could shift the condition text left.
  - Position corrections now track only the movement added by the patch, so each recycled row keeps the game's current layout position.
