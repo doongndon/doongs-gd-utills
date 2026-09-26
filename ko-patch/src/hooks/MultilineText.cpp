@@ -2,6 +2,7 @@
 #include <Geode/modify/MultilineBitmapFont.hpp>
 
 #include <algorithm>
+#include <cmath>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -168,31 +169,64 @@ namespace {
         for (auto* child : CCArrayExt<CCNode*>(children)) {
             if (auto* line = typeinfo_cast<CCLabelBMFont*>(child)) lines.push_back(line);
         }
-        // 한 줄뿐이면 나눌 일도 맞출 일도 없다. GD 가 놓은 자리를 그대로 둔다.
-        if (lines.size() < 2) return;
+        if (lines.empty()) return;
 
-        // 가장 긴 줄은 GD 가 그나마 바르게 놓았을 줄이다. 그 줄을 기준으로
-        // 나머지를 맞춘다. 상자 전체를 옮기지 않으므로, 맞추려다 오히려
-        // 어긋나게 만드는 일이 없다.
-        CCLabelBMFont* widest = lines.front();
-        float widestSize = 0.f;
-        for (auto* line : lines) {
-            float const size = line->getContentSize().width * line->getScaleX();
-            if (size > widestSize) {
-                widestSize = size;
-                widest = line;
+        auto const widthOf = [](CCLabelBMFont* line) {
+            return line->getContentSize().width * line->getScaleX();
+        };
+        auto const edgeOf = [&widthOf](CCLabelBMFont* line, float at) {
+            return line->getPositionX() + (at - line->getAnchorPoint().x) * widthOf(line);
+        };
+
+        // 1) 줄끼리 맞춘다. 가장 긴 줄은 GD 가 그나마 바르게 놓았을 줄이니
+        //    그 줄을 기준으로 나머지를 끌어다 맞춘다.
+        if (lines.size() >= 2) {
+            CCLabelBMFont* widest = lines.front();
+            float widestSize = 0.f;
+            for (auto* line : lines) {
+                float const size = widthOf(line);
+                if (size > widestSize) {
+                    widestSize = size;
+                    widest = line;
+                }
+            }
+            float const target = edgeOf(widest, anchorX);
+            for (auto* line : lines) {
+                if (line == widest) continue;
+                line->setPositionX(line->getPositionX() + (target - edgeOf(line, anchorX)));
             }
         }
 
-        auto edge = [anchorX](CCLabelBMFont* line) {
-            float const size = line->getContentSize().width * line->getScaleX();
-            return line->getPositionX() + (anchorX - line->getAnchorPoint().x) * size;
-        };
-
-        float const target = edge(widest);
+        // 2) 덩어리 전체를 마디 안 제자리에 앉힌다.
+        //
+        //    GD 는 줄을 "줄바꿈 한계 너비" 의 한가운데에 놓으면서, 정작 마디의
+        //    크기는 실제 글 너비로 잡는다. 영어는 한계까지 꽉 채워 쓰니 두 수가
+        //    거의 같아 티가 안 나지만, 줄을 우리가 미리 나눈 한국어는 한계보다
+        //    좁을 때가 많다. 그러면 남는 폭의 절반만큼 오른쪽으로 밀린다.
+        //    창 지름이 아니라 종이 지름을 재서 가운데를 잡은 셈이다.
+        //
+        //    그래서 줄들이 실제로 차지한 자리를 우리가 재서, 마디의 크기를
+        //    그 값으로 고치고 줄들을 0 에서 시작하게 옮긴다. 그러면 마디를
+        //    붙인 쪽이 잡아 준 자리와 anchor 가 제대로 맞아떨어진다.
+        //    이미 바르게 놓인 글은 잴 값이 같으므로 아무것도 달라지지 않는다.
+        float left = edgeOf(lines.front(), 0.f);
+        float right = left + widthOf(lines.front());
         for (auto* line : lines) {
-            if (line == widest) continue;
-            line->setPositionX(line->getPositionX() + (target - edge(line)));
+            float const l = edgeOf(line, 0.f);
+            left = std::min(left, l);
+            right = std::max(right, l + widthOf(line));
+        }
+
+        float const span = right - left;
+        if (span <= 0.f) return;
+
+        auto size = node->getContentSize();
+        if (std::fabs(size.width - span) > 0.5f || std::fabs(left) > 0.5f) {
+            for (auto* line : lines) {
+                line->setPositionX(line->getPositionX() - left);
+            }
+            size.width = span;
+            node->setContentSize(size);
         }
     }
 }

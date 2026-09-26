@@ -91,12 +91,17 @@ class $modify(KoreanLabel, CCLabelBMFont) {
         // 더 넓어 배율이 뚝 떨어지는데, 그 라벨은 사실 넘칠 자리도 아니었다.
         // 밖으로 조금 나가는 것보다 못 읽을 만큼 작아지는 것이 나쁘다.
         // 그래서 눈에 띄게 넘칠 때만 손대고, 줄여도 4분의 3까지만 줄인다.
+        // 다만 얼마나 넘치느냐에 따라 다르게 다룬다. 조금 넘치는 것은 단추
+        // 테두리를 살짝 벗어나는 정도라 읽는 데 지장이 없지만, 배가 넘게
+        // 넘치는 것은 옆 화면까지 밀고 들어간다. 앞은 4분의 3까지만 줄이고,
+        // 뒤는 절반까지 줄여서라도 제자리에 앉힌다.
         constexpr float ALLOW = 1.05f;  // 이만큼까지는 넘쳐도 둔다
-        constexpr float FLOOR = 0.75f;  // 이보다 더 작게는 만들지 않는다
+        constexpr float MUCH  = 1.50f;  // 이보다 넘치면 많이 넘치는 것이다
         if (english_width > 1.f) {
             float const now = this->getContentSize().width * m_fields->m_fontScale;
             if (now > english_width * ALLOW) {
-                float const shrink = std::max(FLOOR, english_width / now);
+                float const floor = now > english_width * MUCH ? 0.5f : 0.75f;
+                float const shrink = std::max(floor, english_width / now);
                 this->setScale(this->getScale() * shrink);
                 m_fields->m_fontScale *= shrink;
             }

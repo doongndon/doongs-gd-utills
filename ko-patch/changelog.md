@@ -1,3 +1,10 @@
+# v5.15.0
+ - **Korean text blocks sat off to one side of their popup.** GD centres each line on the middle of the *wrapping limit*, but sizes the node to the *actual* text - measuring the paper, not the window. English fills the limit so the two nearly agree; Korean, which we wrap ourselves, is often narrower, and the block slid right by half the slack. Every block now measures where its lines really sit, takes that as its own size, and lines up from there
+ - The same correction now runs on single-line blocks, which were skipped before
+ - The loading screen's centring walks the whole screen, not only its top layer, so the title no longer sits off to one side. It only moves text that was already near the middle - a caption in a corner belongs in that corner
+ - Text that spills far past its slot is shrunk harder. Up to half again over is left alone at three quarters, but past that it may go down to half, because a label twice too wide walks into the next screen
+ - The last five gauntlet words: 코스모스, 쿠키, 지하 무덤, 느긋한, 모험
+
 # v5.14.0
  - **The shop's buy dialog was English again, and that was my doing.** v5.11.0 started throwing away any pattern whose blank had picked up a colour tag, to stop BetterInfo's record popup collapsing into one line. But a value often arrives wearing its own colour - the shop says "for 2,000 <cl>Mana Orbs</c>" - and the rule was throwing those away too. A blank may now carry one balanced colour tag; two or more still means the pattern reached past its own sentence
  - The nine quest names. 오브 탐색가, 별 탐색가, 코인 탐색가, then 수집가, then 달인
