@@ -57,12 +57,17 @@ class $modify(KoreanLabel, CCLabelBMFont) {
         // 자리를 재려면 먼저 영어를 그 글꼴로 올려 놓아야 한다.
         CCLabelBMFont::setString(english.c_str(), needUpdateLabel);
 
+        // 글꼴을 이미 패치 글꼴로 바꾼 라벨도 있다. 업적 목록처럼 라벨을
+        // 재활용하는 화면에서는 아래의 글꼴 교체 분기를 건너뛸 수 있으므로,
+        // 영어 폭은 글꼴 교체 여부와 관계없이 측정해야 한다. 이미 패치
+        // 글꼴을 쓰는 경우에는 현재 렌더링 배율까지 반영한다.
+        english_width = this->getContentSize().width * m_fields->m_fontScale;
+
         if (translator.ownFont() && !m_fields->m_usingOwnFont) {
             // 어느 글꼴을 쓰고 있었는지는 바꾸기 전에 봐야 한다. 바꾸고 나면
             // 우리 글꼴로 덮여서 원래 무엇이었는지 알 수 없다.
             std::string const current = m_sFntFile;
 
-            english_width = this->getContentSize().width;
 
             // 글꼴마다 한 줄의 높이가 다르다. 우리 글꼴이 게임 글꼴보다 낮으면
             // 같은 배율로 그려도 글씨가 작아 보인다. 자를 바꾸면 눈금도 바꿔야
