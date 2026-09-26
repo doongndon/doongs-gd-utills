@@ -25,10 +25,18 @@ namespace {
         return false;
     }
 
-    bool isAchievementLabel(CCLabelBMFont* label) {
+    bool isAchievementCellLabel(CCLabelBMFont* label) {
         for (auto* node = static_cast<CCNode*>(label); node; node = node->getParent()) {
-            if (typeinfo_cast<AchievementCell*>(node)
-                || typeinfo_cast<AchievementBar*>(node)) {
+            if (typeinfo_cast<AchievementCell*>(node)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    bool isAchievementBarLabel(CCLabelBMFont* label) {
+        for (auto* node = static_cast<CCNode*>(label); node; node = node->getParent()) {
+            if (typeinfo_cast<AchievementBar*>(node)) {
                 return true;
             }
         }
@@ -97,8 +105,7 @@ namespace {
     float achievementIconOverlapShift(CCLabelBMFont* label) {
         CCNode* container = nullptr;
         for (auto* node = label->getParent(); node; node = node->getParent()) {
-            if (typeinfo_cast<AchievementCell*>(node)
-                || typeinfo_cast<AchievementBar*>(node)) {
+            if (typeinfo_cast<AchievementCell*>(node)) {
                 container = node;
                 break;
             }
@@ -134,29 +141,28 @@ namespace {
 
             // 일부 GD 빌드에서는 업적 아이콘이 일반 CCSprite가 아닌 래퍼
             // CCNode 안에 들어 있어 typeinfo_cast<CCSprite>로 잡히지 않는다.
-            // 행 안의 실제 노드 bounds도 확인하되, 글자와 배경 패널은 제외한다.
-            if (requiredShift <= 0.f) {
-                std::vector<CCNode*> nodes;
-                collectAchievementNodes(node, nodes);
-                for (auto* candidate : nodes) {
-                    if (candidate == label || !candidate->isVisible()) continue;
-                    if (typeinfo_cast<CCLabelBMFont*>(candidate)
-                        || typeinfo_cast<TextArea*>(candidate)) {
-                        continue;
-                    }
-
-                    auto const icon = worldBounds(candidate);
-                    auto const iconWidth = icon.right - icon.left;
-                    auto const iconHeight = icon.top - icon.bottom;
-                    if (iconWidth < 8.f || iconWidth > 120.f
-                        || iconHeight < 8.f || iconHeight > 120.f) {
-                        continue;
-                    }
-                    if (text.top <= icon.bottom || text.bottom >= icon.top) continue;
-                    if (text.left >= icon.right) continue;
-
-                    requiredShift = std::max(requiredShift, icon.right - text.left + 3.f);
+            // 스프라이트를 하나 찾았더라도 래퍼 안의 실제 아이콘을 계속 확인한다.
+            std::vector<CCNode*> nodes;
+            collectAchievementNodes(node, nodes);
+            for (auto* candidate : nodes) {
+                if (candidate == label || !candidate->isVisible()) continue;
+                if (typeinfo_cast<CCSprite*>(candidate)
+                    || typeinfo_cast<CCLabelBMFont*>(candidate)
+                    || typeinfo_cast<TextArea*>(candidate)) {
+                    continue;
                 }
+
+                auto const icon = worldBounds(candidate);
+                auto const iconWidth = icon.right - icon.left;
+                auto const iconHeight = icon.top - icon.bottom;
+                if (iconWidth < 8.f || iconWidth > 120.f
+                    || iconHeight < 8.f || iconHeight > 120.f) {
+                    continue;
+                }
+                if (text.top <= icon.bottom || text.bottom >= icon.top) continue;
+                if (text.left >= icon.right) continue;
+
+                requiredShift = std::max(requiredShift, icon.right - text.left + 3.f);
             }
             return requiredShift;
         };
@@ -167,7 +173,7 @@ namespace {
         // 부모들도 살펴 아이콘을 놓치지 않는다.
         if (requiredShift <= 0.f) {
             int depth = 0;
-            for (auto* node = label->getParent(); node && depth < 8;
+            for (auto* node = label->getParent(); node && depth < 24;
                  node = node->getParent(), ++depth) {
                 requiredShift = requiredShiftIn(node);
                 if (requiredShift > 0.f) break;
@@ -331,7 +337,11 @@ class $modify(KoreanLabel, CCLabelBMFont) {
         // 적용하면 가운데 정렬된 메뉴 제목까지 오른쪽으로 밀려 원래 자리에서
         // 벗어난다.
         bool const achievementCondition = isAchievementCondition(english);
-        if ((isAchievementLabel(this) || achievementCondition)
+        bool const achievementCell = isAchievementCellLabel(this);
+        bool const achievementBar = isAchievementBarLabel(this);
+        bool const shouldAlignAchievement =
+            !achievementBar && (achievementCell || achievementCondition);
+        if (shouldAlignAchievement
             && english_width > 1.f && anchorX > 0.001f) {
             float const now = this->getContentSize().width * m_fields->m_fontScale;
             float const grew = std::max(0.f, (now - english_width) * anchorX);
@@ -347,7 +357,7 @@ class $modify(KoreanLabel, CCLabelBMFont) {
         // 라벨의 왼쪽 영역 위에 그려지는 행도 있어서, 영어보다 넓어지지
         // 않은 문장도 아이콘 아래에 숨을 수 있다. 실제 스프라이트의
         // 오른쪽 경계를 보고 겹칠 때만 최소한으로 민다.
-        if (isAchievementLabel(this) || achievementCondition) {
+        if (shouldAlignAchievement) {
             float const iconShift = achievementIconOverlapShift(this);
             if (iconShift > 0.f) {
                 this->setPositionX(this->getPositionX() + iconShift);
@@ -355,7 +365,7 @@ class $modify(KoreanLabel, CCLabelBMFont) {
                 m_fields->m_lastPatchedX = this->getPositionX();
                 m_fields->m_hasPatchedPosition = true;
             }
-            if (achievementCondition) {
+            if (achievementCell || achievementCondition) {
                 this->scheduleOnce(
                     schedule_selector(KoreanLabel::recheckAchievementPosition), 0.f
                 );
@@ -364,7 +374,11 @@ class $modify(KoreanLabel, CCLabelBMFont) {
     }
 
     void recheckAchievementPosition(float) {
-        if (!isAchievementCondition(m_fields->m_english)) return;
+        bool const achievementCondition = isAchievementCondition(m_fields->m_english);
+        if ((!isAchievementCellLabel(this) && !achievementCondition)
+            || isAchievementBarLabel(this)) {
+            return;
+        }
         restorePositionCorrection();
         float const shift = achievementIconOverlapShift(this);
         if (shift <= 0.f) return;
