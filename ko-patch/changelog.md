@@ -1,3 +1,7 @@
+# v5.17.0
+ - **Death Tracker's whole guided tour - all 118 lines of it.** It hands them to the screen one at a time through a function of its own, `appendDialogue`, which the string harvester had never been told to look at. 그래프 화면에 오신 걸 환영합니다!
+ - The harvester now also reads `setDescription` and `CCLabelTTF::create`, so the next sweep sees them too
+
 # v5.16.0
  - **"5 minutes ago" was coming out as "5 minute 전".** A pattern was eating the plural s and handing back the English word. Every one of them - 초, 분, 시간, 일, 주, 개월, 년 - is Korean now, and they are on every level in the browser
  - The Tower's shard words: 영혼, 동상, 독액, 어스름, 수풀, 천상. Without them the catch-all left "Soul 조각 35개 모으기"

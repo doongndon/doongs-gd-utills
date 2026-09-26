@@ -31,6 +31,10 @@ CALLS = {
     "setDesc": 0,
     "setSubtitle": 0,
     "addButton": 0,
+    "appendDialogue": 0,   # Death Tracker 의 안내 대화
+    "setDescription": 0,
+    "CCLabelTTF::create": 0,
+    "setSubtitle": 0,
 }
 
 STRING = re.compile(r'"((?:[^"\\]|\\.)*)"')
