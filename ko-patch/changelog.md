@@ -1,3 +1,8 @@
+# v5.20.0
+ - **The shop's buy dialog, for real this time.** The collector handed over the sentence as the game actually builds it: GD breaks the line between the colour tag and the item's name - `Do you want to <cg>buy</c> this <co>` on one line, `Main Color</c>` on the next. The break lands exactly on a seam of the template, so the blank that holds the name began with a line break. v5.18.0's guard threw that out along with the real offenders
+ - A blank may now start or end on a line break, because a break on a seam leaves the blank's own content whole. A break in the *middle* of a blank still fails, which is what collapsed BetterInfo's record popup
+ - Whatever lands in a blank is trimmed before it is looked up. Otherwise the name arrives as " Main Color", which is in no table, and the one word stays English inside an otherwise Korean sentence
+
 # v5.19.0
  - **The loading screen's tip sat left of the logo, and that was me.** v5.11.0 pinned each line's anchor to its middle and put it on the centre of the screen, which worked. v5.16.0 rewrote it to "measure where the middle currently is and shift by the difference" so it could reach nested text - but a node's position is written relative to its parent, so any text one layer in came out off by wherever its parent sits. The pinning is back, and the measuring is done in screen coordinates now, so it holds at any depth
 

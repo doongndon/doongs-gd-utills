@@ -113,6 +113,7 @@ def apply_patterns(text, patterns, origin=None):
             continue
         cursor = len(segments[0])
         captures = []
+        spans = []
         ok = True
         for i in range(1, len(segments)):
             seg = segments[i]
@@ -127,14 +128,20 @@ def apply_patterns(text, patterns, origin=None):
                     ok = False
                     break
             captures.append(text[cursor:at])
+            spans.append((cursor, at))
             cursor = at + len(seg)
         if not ok or not captures:
             continue
         if not all(is_plain_ascii(c) for c in captures):
             continue
-        # 편 글로 맞춘 것이라면, 조각이 원래 글에서 줄을 넘나들지 않아야 한다.
+        # 편 글로 맞춘 것이라면, 조각 안에서 줄이 바뀌었는지 본다. 맨 앞이나
+        # 맨 뒤의 줄바꿈은 틀의 이음매에서 끊긴 것이니 괜찮다.
         # Translator.cpp 와 같은 규칙.
-        if origin is not None and any(c not in origin for c in captures):
+        if origin is not None and len(origin) == len(text) and any(
+            any(i not in (0, b - a - 1)
+                for i, ch in enumerate(origin[a:b]) if ch == "\n")
+            for a, b in spans
+        ):
             continue
         # 값 하나가 제 색을 입고 오는 것은 막지 않는다. 색표가 여러 벌이면
         # 문장을 삼킨 것이다. Translator.cpp 와 같은 규칙.

@@ -103,9 +103,19 @@ def render(text, exact, patterns, depth=0, origin=None):
         # 문장을 삼킨 것이다. Translator.cpp 와 같은 규칙.
         if any(cov.too_many_tags(c) for c in caps):
             continue
-        # 편 글로 맞춘 것이라면, 조각이 원래 글에서 줄을 넘나들지 않아야 한다.
-        if origin is not None and any(c not in origin for c in caps):
-            continue
+        # 편 글로 맞춘 것이라면, 조각 안에서 줄이 바뀌었는지 본다. 맨 앞이나
+        # 맨 뒤의 줄바꿈은 틀의 이음매에서 끊긴 것이니 괜찮다.
+        if origin is not None and len(origin) == len(text):
+            spans, cur = [], len(segments[0])
+            for i in range(1, len(segments)):
+                seg = segments[i]
+                at = len(text) - len(seg) if i + 1 == len(segments) else text.find(seg, cur)
+                spans.append((cur, at))
+                cur = at + len(seg)
+            if any(any(j not in (0, b - a - 1)
+                       for j, ch in enumerate(origin[a:b]) if ch == "\n")
+                   for a, b in spans):
+                continue
         if any(n and i < len(caps) and not cov.is_numeric(caps[i])
                for i, n in enumerate(numeric)):
             continue
@@ -119,8 +129,9 @@ def render(text, exact, patterns, depth=0, origin=None):
             if not m.group(1):
                 nxt += 1
             if index < len(caps):
-                piece = render(caps[index], exact, patterns, depth + 1)
-                out.append(piece if piece is not None else caps[index])
+                raw = caps[index].strip(" \t\n")
+                piece = render(raw, exact, patterns, depth + 1)
+                out.append(piece if piece is not None else raw)
             last = m.end()
         out.append(korean[last:])
         return choose_particles("".join(out))

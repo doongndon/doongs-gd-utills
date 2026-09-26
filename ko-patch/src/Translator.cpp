@@ -63,6 +63,16 @@ namespace {
         return closes > 1 || opens != closes;
     }
 
+    // 조각 앞뒤의 빈칸을 떼어 낸다. 틀의 이음매에서 줄이 바뀌면 그 줄바꿈이
+    // 빈칸으로 펴져 조각에 묻어 들어온다. " Main Color" 는 표에 없으므로
+    // 떼어 내지 않으면 그 조각만 영어로 남는다.
+    std::string_view trimmed(std::string_view text) {
+        auto const first = text.find_first_not_of(" \t\n");
+        if (first == std::string_view::npos) return {};
+        auto const last = text.find_last_not_of(" \t\n");
+        return text.substr(first, last - first + 1);
+    }
+
     bool isPlainAscii(std::string_view text) {
         for (unsigned char byte : text) {
             if (byte < 0x20 || byte > 0x7E) {
@@ -482,15 +492,35 @@ namespace kopatch {
             if (!std::ranges::all_of(captures, isPlainAscii)) {
                 continue;
             }
-            // 편 글로 맞춘 것이라면, 거둬들인 조각이 원래 글에서 줄을 넘나들지
-            // 않았는지 본다. 펴면서 줄바꿈 하나가 빈칸 하나로 바뀔 뿐 길이는
-            // 그대로이므로, 조각이 원래 글에도 그대로 들어 있으면 줄을 넘지
-            // 않은 것이다. 넘었다면 그 틀은 제 문장보다 멀리까지 삼킨 것이다.
-            if (!origin.empty()
-                && std::ranges::any_of(captures, [origin](std::string_view capture) {
-                       return origin.find(capture) == std::string_view::npos;
-                   })) {
-                continue;
+            // 편 글로 맞춘 것이라면, 거둬들인 조각 안에서 줄이 바뀌었는지 본다.
+            // 펴면서 줄바꿈 하나가 빈칸 하나로 바뀔 뿐 길이는 그대로이므로,
+            // 조각이 놓였던 자리를 원래 글에서 그대로 떼어 볼 수 있다.
+            //
+            // 조각의 맨 앞이나 맨 뒤에 있는 줄바꿈은 괜찮다. 그것은 틀의
+            // 이음매에서 끊긴 것이라 조각 자체는 한 줄에 온전히 들어 있다.
+            // 상점 창이 그랬다. GD 가 "<co>" 와 물건 이름 사이를 끊는 바람에
+            // 이름 조각이 줄바꿈으로 시작했다.
+            //
+            // 가운데에서 줄이 바뀌었다면 이야기가 다르다. 그 조각은 글쓴이가
+            // 나눠 놓은 줄을 통째로 삼킨 것이고, 그 틀은 제 문장보다 멀리까지
+            // 간 것이다. BetterInfo 의 기록 창이 그렇게 뭉개졌었다.
+            if (!origin.empty() && origin.size() == text.size()) {
+                bool swallowed = false;
+                for (auto const capture : captures) {
+                    auto const start =
+                        static_cast<std::size_t>(capture.data() - text.data());
+                    auto const slice = origin.substr(start, capture.size());
+                    for (std::size_t at = slice.find('\n');
+                         at != std::string_view::npos;
+                         at = slice.find('\n', at + 1)) {
+                        if (at != 0 && at + 1 != slice.size()) {
+                            swallowed = true;
+                            break;
+                        }
+                    }
+                    if (swallowed) break;
+                }
+                if (swallowed) continue;
             }
             // 빈칸에 담기는 것은 값이다. 값 하나가 제 색을 입고 오는 것은
             // 흔한 일이라 (상점의 "<cl>마나 오브</c>" 가 그렇다) 막으면 안 된다.
@@ -538,8 +568,9 @@ namespace kopatch {
                     // 이름 목록을 보지 않으므로, 여기서 lookup 을 부르면
                     // "'Can't Let Go' 일반 모드로 완료함" 이 "'캔트 렛 고'" 가
                     // 되어 버린다. 레벨 이름은 문장 안에서도 이름이다.
-                    auto const piece = this->translate(captures[slot.index]);
-                    result.append(piece ? std::string_view(piece->text) : captures[slot.index]);
+                    auto const raw = trimmed(captures[slot.index]);
+                    auto const piece = this->translate(raw);
+                    result.append(piece ? std::string_view(piece->text) : raw);
                 }
                 start = slot.at + slot.length;
             }
