@@ -1,5 +1,7 @@
 #include <Geode/Geode.hpp>
 #include <Geode/modify/CCLabelBMFont.hpp>
+#include <Geode/binding/AchievementBar.hpp>
+#include <Geode/binding/AchievementCell.hpp>
 
 #include <algorithm>
 
@@ -14,6 +16,16 @@ namespace {
     bool hasAsciiLetter(std::string_view text) {
         for (unsigned char byte : text) {
             if ((byte >= 'A' && byte <= 'Z') || (byte >= 'a' && byte <= 'z')) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    bool isAchievementLabel(CCLabelBMFont* label) {
+        for (auto* node = static_cast<CCNode*>(label); node; node = node->getParent()) {
+            if (typeinfo_cast<AchievementCell*>(node)
+                || typeinfo_cast<AchievementBar*>(node)) {
                 return true;
             }
         }
@@ -61,7 +73,11 @@ class $modify(KoreanLabel, CCLabelBMFont) {
         // 재활용하는 화면에서는 아래의 글꼴 교체 분기를 건너뛸 수 있으므로,
         // 영어 폭은 글꼴 교체 여부와 관계없이 측정해야 한다. 이미 패치
         // 글꼴을 쓰는 경우에는 현재 렌더링 배율까지 반영한다.
-        english_width = this->getContentSize().width * m_fields->m_fontScale;
+        if (translator.ownFont()) {
+            // 자체 글꼴을 쓰는 라벨에서만 폭과 크기 보정을 한다. 자체 글꼴을
+            // 끈 상태의 일반 메뉴 라벨까지 위치를 옮기면 가운데 정렬이 깨진다.
+            english_width = this->getContentSize().width * m_fields->m_fontScale;
+        }
 
         if (translator.ownFont() && !m_fields->m_usingOwnFont) {
             // 어느 글꼴을 쓰고 있었는지는 바꾸기 전에 봐야 한다. 바꾸고 나면
@@ -126,7 +142,10 @@ class $modify(KoreanLabel, CCLabelBMFont) {
         // 만큼만 오른쪽으로 되민다. 글의 한가운데는 그대로 두고 왼쪽 끝만
         // 원래 자리를 지키게 하는 셈이다.
         float const anchorX = this->getAnchorPoint().x;
-        if (english_width > 1.f && anchorX > 0.001f) {
+        // 이 보정은 업적 목록/알림의 조건 문장에만 적용한다. 모든 라벨에
+        // 적용하면 가운데 정렬된 메뉴 제목까지 오른쪽으로 밀려 원래 자리에서
+        // 벗어난다.
+        if (isAchievementLabel(this) && english_width > 1.f && anchorX > 0.001f) {
             if (!m_fields->m_hasBaselineX) {
                 m_fields->m_baselineX = this->getPositionX();
                 m_fields->m_hasBaselineX = true;
