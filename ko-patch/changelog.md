@@ -1,3 +1,6 @@
+# v5.19.0
+ - **The loading screen's tip sat left of the logo, and that was me.** v5.11.0 pinned each line's anchor to its middle and put it on the centre of the screen, which worked. v5.16.0 rewrote it to "measure where the middle currently is and shift by the difference" so it could reach nested text - but a node's position is written relative to its parent, so any text one layer in came out off by wherever its parent sits. The pinning is back, and the measuring is done in screen coordinates now, so it holds at any depth
+
 # v5.18.0
  - **The shop's buy dialog was Korean for a Wave and English for a Main Color.** The item name goes in the middle of the sentence, so a long one makes the sentence too wide and GD breaks it a second time. That extra line break becomes part of the string, and the table no longer recognises its own sentence. The patch already unfolded one break; it now unfolds as many as there are
  - Unfolding is guarded properly this time. After a match, every blank's content must sit inside a single line of the original. If a blank swallowed a line break it was not a break GD added for width but one the writer put there, and the pattern reached past its own sentence - which is what collapsed BetterInfo's record popup back in v5.11.0
