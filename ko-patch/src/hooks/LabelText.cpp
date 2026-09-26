@@ -71,7 +71,7 @@ namespace {
         }
     }
 
-    void clearAchievementIconOverlap(CCLabelBMFont* label) {
+    float achievementIconOverlapShift(CCLabelBMFont* label) {
         CCNode* container = nullptr;
         for (auto* node = label->getParent(); node; node = node->getParent()) {
             if (typeinfo_cast<AchievementCell*>(node)
@@ -80,7 +80,7 @@ namespace {
                 break;
             }
         }
-        if (!container || !label->isVisible()) return;
+        if (!container || !label->isVisible()) return 0.f;
 
         auto const text = worldBounds(label);
         std::vector<CCSprite*> sprites;
@@ -107,16 +107,16 @@ namespace {
             requiredShift = std::max(requiredShift, icon.right - text.left + 3.f);
         }
 
-        if (requiredShift <= 0.f) return;
+        if (requiredShift <= 0.f) return 0.f;
 
         auto* parent = label->getParent();
-        if (!parent) return;
+        if (!parent) return 0.f;
         auto const worldPosition = parent->convertToWorldSpace(label->getPosition());
         auto const localPosition = parent->convertToNodeSpace({
             worldPosition.x + requiredShift,
             worldPosition.y
         });
-        label->setPositionX(localPosition.x);
+        return localPosition.x - label->getPositionX();
     }
 }
 
@@ -142,17 +142,26 @@ class $modify(KoreanLabel, CCLabelBMFont) {
         std::string m_originalFont;
         std::string m_english;
         std::string m_korean;
-        // 왼쪽 끝을 지키려고 오른쪽으로 민 적이 있다면 그 전 자리를 기억해
-        // 둔다. 같은 라벨을 재활용해 다시 영어로 얹었다가 한글로 바꿔치는
-        // 목록 칸 같은 자리에서, 밀어 둔 것 위에 또 밀어 자리가 자꾸
-        // 벌어지는 것을 막는다.
-        bool m_hasBaselineX = false;
-        float m_baselineX = 0.f;
+        // 우리가 마지막으로 더한 X 이동량. 업적 행은 라벨을 재활용하므로
+        // 이전 행의 절대 위치를 기억하면 안 된다. 다음 행에서는 게임이 새로
+        // 잡은 위치에서 이 이동량만 먼저 빼고, 현재 위치를 새 기준으로 쓴다.
+        float m_positionCorrection = 0.f;
     };
+
+    void restorePositionCorrection() {
+        if (m_fields->m_positionCorrection == 0.f) return;
+        this->setPositionX(this->getPositionX() - m_fields->m_positionCorrection);
+        m_fields->m_positionCorrection = 0.f;
+    }
 
     // 한국어를 라벨에 올린다. 글꼴 교체까지 여기서 끝낸다.
     void applyKorean(std::string const& english, std::string const& korean, bool needUpdateLabel) {
         auto const& translator = kopatch::Translator::get();
+
+        // 비동기 번역처럼 setString 을 거치지 않고 바로 들어오는 경로도
+        // 있다. 라벨을 재활용할 때는 우리가 전에 더한 이동만 되돌리고,
+        // 게임이 이번 행에 설정한 현재 위치는 그대로 새 기준으로 삼는다.
+        restorePositionCorrection();
 
         // 업적 목록은 몇 개의 라벨을 돌려 쓰며 모든 행을 그린다. 앞 행의
         // 한국어가 너무 길어서 줄어든 배율을 그대로 두면, 뒤 행도 작게
@@ -164,10 +173,6 @@ class $modify(KoreanLabel, CCLabelBMFont) {
             m_fields->m_fontScale /= m_fields->m_widthScale;
             m_fields->m_widthScale = 1.f;
         }
-        if (m_fields->m_hasBaselineX) {
-            this->setPositionX(m_fields->m_baselineX);
-        }
-
         // 영어가 차지하던 너비. 단추는 영어에 맞춰 만들어졌으므로 이것이
         // 우리에게 허락된 자리다.
         float english_width = 0.f;
@@ -249,18 +254,11 @@ class $modify(KoreanLabel, CCLabelBMFont) {
         // 적용하면 가운데 정렬된 메뉴 제목까지 오른쪽으로 밀려 원래 자리에서
         // 벗어난다.
         if (isAchievementLabel(this) && english_width > 1.f && anchorX > 0.001f) {
-            if (!m_fields->m_hasBaselineX) {
-                m_fields->m_baselineX = this->getPositionX();
-                m_fields->m_hasBaselineX = true;
-            }
-            else {
-                // 전에 밀어 둔 자리를 되돌리고 이번 값으로 다시 잰다.
-                this->setPositionX(m_fields->m_baselineX);
-            }
             float const now = this->getContentSize().width * m_fields->m_fontScale;
-            float const grew = (now - english_width) * anchorX;
+            float const grew = std::max(0.f, (now - english_width) * anchorX);
             if (grew > 0.5f) {
-                this->setPositionX(m_fields->m_baselineX + grew);
+                this->setPositionX(this->getPositionX() + grew);
+                m_fields->m_positionCorrection += grew;
             }
         }
 
@@ -269,7 +267,11 @@ class $modify(KoreanLabel, CCLabelBMFont) {
         // 않은 문장도 아이콘 아래에 숨을 수 있다. 실제 스프라이트의
         // 오른쪽 경계를 보고 겹칠 때만 최소한으로 민다.
         if (isAchievementLabel(this)) {
-            clearAchievementIconOverlap(this);
+            float const iconShift = achievementIconOverlapShift(this);
+            if (iconShift > 0.f) {
+                this->setPositionX(this->getPositionX() + iconShift);
+                m_fields->m_positionCorrection += iconShift;
+            }
         }
     }
 
@@ -329,6 +331,10 @@ class $modify(KoreanLabel, CCLabelBMFont) {
 
     void setString(char const* text, bool needUpdateLabel) {
         auto const& translator = kopatch::Translator::get();
+
+        // 업적 목록은 같은 라벨을 여러 행에 돌려 쓴다. 이전 번역에서
+        // 아이콘을 피하려고 더한 이동량이 새 행까지 따라가지 않게 한다.
+        restorePositionCorrection();
 
         // createBatched 로 만든 라벨은 제 텍스처 아틀라스가 없다. 다른 곳에 묶여
         // 그려지기 때문이다. 거기에 글꼴을 갈아 끼우려 하면 없는 아틀라스를 만지다
