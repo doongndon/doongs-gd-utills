@@ -61,6 +61,35 @@ def keep_english(path) -> set:
     return set(table.get("names", []))
 
 
+# 윈도우 헤더가 오래전부터 차지하고 있는 이름들. 이 이름으로 상수를 두면
+# 안드로이드와 맥에서는 멀쩡히 빌드되다가 윈도우에서만 깨진다. 한 바퀴를
+# 통째로 버리게 되므로 여기서 미리 잡는다.
+WINDOWS_MACROS = (
+    "NEAR FAR IN OUT ERROR DELETE MIN MAX INFINITE OPTIONAL CONST VOID "
+    "TRUE FALSE interface small near far PASCAL WINAPI CALLBACK"
+).split()
+
+DECLARE = re.compile(
+    r"\b(?:constexpr|const|static|enum|#\s*define)\b[^;\n]*?\b(" +
+    "|".join(WINDOWS_MACROS) + r")\b\s*(?:=|\{|\()"
+)
+
+
+def windows_macro_clashes() -> int:
+    hits = 0
+    for path in sorted((HERE.parent / "src").rglob("*.?pp")):
+        for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+            if line.lstrip().startswith("//"):
+                continue
+            found = DECLARE.search(line)
+            if found:
+                print(f"  {path.name}:{number} 은(는) 윈도우 매크로 이름 "
+                      f"{found.group(1)} 을(를) 쓴다")
+                hits += 1
+    print(f"{hits} windows macro clashes")
+    return hits
+
+
 def main() -> None:
     exact, patterns = render.cov.load()
     # 그대로 두기로 한 이름은 문장 안에 남아 있어도 빠진 것이 아니다.
@@ -68,6 +97,7 @@ def main() -> None:
     for name in names:
         for word in TAG.sub("", name).split():
             KEEP.add(word.lower())
+    windows_macro_clashes()
     achievements(exact, patterns)
     keys = json.loads((HERE / "gd-strings.json").read_text(encoding="utf-8")).keys()
     suspect = []
