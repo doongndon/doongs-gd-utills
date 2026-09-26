@@ -1,3 +1,7 @@
+# v5.24.8
+ - Fixed achievement icons that are wrapped in a plain CCNode and were missed by the sprite-only overlap check.
+ - Achievement condition placement now falls back to the rendered bounds of nearby row nodes.
+
 # v5.24.7
  - Fixed achievement condition labels being repositioned by the game after the Korean patch moved them.
  - Achievement conditions are now identified directly and rechecked after the achievement row finishes laying itself out.
