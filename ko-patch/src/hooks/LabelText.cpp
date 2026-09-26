@@ -4,6 +4,7 @@
 #include <Geode/binding/AchievementCell.hpp>
 
 #include <algorithm>
+#include <cmath>
 #include <vector>
 
 #include "Collector.hpp"
@@ -31,6 +32,15 @@ namespace {
             }
         }
         return false;
+    }
+
+    bool isAchievementCondition(std::string_view text) {
+        bool const hasCompletionWord =
+            text.starts_with("Complete ") || text.starts_with("Completed ");
+        bool const hasMode =
+            text.find(" in Normal mode") != std::string_view::npos
+            || text.find(" in Practice mode") != std::string_view::npos;
+        return hasCompletionWord && hasMode;
     }
 
     struct WorldBounds {
@@ -80,33 +90,49 @@ namespace {
                 break;
             }
         }
-        if (!container || !label->isVisible()) return 0.f;
+        if (!label->isVisible()) return 0.f;
 
         auto const text = worldBounds(label);
-        std::vector<CCSprite*> sprites;
-        collectAchievementSprites(container, sprites);
+        auto requiredShiftIn = [&](CCNode* node) {
+            if (!node) return 0.f;
 
-        float requiredShift = 0.f;
-        for (auto* sprite : sprites) {
-            if (!sprite->isVisible()) continue;
+            std::vector<CCSprite*> sprites;
+            collectAchievementSprites(node, sprites);
+            float requiredShift = 0.f;
+            for (auto* sprite : sprites) {
+                if (!sprite->isVisible()) continue;
 
-            auto const icon = worldBounds(sprite);
-            auto const iconWidth = icon.right - icon.left;
-            auto const iconHeight = icon.top - icon.bottom;
+                auto const icon = worldBounds(sprite);
+                auto const iconWidth = icon.right - icon.left;
+                auto const iconHeight = icon.top - icon.bottom;
 
-            // AchievementCell 안의 작은 스프라이트만 아이콘 후보로 본다.
-            // 배경 판넬이나 테두리까지 장애물로 취급하면 글자를 화면
-            // 오른쪽 끝까지 밀어 버린다.
-            if (iconWidth < 8.f || iconWidth > 120.f
-                || iconHeight < 8.f || iconHeight > 120.f) {
-                continue;
+                // AchievementCell 안의 작은 스프라이트만 아이콘 후보로 본다.
+                // 배경 판넬이나 테두리까지 장애물로 취급하면 글자를 화면
+                // 오른쪽 끝까지 밀어 버린다.
+                if (iconWidth < 8.f || iconWidth > 120.f
+                    || iconHeight < 8.f || iconHeight > 120.f) {
+                    continue;
+                }
+                if (text.top <= icon.bottom || text.bottom >= icon.top) continue;
+                if (text.left >= icon.right) continue;
+
+                requiredShift = std::max(requiredShift, icon.right - text.left + 3.f);
             }
-            if (text.top <= icon.bottom || text.bottom >= icon.top) continue;
-            if (text.left >= icon.right) continue;
+            return requiredShift;
+        };
 
-            requiredShift = std::max(requiredShift, icon.right - text.left + 3.f);
+        float requiredShift = requiredShiftIn(container);
+        // 게임 버전에 따라 AchievementCell 타입이 라벨의 조상으로 노출되지
+        // 않는 경우가 있다. 조건 문장인 것이 이미 확인된 호출에서는 가까운
+        // 부모들도 살펴 아이콘을 놓치지 않는다.
+        if (requiredShift <= 0.f && !container) {
+            int depth = 0;
+            for (auto* node = label->getParent(); node && depth < 5;
+                 node = node->getParent(), ++depth) {
+                requiredShift = requiredShiftIn(node);
+                if (requiredShift > 0.f) break;
+            }
         }
-
         if (requiredShift <= 0.f) return 0.f;
 
         auto* parent = label->getParent();
@@ -146,12 +172,23 @@ class $modify(KoreanLabel, CCLabelBMFont) {
         // 이전 행의 절대 위치를 기억하면 안 된다. 다음 행에서는 게임이 새로
         // 잡은 위치에서 이 이동량만 먼저 빼고, 현재 위치를 새 기준으로 쓴다.
         float m_positionCorrection = 0.f;
+        float m_lastPatchedX = 0.f;
+        bool m_hasPatchedPosition = false;
     };
 
     void restorePositionCorrection() {
         if (m_fields->m_positionCorrection == 0.f) return;
-        this->setPositionX(this->getPositionX() - m_fields->m_positionCorrection);
+        float const current = this->getPositionX();
+        float const patched = m_fields->m_lastPatchedX;
+        float const unpatched = patched - m_fields->m_positionCorrection;
+        if (m_fields->m_hasPatchedPosition && std::fabs(current - unpatched) <= 1.f) {
+            // 게임이 우리의 이동을 이미 덮어쓴 상태다.
+        }
+        else if (!m_fields->m_hasPatchedPosition || std::fabs(current - patched) <= 1.f) {
+            this->setPositionX(current - m_fields->m_positionCorrection);
+        }
         m_fields->m_positionCorrection = 0.f;
+        m_fields->m_hasPatchedPosition = false;
     }
 
     // 한국어를 라벨에 올린다. 글꼴 교체까지 여기서 끝낸다.
@@ -253,12 +290,16 @@ class $modify(KoreanLabel, CCLabelBMFont) {
         // 이 보정은 업적 목록/알림의 조건 문장에만 적용한다. 모든 라벨에
         // 적용하면 가운데 정렬된 메뉴 제목까지 오른쪽으로 밀려 원래 자리에서
         // 벗어난다.
-        if (isAchievementLabel(this) && english_width > 1.f && anchorX > 0.001f) {
+        bool const achievementCondition = isAchievementCondition(english);
+        if ((isAchievementLabel(this) || achievementCondition)
+            && english_width > 1.f && anchorX > 0.001f) {
             float const now = this->getContentSize().width * m_fields->m_fontScale;
             float const grew = std::max(0.f, (now - english_width) * anchorX);
             if (grew > 0.5f) {
                 this->setPositionX(this->getPositionX() + grew);
                 m_fields->m_positionCorrection += grew;
+                m_fields->m_lastPatchedX = this->getPositionX();
+                m_fields->m_hasPatchedPosition = true;
             }
         }
 
@@ -266,13 +307,31 @@ class $modify(KoreanLabel, CCLabelBMFont) {
         // 라벨의 왼쪽 영역 위에 그려지는 행도 있어서, 영어보다 넓어지지
         // 않은 문장도 아이콘 아래에 숨을 수 있다. 실제 스프라이트의
         // 오른쪽 경계를 보고 겹칠 때만 최소한으로 민다.
-        if (isAchievementLabel(this)) {
+        if (isAchievementLabel(this) || achievementCondition) {
             float const iconShift = achievementIconOverlapShift(this);
             if (iconShift > 0.f) {
                 this->setPositionX(this->getPositionX() + iconShift);
                 m_fields->m_positionCorrection += iconShift;
+                m_fields->m_lastPatchedX = this->getPositionX();
+                m_fields->m_hasPatchedPosition = true;
+            }
+            if (achievementCondition) {
+                this->scheduleOnce(
+                    schedule_selector(KoreanLabel::recheckAchievementPosition), 0.f
+                );
             }
         }
+    }
+
+    void recheckAchievementPosition(float) {
+        if (!isAchievementCondition(m_fields->m_english)) return;
+        restorePositionCorrection();
+        float const shift = achievementIconOverlapShift(this);
+        if (shift <= 0.f) return;
+        this->setPositionX(this->getPositionX() + shift);
+        m_fields->m_positionCorrection = shift;
+        m_fields->m_lastPatchedX = this->getPositionX();
+        m_fields->m_hasPatchedPosition = true;
     }
 
     // 우리가 바꿔 놓은 글자 뒤에 영어가 덧붙고 있다. 이 라벨은 문장이 아니라
