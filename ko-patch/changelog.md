@@ -1,3 +1,7 @@
+# v5.24.1
+ - Fixed achievement condition labels drifting left into the lock and completion icons when the label was already using the bundled Korean font.
+ - English width is now measured on every translation path, including recycled achievement-list labels, so the existing width and anchor correction can always run.
+
 # v5.24.0
  - **The in-game Achievements list - the description under a completed one starts one letter short, sliding under the lock/checkmark icon.** Unlike everything else this patch touches, that screen's own layout is the closed game binary's code, not something readable here, so this isn't a "here's the exact line" fix like the others have been. What is knowable: our width-based correction only ever shrinks a label that grew too wide - it never moves it - so a label anchored at its centre or its right edge, given wider Korean, still grows into whatever sits to its left, no matter how much it's shrunk
  - Labels are now nudged right by exactly however far Korean pushed their left edge past where the English one sat, but only when the anchor isn't the left edge itself (the overwhelming majority of labels, which only grow rightward, are untouched). A recycled label - a list cell reused for a new row - remembers its own un-shifted position so re-translating it doesn't push it further right each time
