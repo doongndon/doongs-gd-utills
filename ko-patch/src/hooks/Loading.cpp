@@ -13,7 +13,9 @@ namespace {
     // 다만 원래부터 구석에 있던 글까지 끌어다 가운데에 놓으면 안 된다.
     // 그래서 "이미 가운데 언저리에 있는" 글만 손댄다. 제자리에서 조금
     // 밀린 것은 되돌리고, 애초에 한쪽에 있던 것은 그대로 둔다.
-    constexpr float NEAR = 0.15f;   // 화면 너비의 이만큼까지가 가운데 언저리다
+    // NEAR 라는 이름은 쓰지 않는다. 윈도우 헤더가 이미 그 이름을 매크로로
+    // 쓰고 있어서, 그대로 두면 윈도우에서만 빌드가 깨진다.
+    constexpr float MIDDLE_SLACK = 0.15f;   // 화면 너비의 이만큼까지가 가운데 언저리다
 
     void centreLabels(CCNode* node, float middle, float slack) {
         if (!node) return;
@@ -50,7 +52,7 @@ class $modify(KoreanLoadingLayer, LoadingLayer) {
         }
 
         float const width = CCDirector::sharedDirector()->getWinSize().width;
-        centreLabels(this, width / 2.f, width * NEAR);
+        centreLabels(this, width / 2.f, width * MIDDLE_SLACK);
         return true;
     }
 };
