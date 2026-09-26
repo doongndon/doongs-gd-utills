@@ -1,95 +1,91 @@
-# Korean Patch
+# 한국어 패치
 
-Translates Geometry Dash into Korean, drawn in a bundled font that carries a black
-outline like the game's own lettering.
+Geometry Dash 를 한국어로 옮깁니다. 글씨는 게임의 글자처럼 검은 테두리를 두른
+글꼴로 그립니다.
 
-Text is swapped at the single point every label in the game passes through, so menus,
-popups and buttons are all covered by the same path. Anything without a translation is
-left in English, untouched.
+글자를 바꾸는 자리는 하나입니다. 게임의 모든 라벨이 지나가는 그 한 지점에서
+바꾸므로 메뉴든 팝업이든 단추든 같은 길로 걸립니다. 표에 없는 글은 손대지 않고
+영어 그대로 둡니다.
 
-## Coverage
+## 어디까지 덮었나
 
-Every one of the 4,872 strings in Geometry Dash 2.2 is covered: the 547 achievements and
-their descriptions, the official level names, every settings page with its help text,
-every editor trigger, the vault dialogue, the loading screens and the endscreen quips.
+Geometry Dash 2.2 의 문자열 4,872개가 모두 덮여 있습니다. 업적 547개와 그 설명,
+공식 레벨 이름, 설정 화면과 거기 딸린 도움말, 편집기의 모든 트리거, 금고의 대화,
+로딩 화면, 끝 화면의 한마디까지.
 
-The string list is not from memory. It is the dump published by GDL, the Russian
-localisation project, which pulled it out of the game itself. Working from that is what
-makes coverage countable rather than a guess.
+이 문자열 목록은 기억에 기대어 적은 것이 아닙니다. 러시아어 번역 프로젝트 GDL 이
+게임에서 직접 뽑아 공개한 덤프입니다. 그걸 바탕으로 삼았기에 "얼마나 덮었나" 를
+짐작이 아니라 **셀 수 있는 수**로 말할 수 있습니다.
 
-Repeated sentences are templates rather than 4,872 separate lines: one rule covers every
-"Complete '<level>' in Normal mode", every shard rank, every Path of <element>. Strings
-holding a number or a name are templates too, since a label carrying one never matches as
-fixed text.
+되풀이되는 문장은 4,872줄을 따로 적는 대신 틀로 만들었습니다. 규칙 하나가
+"'<레벨>' 일반 모드로 깨기" 전부를 덮고, 조각 등급 전부를, "<원소>의 길" 전부를
+덮습니다. 숫자나 이름이 끼어 있는 문장도 틀입니다. 그런 라벨은 고정된 글로는
+결코 맞아떨어지지 않기 때문입니다.
 
-Installed mods are covered too, not just the game. Geode's own mod manager, BetterEdit,
-Tinker, BetterInfo and NodeIDs: their buttons, their settings, and the description under
-every setting. Those strings were read out of each mod's source with `tools/extract.py`
-rather than copied off screenshots, so what is covered is again countable.
+게임뿐 아니라 **설치된 모드**도 덮습니다. Geode 의 모드 관리자, BetterEdit,
+Tinker, BetterInfo, NodeIDs 의 단추와 설정, 설정마다 딸린 설명까지. 이 글들은
+화면을 보고 옮겨 적은 것이 아니라 `tools/extract.py` 로 각 모드의 소스에서
+긁어냈습니다. 그래서 여기도 셀 수 있습니다.
 
-What is not covered is every other mod, and there is no list to work from for those - each
-one would have to be read the same way. The Gemini setting exists for that gap.
+덮지 못한 것은 그 밖의 모드들입니다. 그것들은 기댈 목록이 없어 하나하나 같은
+방식으로 읽어야 합니다. Gemini 설정은 그 틈을 메우라고 있습니다.
 
-Mod names and their developers are never translated. They are names other people chose.
+모드 이름과 만든 사람 이름은 옮기지 않습니다. 남이 고른 이름이기 때문입니다.
 
-Translations live in `translations/ko.json`. Adding a line there is all it takes to cover
-one more piece of text.
+번역은 `translations/ko.json` 에 있습니다. 거기 한 줄을 더하면 글 하나가
+더 덮입니다.
 
-Both fonts carry the whole common Hangul set, not only the characters the translations
-happen to use, so Korean that this mod did not write - a level someone named in Korean,
-say - still draws.
+두 글꼴 모두 번역에 쓰인 글자만이 아니라 **흔히 쓰는 한글 전체**를 담고 있습니다.
+그래서 이 모드가 쓰지 않은 한글 — 누군가 한국어로 이름 붙인 레벨 같은 것 — 도
+제대로 그려집니다.
 
-Titles keep their gold. GD draws headings in a gold font and body text in a white one, so
-the bundled font is baked in both colours and a translated label keeps whichever its
-original used.
+제목은 금빛을 지킵니다. GD 는 제목을 금색 글꼴로, 본문을 흰색 글꼴로 그립니다.
+그래서 글꼴을 두 색으로 각각 구워 두고, 바뀐 라벨은 본디 쓰던 쪽을 그대로 씁니다.
 
-## Machine translation
+## 기계 번역
 
-Off by default. Turn it on with your own Gemini key and text with no translation yet is
-sent to Gemini; answers land in `config/learned.json`, which is plain JSON you can open
-and edit.
+처음에는 꺼져 있습니다. 본인의 Gemini 열쇠를 넣고 켜면, 아직 번역이 없는 글을
+Gemini 에 물어보고 답을 `config/learned.json` 에 담습니다. 그냥 열어서 고칠 수
+있는 JSON 파일입니다.
 
-Treat it as a way of gathering candidates rather than a finished translation. Every label
-in the game arrives through one function, so the mod cannot tell an interface string from
-a level someone named - the prompt asks Gemini to leave proper nouns alone, and answers
-that come back unchanged are dropped, but some will still slip through. Read the file,
-delete what is wrong, and anything good is worth moving into `translations/ko.json` where
-everyone gets it.
+완성된 번역이 아니라 **후보를 모으는 수단**으로 여기세요. 게임의 모든 라벨이 한
+함수를 지나가므로, 모드는 화면의 글과 누군가 붙인 레벨 이름을 가릴 수 없습니다.
+고유명사는 건드리지 말라고 부탁해 두었고 그대로 돌아온 답은 버리지만, 그래도
+새는 것이 있습니다. 파일을 읽고 틀린 것은 지우세요. 쓸 만한 것은
+`translations/ko.json` 으로 옮기면 모두가 받아 쓸 수 있습니다.
 
-Requests stop at 300 a session and three at a time. Your key is stored in plain text on
-the device, as mod settings are.
+한 판에 300번까지, 한 번에 세 개까지만 물어봅니다. 열쇠는 다른 모드 설정과
+마찬가지로 기기에 그대로 적혀 저장됩니다.
 
-## Updating
+## 새 판 받기
 
-**Check for updates** in the settings pulls the newest release from GitHub and installs it.
-Restart the game afterwards to apply it.
+설정의 **새 판 확인**이 GitHub 에서 가장 새 판을 받아 깝니다. 받은 뒤에는 게임을
+다시 켜야 적용됩니다.
 
-## Living with other Korean patches and texture packs
+## 다른 한국어 패치·텍스처 팩과 함께 쓰기
 
-Text that is **already Korean** is left alone, so a Korean pack that got there first keeps
-its wording instead of the two fighting over the same label.
+**이미 한국어인 글**은 건드리지 않습니다. 먼저 자리를 잡은 한국어 패치가 있으면
+그쪽 말이 그대로 남습니다. 한 라벨을 두고 둘이 다투지 않습니다.
 
-If your texture pack already supplies a font that can draw Korean, turn off
-**Use the bundled font** in the settings. The translation still applies, but the label
-keeps the pack's font, so one screen never ends up with two different typefaces.
+텍스처 팩이 한글을 그릴 수 있는 글꼴을 이미 주고 있다면 설정에서 **딸려 온 글꼴
+쓰기**를 꺼 주세요. 번역은 그대로 되고 글꼴만 팩의 것을 씁니다. 한 화면에 서로
+다른 글씨체가 섞이지 않습니다.
 
-The bundled font lives under this mod's own name, so a texture pack cannot overwrite it
-and it cannot overwrite the game's.
+딸려 온 글꼴은 이 모드 제 이름 아래 있습니다. 그래서 텍스처 팩이 이 글꼴을
+덮어쓸 수 없고, 이 글꼴이 게임의 것을 덮어쓰지도 않습니다.
 
-## Fonts
+## 글꼴
 
-Two are bundled and **Font** in the settings picks between them. Jua is the rounded face
-most Korean packs use; Dunggeunmo is a pixel font, which sits better next to a pixel
-texture pack. The choice applies to screens opened after it, so step out and back in to
-see it change.
+두 가지가 딸려 오고 설정의 **글꼴**에서 고릅니다. 주아는 한국어 팩들이 많이 쓰는
+둥근 글씨체이고, 둥근모는 픽셀 글꼴이라 픽셀 텍스처 팩 옆에 더 잘 어울립니다.
+고른 글꼴은 그 뒤에 여는 화면부터 적용되니, 나갔다 들어오면 바뀐 것이 보입니다.
 
+둘 다 `tools/make_atlas.py` 가 그림판으로 구워 냅니다. 글자마다 검은 테두리를
+둘러 어떤 바탕 위에서도 읽히게 하는데, 게임의 글자가 그렇게 그려지는 것과 같은
+방식입니다. 글꼴마다 해상도 세 벌을 써 두고 게임이 알맞은 것을 고릅니다.
 
-Both are baked into bitmap atlases by `tools/make_atlas.py`, which draws every glyph with
-a black outline so the text reads against any background, the same way the game's own
-lettering does. Three resolutions are written for each face and the game picks one.
+Neo둥근모 (c) 2017-2021 정은빈, SIL Open Font License 1.1 에 따릅니다. 이
+파생물도 같은 허락을 물려받습니다. 본디 둥근모 비트맵 글꼴은 김중태 님이 퍼블릭
+도메인으로 내놓은 것입니다.
 
-Neo둥근모 (c) 2017-2021 Eunbin Jeong, licensed under the SIL Open Font License 1.1, which
-this derivative inherits. The original Dunggeunmo bitmap font was released into the public
-domain by 김중태.
-
-배달의민족 주아 (c) 2014 Woowa Brothers, also under the SIL Open Font License 1.1.
+배달의민족 주아 (c) 2014 우아한형제들, 역시 SIL Open Font License 1.1 을 따릅니다.

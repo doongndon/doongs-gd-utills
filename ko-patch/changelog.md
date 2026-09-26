@@ -1,3 +1,7 @@
+# v5.21.0
+ - **The loading tip sat left of the logo because I measured the wrong thing.** A `TextArea`'s `contentSize` is not how wide the text is - it is the width the text is allowed to wrap at. Korean is usually narrower than that, so the middle I calculated was right of the real one and I pushed the line left by half the slack. Centring now walks down to the glyph labels that actually get drawn and measures their two ends on screen, so what gets centred is what you can see
+ - The mod's own settings and its about page are Korean, along with Geode's logging and mod-manager settings and the editor percentage mods
+
 # v5.20.0
  - **The shop's buy dialog, for real this time.** The collector handed over the sentence as the game actually builds it: GD breaks the line between the colour tag and the item's name - `Do you want to <cg>buy</c> this <co>` on one line, `Main Color</c>` on the next. The break lands exactly on a seam of the template, so the blank that holds the name began with a line break. v5.18.0's guard threw that out along with the real offenders
  - A blank may now start or end on a line break, because a break on a seam leaves the blank's own content whole. A break in the *middle* of a blank still fails, which is what collapsed BetterInfo's record popup
