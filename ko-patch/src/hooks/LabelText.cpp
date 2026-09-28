@@ -379,7 +379,10 @@ class $modify(KoreanLabel, CCLabelBMFont) {
         bool const achievementBar = isAchievementBarLabel(this);
         bool const shouldAlignAchievement =
             !achievementBar && (achievementCell || achievementCondition);
-        if (shouldAlignAchievement
+        // 넓어진 만큼 오른쪽으로 미는 것은 업적 목록 행 안에서만 한다. 조건
+        // 문장이라는 것만으로 밀면, 가운데 정렬로 놓인 다른 모드의 조건 줄
+        // (Achievements Reimagined 의 업적 칸) 이 가운데에서 벗어난다.
+        if (shouldAlignAchievement && achievementCell
             && english_width > 1.f && anchorX > 0.001f) {
             float const now = this->getContentSize().width * m_fields->m_fontScale;
             float const grew = std::max(0.f, (now - english_width) * anchorX);
