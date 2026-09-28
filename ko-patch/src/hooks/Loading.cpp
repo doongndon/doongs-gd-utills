@@ -7,6 +7,9 @@
 #include <string>
 #include <string_view>
 
+#include <fmt/format.h>
+
+#include "LayoutLog.hpp"
 #include "Loading.hpp"
 #include "Translator.hpp"
 
@@ -55,43 +58,6 @@ namespace {
         return found;
     }
 
-    void centreLabels(CCNode* node, float middle, float slack) {
-        if (!node) return;
-        auto* children = node->getChildren();
-        if (!children) return;
-
-        for (auto* child : CCArrayExt<CCNode*>(children)) {
-            if (!child) continue;
-
-            bool const isText = typeinfo_cast<CCLabelBMFont*>(child)
-                             || typeinfo_cast<TextArea*>(child);
-            if (!isText) {
-                centreLabels(child, middle, slack);
-                continue;
-            }
-
-            auto* parent = child->getParent();
-            if (!parent) continue;
-
-            float left = std::numeric_limits<float>::max();
-            float right = std::numeric_limits<float>::lowest();
-            if (!measure(child, left, right)) continue;
-
-            float const centre = (left + right) / 2.f;
-            if (std::fabs(centre - middle) > slack) continue;
-
-            // 화면에서 옮겨야 할 만큼을 이 마디의 부모 자리로 바꿔 민다.
-            auto const from = parent->convertToNodeSpace(ccp(centre, 0.f));
-            auto const to = parent->convertToNodeSpace(ccp(middle, 0.f));
-            child->setPositionX(child->getPositionX() + (to.x - from.x));
-        }
-    }
-
-    void centreAll(CCNode* layer) {
-        float const width = CCDirector::sharedDirector()->getWinSize().width;
-        centreLabels(layer, width / 2.f, width * MIDDLE_SLACK);
-    }
-
     // 글 상자에 적힌 글을 줄에서 도로 모은다. GD 는 줄을 나눌 때 그 자리의
     // 빈칸을 줄 끝에 남기기도 하므로 줄마다 앞뒤 빈칸을 떼고, 줄 사이는
     // 줄바꿈으로 잇는다. 번역표는 줄바꿈을 빈칸으로 펴서도 찾아 준다.
@@ -112,6 +78,54 @@ namespace {
             first = false;
         }
         return joined;
+    }
+
+    // tag 를 주면 옮기기 전에 얼마나 어긋나 있었는지 적어 둔다.
+    void centreLabels(CCNode* node, float middle, float slack, char const* tag = nullptr) {
+        if (!node) return;
+        auto* children = node->getChildren();
+        if (!children) return;
+
+        for (auto* child : CCArrayExt<CCNode*>(children)) {
+            if (!child) continue;
+
+            auto* label = typeinfo_cast<CCLabelBMFont*>(child);
+            auto* area = typeinfo_cast<TextArea*>(child);
+            if (!label && !area) {
+                centreLabels(child, middle, slack, tag);
+                continue;
+            }
+
+            auto* parent = child->getParent();
+            if (!parent) continue;
+
+            float left = std::numeric_limits<float>::max();
+            float right = std::numeric_limits<float>::lowest();
+            if (!measure(child, left, right)) continue;
+
+            float const centre = (left + right) / 2.f;
+            if (std::fabs(centre - middle) > slack) continue;
+
+            if (tag) {
+                std::string text = area ? gatherText(area)
+                                        : std::string(label->getString() ? label->getString() : "");
+                std::ranges::replace(text, '\n', ' ');
+                kopatch::layoutlog::record(fmt::format(
+                    "[{}] {} off={:+.1f} width={:.1f} screen={:.1f} \"{}\"",
+                    tag, area ? "TextArea" : "Label", centre - middle, right - left,
+                    middle * 2.f, text));
+            }
+
+            // 화면에서 옮겨야 할 만큼을 이 마디의 부모 자리로 바꿔 민다.
+            auto const from = parent->convertToNodeSpace(ccp(centre, 0.f));
+            auto const to = parent->convertToNodeSpace(ccp(middle, 0.f));
+            child->setPositionX(child->getPositionX() + (to.x - from.x));
+        }
+    }
+
+    void centreAll(CCNode* layer) {
+        float const width = CCDirector::sharedDirector()->getWinSize().width;
+        centreLabels(layer, width / 2.f, width * MIDDLE_SLACK);
     }
 
     void rebuildAreas(CCNode* node) {
@@ -170,6 +184,8 @@ namespace kopatch::loading {
 
     void centreText() {
         if (auto* layer = runningLoadingLayer()) {
+            float const width = CCDirector::sharedDirector()->getWinSize().width;
+            centreLabels(layer, width / 2.f, width * MIDDLE_SLACK, "loading");
             static_cast<KoreanLoadingLayer*>(layer)->keepCentred();
         }
     }

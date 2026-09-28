@@ -2,13 +2,17 @@
 #include <Geode/modify/MultilineBitmapFont.hpp>
 
 #include <algorithm>
+#include <cmath>
 #include <optional>
 #include <string>
 #include <string_view>
 
+#include <fmt/format.h>
+
 #include "Collector.hpp"
 #include "ColorTags.hpp"
 #include "KoreanFont.hpp"
+#include "LayoutLog.hpp"
 #include "Translator.hpp"
 
 using namespace geode::prelude;
@@ -152,6 +156,45 @@ namespace {
         return any ? std::optional<ByLine>(std::move(out)) : std::nullopt;
     }
 
+    // 기기에서 이 줄 세우기가 실제로 얼마나 움직였는지 적어 둔다. 왼쪽 정렬은
+    // GD 가 이미 바르게 놓으므로 움직임이 0 이어야 한다. 0 이 아니면 위의
+    // 설명이 이 기기에서는 틀렸다는 뜻이고, 그 숫자가 곧 고칠 방향이다.
+    // 가운데 정렬은 늘 조금씩 움직이므로 몇 개만 본보기로 남긴다.
+    void recordRealign(
+        cocos2d::CCNode* node, float anchorX, CCLabelBMFont* first,
+        std::size_t lines, float firstMove, float largestMove
+    ) {
+        // 제자리였던 왼쪽·오른쪽 정렬도 설명이 맞다는 증거라 조금은 남긴다.
+        static int centredSamples = 0;
+        static int stillSamples = 0;
+        bool const centred = anchorX > 0.25f && anchorX < 0.75f;
+        bool const moved = std::abs(largestMove) > 0.5f;
+        if (centred) {
+            if (++centredSamples > 10) return;
+        }
+        else if (!moved && ++stillSamples > 20) {
+            return;
+        }
+
+        std::string snippet = first && first->getString() ? first->getString() : "";
+        if (snippet.size() > 36) {
+            std::size_t cut = 36;
+            // UTF-8 한 글자의 한가운데에서 자르지 않는다.
+            while (cut > 0 && (static_cast<unsigned char>(snippet[cut]) & 0xC0) == 0x80) --cut;
+            snippet.resize(cut);
+            snippet += "..";
+        }
+
+        auto const anchor = node->getAnchorPoint();
+        auto const size = node->getContentSize();
+        kopatch::layoutlog::record(fmt::format(
+            "[box] align={:.2f} anchor=({:.2f},{:.2f}) size={:.0f}x{:.0f} lineAnchor=({:.2f},{:.2f}) "
+            "lines={} move={:+.1f} most={:+.1f} \"{}\"",
+            anchorX, anchor.x, anchor.y, size.width, size.height,
+            first ? first->getAnchorPoint().x : 0.f, first ? first->getAnchorPoint().y : 0.f,
+            lines, firstMove, largestMove, snippet));
+    }
+
     // GD 는 한 줄의 너비를 바이트로 잰다. 한글 한 글자는 세 바이트이고 그
     // 바이트값은 글꼴의 글자표에 없으니, 한글 줄은 제 실제 너비와 다른 값으로
     // 셈해진다. GD 는 그 틀린 너비로 줄의 자리를 정하므로, 가운데 정렬은
@@ -178,13 +221,27 @@ namespace {
         if (!children) return;
 
         float const target = node->getAnchorPointInPoints().x;
+        CCLabelBMFont* first = nullptr;
+        std::size_t lines = 0;
+        float firstMove = 0.f;
+        float largestMove = 0.f;
         for (auto* child : CCArrayExt<CCNode*>(children)) {
             auto* line = typeinfo_cast<CCLabelBMFont*>(child);
             if (!line) continue;
             float const width = line->getContentSize().width * line->getScaleX();
             float const edge = line->getPositionX() + (anchorX - line->getAnchorPoint().x) * width;
-            line->setPositionX(line->getPositionX() + (target - edge));
+            float const move = target - edge;
+            line->setPositionX(line->getPositionX() + move);
+
+            if (!first) {
+                first = line;
+                firstMove = move;
+            }
+            if (std::abs(move) > std::abs(largestMove)) largestMove = move;
+            ++lines;
         }
+
+        recordRealign(node, anchorX, first, lines, firstMove, largestMove);
     }
 }
 

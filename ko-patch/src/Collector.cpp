@@ -14,6 +14,7 @@
 
 #include <fmt/format.h>
 
+#include "LayoutLog.hpp"
 #include "Translator.hpp"
 
 using namespace geode::prelude;
@@ -237,7 +238,15 @@ namespace kopatch::collector {
                 sweepAchievements();
                 sweepMods();
                 sweepScene();
-                auto const text = flush();
+                auto text = flush();
+
+                // 글이 기기에서 실제로 놓인 자리를 잰 기록도 앞에 붙인다. 사진만으로는
+                // 얼마나, 어느 쪽으로 어긋났는지 알 수 없다. 클립보드가 넘칠 때 뒤가
+                // 잘리므로 짧은 이쪽을 앞에 둔다.
+                if (auto const layout = kopatch::layoutlog::dump(); !layout.empty()) {
+                    text = "--- layout ---\n" + layout + "--- missing ---\n" + text;
+                }
+
                 if (text.empty()) {
                     Notification::create(
                         "Nothing collected yet", NotificationIcon::Info, 4.f)->show();
