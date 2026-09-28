@@ -220,6 +220,10 @@ class $modify(KoreanLabel, CCLabelBMFont) {
         float m_positionCorrection = 0.f;
         float m_lastPatchedX = 0.f;
         bool m_hasPatchedPosition = false;
+        // 한국어를 올린 프레임. 조각을 덧붙여 문장을 쌓는 쪽은 한 프레임 안에서
+        // 몰아서 붙인다. 다음 프레임에 더 긴 글이 오는 것은 게임이 라벨을 새로
+        // 쓴 것이지 덧붙이는 것이 아니다.
+        unsigned int m_koreanFrame = 0;
     };
 
     void restorePositionCorrection() {
@@ -299,7 +303,22 @@ class $modify(KoreanLabel, CCLabelBMFont) {
 
         m_fields->m_english = english;
         m_fields->m_korean = korean;
+        m_fields->m_koreanFrame = CCDirector::sharedDirector()->getTotalFrames();
         CCLabelBMFont::setString(korean.c_str(), needUpdateLabel);
+
+        // 화면에는 한국어를 그리되, 누가 이 라벨에게 "뭐라고 적혀 있니" 하고
+        // 물으면(getString) 원래 영어로 답한다. 모드들은 라벨의 글자를 영어와
+        // 견주어 자기 할 일을 정한다. Overcharged Levels 는 "Coming Soon!"
+        // 라벨만 빼고 나머지 라벨을 옆으로 옮기는데, 번역된 글자로는 그 라벨을
+        // 알아보지 못해 "곧 나옵니다!" 를 화면 왼쪽 밖으로 밀어냈다. NodeIDs,
+        // NamedEditorGroups, textureldr, Tinker 도 같은 식으로 단추를 찾는다.
+        // 간판은 한국어로 바꿔 달아도 주소는 그대로 두는 셈이다.
+        //
+        // 그려지는 글자는 따로 들고 있으므로(m_sInitialString) 화면은 한국어
+        // 그대로다. 줄을 다시 맞출 때도 cocos 는 그쪽을 쓴다.
+        if (needUpdateLabel) {
+            m_sInitialStringUTF8 = english;
+        }
 
         // 한글은 같은 뜻을 더 넓게 적는 일이 많다. 단추는 영어에 맞춰 잘려
         // 있으므로, 넘치면 줄여서 그 안에 앉힌다.
@@ -390,10 +409,8 @@ class $modify(KoreanLabel, CCLabelBMFont) {
 
     // 우리가 바꿔 놓은 글자 뒤에 영어가 덧붙고 있다. 이 라벨은 문장이 아니라
     // 조각을 쌓아 만드는 중이었다는 뜻이므로, 영어로 되돌리고 손을 뗀다.
-    void undoKorean(char const* text, bool needUpdateLabel) {
-        std::string restored = m_fields->m_english;
-        restored += text + m_fields->m_korean.size();
-
+    // restored 는 덧붙은 것까지 합친 영어 문장이다.
+    void undoKorean(std::string restored, bool needUpdateLabel) {
         m_fields->m_english.clear();
         m_fields->m_korean.clear();
 
@@ -411,9 +428,8 @@ class $modify(KoreanLabel, CCLabelBMFont) {
 
         // 덧붙은 결과가 그 자체로 온전한 문장일 수도 있다. Tinker 와
         // BetterEdit 은 편집기의 물체 수 라벨을 **읽어서** 그 뒤에
-        // " | LDM: 0 (0%)" 을 이어 붙인다. 우리가 앞부분을 한국어로 바꿔 둔
-        // 뒤였으므로 한국어 뒤에 영어가 붙은 꼴이 되고, 조각을 쌓는 것과
-        // 구별되지 않는다. 다만 이어 붙은 그 문장이 표에 통째로 있다.
+        // " | LDM: 0 (0%)" 을 이어 붙인다. 겉보기로는 조각을 쌓는 것과
+        // 구별되지 않지만, 이어 붙은 그 문장이 표에 통째로 있다.
         //
         // 그래서 되돌린 문장을 한 번 찾아본다. 찾으면 그것이 문장이었다는
         // 뜻이니 다시 한국어로 올리고, 못 찾으면 그제서야 조각으로 보고
@@ -469,20 +485,36 @@ class $modify(KoreanLabel, CCLabelBMFont) {
 
         // Geode 의 TextRenderer 는 라벨에 단어를 하나씩, 안 들어가면 글자를
         // 하나씩 덧붙여 가며 폭을 잰다. 붙일 때마다 라벨에 **지금 적힌 글자**를
-        // 읽어서 거기에 잇는다. 그래서 우리가 첫 조각을 한국어로 바꿔 버리면
-        // 그 뒤로 영어가 계속 그 위에 붙는다. "No" 를 "아니오" 로 바꾼 뒤
-        // 글자가 하나씩 붙어 "아니오rmal" 이 되고, 단어가 붙어
-        // "아니오 more clicking" 이 된다.
+        // 읽어서 거기에 잇는다. 첫 조각 "No" 가 표에 걸려 "아니오" 가 되면,
+        // 그 뒤로 "Nor", "Norm" 처럼 계속 덧붙는다.
         //
         // 덧붙는 것이 보이면 우리가 문장이 아니라 조각을 번역한 것이다.
         // 되돌리고, 이 라벨에서는 손을 뗀다. 뒤에 붙는 것이 영어일 때만
         // 그렇게 본다. 한국어가 붙는 것은 게임이 라벨을 새로 쓴 것이다.
+        //
+        // 라벨은 물으면 영어로 답하므로 덧붙는 앞부분은 보통 영어다. 그래도
+        // 한국어를 따로 들고 있다가 거기에 잇는 쪽이 있을 수 있어 둘 다 본다.
+        // 영어 쪽은 같은 프레임 안에서만 덧붙이기로 본다. 다음 프레임에
+        // "Play" 가 "Play again" 이 되는 것은 게임이 새로 쓴 것이다.
         std::string_view const incoming = text;
-        if (!m_fields->m_korean.empty() && incoming.size() > m_fields->m_korean.size()
-            && incoming.starts_with(m_fields->m_korean)
-            && hasAsciiLetter(incoming.substr(m_fields->m_korean.size()))) {
-            this->undoKorean(text, needUpdateLabel);
-            return;
+        auto const grewFrom = [incoming](std::string const& base) {
+            return !base.empty() && incoming.size() > base.size()
+                && incoming.starts_with(base)
+                && hasAsciiLetter(incoming.substr(base.size()));
+        };
+        if (!m_fields->m_korean.empty()) {
+            bool const sameFrame =
+                m_fields->m_koreanFrame == CCDirector::sharedDirector()->getTotalFrames();
+            if (sameFrame && grewFrom(m_fields->m_english)) {
+                this->undoKorean(std::string(incoming), needUpdateLabel);
+                return;
+            }
+            if (grewFrom(m_fields->m_korean)) {
+                this->undoKorean(
+                    m_fields->m_english + std::string(incoming.substr(m_fields->m_korean.size())),
+                    needUpdateLabel);
+                return;
+            }
         }
 
         m_fields->m_english.clear();

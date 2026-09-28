@@ -1,3 +1,9 @@
+# v5.25.0
+ - **Achievement descriptions sat half their own width to the left - their middle landed where their left edge belonged.** Both the game's Achievements list and Overcharged Levels' level page. Those descriptions are multi-line text boxes, not plain labels, which is why the label fixes in v5.24.x could not reach them. v5.15 resized each Korean text box to its measured width, but the box's anchor is its centre, so growing it pulled the text left by half. Lines are now lined up on the box's own anchor point - left edge, centre or right edge, whichever the text asked for - and the box keeps the size the game gave it. Left-aligned text is back where v5.14 had it; centred text stays centred
+ - **The loading screen tip was never centred on the first launch.** The screen is built before this mod loads, so the init hook meant for it - and the re-centring timer added in v5.24.6 - never ran there. When the mod loads, the tip is now rebuilt from its whole sentence, centred, and kept centred while the other mods load
+ - **"Coming Soon!" on the last level page was pushed off the left edge.** Overcharged Levels moves every label on that page except the one reading "Coming Soon!", and a translated one no longer read that. Translated labels now show Korean but still answer English when a mod asks what they say, which also keeps NodeIDs, NamedEditorGroups, textureldr and Tinker finding their buttons
+ - BetterInfo's "(Filtered)" level count is Korean
+
 # v5.24.9
  - Fixed quest notification labels being repositioned by achievement-list alignment.
  - Achievement rows now keep translated conditions clear of lock and completion icons,

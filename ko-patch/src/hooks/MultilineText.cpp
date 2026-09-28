@@ -2,11 +2,9 @@
 #include <Geode/modify/MultilineBitmapFont.hpp>
 
 #include <algorithm>
-#include <cmath>
 #include <optional>
 #include <string>
 #include <string_view>
-#include <vector>
 
 #include "Collector.hpp"
 #include "ColorTags.hpp"
@@ -154,79 +152,38 @@ namespace {
         return any ? std::optional<ByLine>(std::move(out)) : std::nullopt;
     }
 
-    // GD 는 한 줄의 너비도 바이트로 잰다. 한글 줄은 거의 0 으로 셈해지므로,
-    // 그 숫자로 줄을 놓으면 가운데가 맞지 않고 오른쪽으로 밀린다. 글자를 다
-    // 그린 뒤에 줄마다 제 실제 너비를 보고 다시 놓는다.
+    // GD 는 한 줄의 너비를 바이트로 잰다. 한글 한 글자는 세 바이트이고 그
+    // 바이트값은 글꼴의 글자표에 없으니, 한글 줄은 제 실제 너비와 다른 값으로
+    // 셈해진다. GD 는 그 틀린 너비로 줄의 자리를 정하므로, 가운데 정렬은
+    // 가운데가, 오른쪽 정렬은 오른쪽 끝이 어긋난다.
     //
-    // 줄의 앵커를 정렬 방향에 맞추고 같은 축 위에 세우면, 가운데 정렬이든
-    // 왼쪽 정렬이든 한 줄로 끝난다.
+    // GD 가 줄을 세우는 기준은 이 마디 자신의 앵커 자리다. 왼쪽 정렬이면 줄의
+    // 왼쪽 끝을, 가운데 정렬이면 줄의 한가운데를, 오른쪽 정렬이면 오른쪽 끝을
+    // 거기에 댄다. 기기에서 확인한 것이 둘 있다.
+    //  - 업적 목록과 Overcharged Levels 의 설명 글은 왼쪽 정렬이다. v5.14 까지
+    //    GD 가 놓은 자리는 바르게 왼쪽 끝이 맞았다. 왼쪽 정렬은 너비를 쓰지
+    //    않으니 틀린 너비도 해가 없었던 것이다.
+    //  - v5.15 에서 줄을 0 부터 놓고 마디 크기를 글 너비로 바꾸자, 같은 글이
+    //    제 너비의 절반만큼 왼쪽으로 밀려 글의 한가운데가 왼쪽 끝 자리에
+    //    왔다. 앵커가 가운데(0.5)인 마디의 크기를 늘리면 그 절반만큼 왼쪽으로
+    //    물러나기 때문이다. 줄을 세우는 기준이 마디의 앵커 자리라는 증거다.
+    //
+    // 그래서 마디의 크기는 GD 가 정한 그대로 두고, 줄마다 정렬 쪽 끝(anchorX
+    // 가 가리키는 곳)을 마디의 앵커 자리에 다시 댄다. 자는 GD 것을 쓰되
+    // 눈금은 우리가 실제로 잰 너비로 읽는 셈이다. GD 가 이미 바르게 놓은 줄은
+    // 잰 값이 같아 움직이지 않는다.
     void realign(cocos2d::CCNode* node, float anchorX) {
         if (!node) return;
         auto* children = node->getChildren();
         if (!children) return;
 
-        std::vector<CCLabelBMFont*> lines;
+        float const target = node->getAnchorPointInPoints().x;
         for (auto* child : CCArrayExt<CCNode*>(children)) {
-            if (auto* line = typeinfo_cast<CCLabelBMFont*>(child)) lines.push_back(line);
-        }
-        if (lines.empty()) return;
-
-        auto const widthOf = [](CCLabelBMFont* line) {
-            return line->getContentSize().width * line->getScaleX();
-        };
-        auto const edgeOf = [&widthOf](CCLabelBMFont* line, float at) {
-            return line->getPositionX() + (at - line->getAnchorPoint().x) * widthOf(line);
-        };
-
-        // 1) 줄끼리 맞춘다. 가장 긴 줄은 GD 가 그나마 바르게 놓았을 줄이니
-        //    그 줄을 기준으로 나머지를 끌어다 맞춘다.
-        if (lines.size() >= 2) {
-            CCLabelBMFont* widest = lines.front();
-            float widestSize = 0.f;
-            for (auto* line : lines) {
-                float const size = widthOf(line);
-                if (size > widestSize) {
-                    widestSize = size;
-                    widest = line;
-                }
-            }
-            float const target = edgeOf(widest, anchorX);
-            for (auto* line : lines) {
-                if (line == widest) continue;
-                line->setPositionX(line->getPositionX() + (target - edgeOf(line, anchorX)));
-            }
-        }
-
-        // 2) 덩어리 전체를 마디 안 제자리에 앉힌다.
-        //
-        //    GD 는 줄을 "줄바꿈 한계 너비" 의 한가운데에 놓으면서, 정작 마디의
-        //    크기는 실제 글 너비로 잡는다. 영어는 한계까지 꽉 채워 쓰니 두 수가
-        //    거의 같아 티가 안 나지만, 줄을 우리가 미리 나눈 한국어는 한계보다
-        //    좁을 때가 많다. 그러면 남는 폭의 절반만큼 오른쪽으로 밀린다.
-        //    창 지름이 아니라 종이 지름을 재서 가운데를 잡은 셈이다.
-        //
-        //    그래서 줄들이 실제로 차지한 자리를 우리가 재서, 마디의 크기를
-        //    그 값으로 고치고 줄들을 0 에서 시작하게 옮긴다. 그러면 마디를
-        //    붙인 쪽이 잡아 준 자리와 anchor 가 제대로 맞아떨어진다.
-        //    이미 바르게 놓인 글은 잴 값이 같으므로 아무것도 달라지지 않는다.
-        float left = edgeOf(lines.front(), 0.f);
-        float right = left + widthOf(lines.front());
-        for (auto* line : lines) {
-            float const l = edgeOf(line, 0.f);
-            left = std::min(left, l);
-            right = std::max(right, l + widthOf(line));
-        }
-
-        float const span = right - left;
-        if (span <= 0.f) return;
-
-        auto size = node->getContentSize();
-        if (std::fabs(size.width - span) > 0.5f || std::fabs(left) > 0.5f) {
-            for (auto* line : lines) {
-                line->setPositionX(line->getPositionX() - left);
-            }
-            size.width = span;
-            node->setContentSize(size);
+            auto* line = typeinfo_cast<CCLabelBMFont*>(child);
+            if (!line) continue;
+            float const width = line->getContentSize().width * line->getScaleX();
+            float const edge = line->getPositionX() + (anchorX - line->getAnchorPoint().x) * width;
+            line->setPositionX(line->getPositionX() + (target - edge));
         }
     }
 }

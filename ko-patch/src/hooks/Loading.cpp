@@ -4,6 +4,11 @@
 #include <algorithm>
 #include <cmath>
 #include <limits>
+#include <string>
+#include <string_view>
+
+#include "Loading.hpp"
+#include "Translator.hpp"
 
 using namespace geode::prelude;
 
@@ -81,25 +86,91 @@ namespace {
             child->setPositionX(child->getPositionX() + (to.x - from.x));
         }
     }
+
+    void centreAll(CCNode* layer) {
+        float const width = CCDirector::sharedDirector()->getWinSize().width;
+        centreLabels(layer, width / 2.f, width * MIDDLE_SLACK);
+    }
+
+    // 글 상자에 적힌 글을 줄에서 도로 모은다. GD 는 줄을 나눌 때 그 자리의
+    // 빈칸을 줄 끝에 남기기도 하므로 줄마다 앞뒤 빈칸을 떼고, 줄 사이는
+    // 줄바꿈으로 잇는다. 번역표는 줄바꿈을 빈칸으로 펴서도 찾아 준다.
+    std::string gatherText(TextArea* area) {
+        auto* font = area->getChildByType<MultilineBitmapFont>(0);
+        if (!font || !font->getChildren()) return {};
+
+        std::string joined;
+        bool first = true;
+        for (auto* child : CCArrayExt<CCNode*>(font->getChildren())) {
+            auto* line = typeinfo_cast<CCLabelBMFont*>(child);
+            if (!line) continue;
+            std::string_view text = line->getString() ? line->getString() : "";
+            while (!text.empty() && text.front() == ' ') text.remove_prefix(1);
+            while (!text.empty() && text.back() == ' ') text.remove_suffix(1);
+            if (!first) joined += '\n';
+            joined.append(text);
+            first = false;
+        }
+        return joined;
+    }
+
+    void rebuildAreas(CCNode* node) {
+        if (!node || !node->getChildren()) return;
+        for (auto* child : CCArrayExt<CCNode*>(node->getChildren())) {
+            auto* area = typeinfo_cast<TextArea*>(child);
+            if (!area) {
+                rebuildAreas(child);
+                continue;
+            }
+            std::string const text = gatherText(area);
+            if (text.empty() || kopatch::containsHangul(text)) continue;
+            // GD 가 글 상자에 글을 새로 쓸 때 쓰는 그 길로 다시 쓴다. 우리
+            // 훅이 문장을 통째로 번역해 줄을 나누고 제자리에 세운다.
+            area->setString(text);
+        }
+    }
+
+    LoadingLayer* runningLoadingLayer() {
+        auto* scene = CCDirector::sharedDirector()->getRunningScene();
+        return scene ? scene->getChildByType<LoadingLayer>(0) : nullptr;
+    }
 }
 
 class $modify(KoreanLoadingLayer, LoadingLayer) {
     void centreLoadingText(float) {
-        float const width = CCDirector::sharedDirector()->getWinSize().width;
-        centreLabels(this, width / 2.f, width * MIDDLE_SLACK);
+        centreAll(this);
     }
 
+    // Geode가 모드를 읽는 동안 하단 상태 문구와 팁을 계속 갱신한다.
+    // 한 번만 재면 첫 문장의 폭에 고정되어, 번역된 문구나 모드 수가 바뀐
+    // 뒤에는 가운데에서 벗어난다. 그래서 로딩 화면이 떠 있는 동안 계속 맞춘다.
+    void keepCentred() {
+        centreAll(this);
+        this->schedule(schedule_selector(KoreanLoadingLayer::centreLoadingText), 0.1f);
+    }
+
+    // 설정에서 화질이나 텍스처 팩을 바꾸면 로딩 화면이 다시 지어진다. 그때는
+    // 우리 훅이 이미 켜져 있으니 글은 처음부터 한국어로 올라온다.
     bool init(bool fromReload) {
         if (!LoadingLayer::init(fromReload)) {
             return false;
         }
 
-        float const width = CCDirector::sharedDirector()->getWinSize().width;
-        centreLabels(this, width / 2.f, width * MIDDLE_SLACK);
-        // Geode가 모드를 읽는 동안 하단 상태 문구와 팁을 계속 갱신한다.
-        // init 직후 한 번만 재면 첫 문장의 폭에 고정되어, 번역된 문구나
-        // 모드 수가 바뀐 뒤에는 가운데에서 벗어난다.
-        this->schedule(schedule_selector(KoreanLoadingLayer::centreLoadingText), 0.1f);
+        this->keepCentred();
         return true;
     }
 };
+
+// 첫 실행의 로딩 화면은 이 모드가 켜지기 전에 지어져서 위의 init 훅이 돌지
+// 못한다. main.cpp 가 우리가 켜지는 순간 이 둘을 부른다.
+namespace kopatch::loading {
+    void rebuildText() {
+        if (auto* layer = runningLoadingLayer()) rebuildAreas(layer);
+    }
+
+    void centreText() {
+        if (auto* layer = runningLoadingLayer()) {
+            static_cast<KoreanLoadingLayer*>(layer)->keepCentred();
+        }
+    }
+}

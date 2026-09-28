@@ -11058,6 +11058,7 @@
   "(\n        Command: {}\n        ID: {}\n        )": "(\n        명령: {}\n        ID: {}\n        )",
   "(\n        Command: {}\n        Objects: {}\n        ID: {}\n        )": "(\n        명령: {}\n        오브젝트: {}\n        ID: {}\n        )",
   "(Filtered) {#}": "(거른) {0}",
+  "(Filtered) {}": "(거른) {0}",
   "(You have the playlist {} enabled, is it empty?)": "(목록 {} 이(가) 켜져 있는데 비어 있지 않나요?)",
   "(showing {} groups)": "(그룹 {}개 보는 중)",
   "({} invalid mods)": "(잘못된 모드 {}개)",

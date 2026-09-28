@@ -7,6 +7,7 @@
 #include "Gemini.hpp"
 #include "Translator.hpp"
 #include "Updater.hpp"
+#include "hooks/Loading.hpp"
 
 using namespace geode::prelude;
 
@@ -85,7 +86,16 @@ $on_mod(Loaded) {
     //
     // 그래서 우리가 켜지는 순간 화면에 있는 글자를 한 번 다시 올린다.
     // 같은 글을 그대로 setString 하는 것뿐이라 훅이 그때 번역한다.
+    //
+    // 다만 자리는 영어에 맞춰 잡혀 있다. 팁의 줄은 왼쪽 끝을 기준으로
+    // 놓여 있어서, 좁은 한국어로 바꿔 끼우면 줄어든 만큼의 절반이 왼쪽으로
+    // 쏠린다. 기기 사진 네 장의 어긋남이 모두 그렇게 설명된다. 로딩 화면의
+    // LoadingLayer::init 훅이 이것을 고치게 되어 있었지만, 그 훅은 우리가
+    // 켜지기 전에 이미 지나가 버려 첫 화면에서는 한 번도 돌지 못했다.
+    // 그래서 여기서, 글 상자는 통째로 다시 짓고 나서 가운데를 맞춘다.
+    kopatch::loading::rebuildText();
     retranslateScene();
+    kopatch::loading::centreText();
 }
 
 // 우리 모드가 켜질 때는 다른 모드가 아직 다 불려 오지 않았을 수 있다. 메뉴가
