@@ -1,3 +1,7 @@
+# v5.25.2
+ - **Achievement titles could be pushed right by about their own width.** The v5.24.4 check that keeps text clear of lock and completion icons counted every sprite in the row as a possible icon - including the letters of the label itself, since each letter is a sprite. The label then "avoided" its own letters. Letters and text boxes are no longer icon candidates
+ - The same check moved text away from any icon at its height, even one sitting well to its right, such as the completion checkmark - pushing the text past it. It now moves text only when an icon actually covers the text's left end
+
 # v5.25.1
  - **"Copy the collected text" now also copies a layout report.** It records, on your own device, how far each Korean text box had to be moved to line up and how far the loading tip sat from the middle of the screen. A photo shows that something is off; these numbers show by how much and in which direction, so the next fix does not have to be a guess. Nothing on screen changes in this version
 

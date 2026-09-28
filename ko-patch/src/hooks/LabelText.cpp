@@ -2,6 +2,7 @@
 #include <Geode/modify/CCLabelBMFont.hpp>
 #include <Geode/binding/AchievementBar.hpp>
 #include <Geode/binding/AchievementCell.hpp>
+#include <Geode/binding/MultilineBitmapFont.hpp>
 #include <Geode/binding/TextArea.hpp>
 
 #include <algorithm>
@@ -78,7 +79,17 @@ namespace {
         };
     }
 
+    // 글자는 아이콘이 아니다. 라벨의 글자 하나하나도 CCSprite 라서 그대로
+    // 두면, 라벨이 제 첫 글자를 아이콘으로 알고 피하느라 오른쪽으로 밀려난다.
+    // 글 상자(TextArea)도 CCSprite 를 물려받았으니 함께 뺀다.
+    bool isText(CCNode* node) {
+        return typeinfo_cast<CCLabelBMFont*>(node)
+            || typeinfo_cast<TextArea*>(node)
+            || typeinfo_cast<MultilineBitmapFont*>(node);
+    }
+
     void collectAchievementSprites(CCNode* node, std::vector<CCSprite*>& sprites) {
+        if (isText(node)) return;
         if (auto* sprite = typeinfo_cast<CCSprite*>(node)) {
             sprites.push_back(sprite);
         }
@@ -91,6 +102,7 @@ namespace {
     }
 
     void collectAchievementNodes(CCNode* node, std::vector<CCNode*>& nodes) {
+        if (node && isText(node)) return;
         if (node) {
             nodes.push_back(node);
         }
@@ -113,6 +125,15 @@ namespace {
         if (!label->isVisible()) return 0.f;
 
         auto const text = worldBounds(label);
+
+        // 아이콘이 글의 왼쪽 끝을 덮고 있을 때만 민다. 위아래로 겹치는지만 보고
+        // 옆은 보지 않으면, 글 오른쪽에 떨어져 있는 완료 표시나 한가운데의
+        // 자물쇠까지 장애물이 되어 글을 그 너머 오른쪽 끝까지 밀어 버린다.
+        auto const coversLeftEnd = [&text](WorldBounds const& icon) {
+            if (text.top <= icon.bottom || text.bottom >= icon.top) return false;
+            return icon.left <= text.left + 1.f && icon.right > text.left;
+        };
+
         auto requiredShiftIn = [&](CCNode* node) {
             if (!node) return 0.f;
 
@@ -133,8 +154,7 @@ namespace {
                     || iconHeight < 8.f || iconHeight > 120.f) {
                     continue;
                 }
-                if (text.top <= icon.bottom || text.bottom >= icon.top) continue;
-                if (text.left >= icon.right) continue;
+                if (!coversLeftEnd(icon)) continue;
 
                 requiredShift = std::max(requiredShift, icon.right - text.left + 3.f);
             }
@@ -159,8 +179,7 @@ namespace {
                     || iconHeight < 8.f || iconHeight > 120.f) {
                     continue;
                 }
-                if (text.top <= icon.bottom || text.bottom >= icon.top) continue;
-                if (text.left >= icon.right) continue;
+                if (!coversLeftEnd(icon)) continue;
 
                 requiredShift = std::max(requiredShift, icon.right - text.left + 3.f);
             }
