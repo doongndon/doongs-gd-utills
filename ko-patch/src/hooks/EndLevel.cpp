@@ -4,6 +4,7 @@
 #include <string>
 
 #include "KoreanFont.hpp"
+#include "Loading.hpp"
 
 using namespace geode::prelude;
 
@@ -40,6 +41,10 @@ class $modify(KoreanEndLevelLayer, EndLevelLayer) {
         EndLevelLayer::customSetup();
         kopatch::setSplittingText(false);
 
+        // 완료 메시지는 여러 줄 글 상자다. 줄마다 따로 바꿔 끼우면 줄이 영어의
+        // 왼쪽 끝에 붙은 채 남아 가운데에서 벗어난다. 로딩 팁과 같은 일이라
+        // 같은 방법으로, 문장을 통째로 다시 쓴다.
+        kopatch::loading::rebuildTextIn(this);
         retranslate(this);
     }
 };

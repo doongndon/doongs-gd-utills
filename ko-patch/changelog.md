@@ -1,3 +1,6 @@
+# v5.25.3
+ - **The level-complete message could sit off-centre.** That screen is built with translation paused so NodeIDs can name its parts, and the message box was then translated line by line in place - each Korean line kept the English line's left edge, the same thing that pushed the loading tip left. The message is now rewritten as a whole sentence, so it is wrapped and centred like any other text box
+
 # v5.25.2
  - **Achievement titles could be pushed right by about their own width.** The v5.24.4 check that keeps text clear of lock and completion icons counted every sprite in the row as a possible icon - including the letters of the label itself, since each letter is a sprite. The label then "avoided" its own letters. Letters and text boxes are no longer icon candidates
  - The same check moved text away from any icon at its height, even one sitting well to its right, such as the completion checkmark - pushing the text past it. It now moves text only when an icon actually covers the text's left end

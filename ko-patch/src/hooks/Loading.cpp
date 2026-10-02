@@ -182,6 +182,10 @@ namespace kopatch::loading {
         if (auto* layer = runningLoadingLayer()) rebuildAreas(layer);
     }
 
+    void rebuildTextIn(CCNode* root) {
+        rebuildAreas(root);
+    }
+
     void centreText() {
         if (auto* layer = runningLoadingLayer()) {
             float const width = CCDirector::sharedDirector()->getWinSize().width;
