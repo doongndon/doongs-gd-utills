@@ -1,3 +1,7 @@
+# v5.25.5
+ - **Text placed inside a level was being translated.** A creator's text object reading "Progress" turned into Korean in the middle of their level. Text objects are the creator's own words, like level names, and are now left as written
+ - Checked on a device: achievement descriptions, the loading tip, "Coming Soon!", the end-screen message and level names are all where they belong
+
 # v5.25.4
  - **Level names were being translated.** Words alone cannot tell a button from a name someone gave their level - a level called "Jumper" or "Test" matched the table like any other text. While the game draws one level - its cell in a list, its info page, its page in the main levels, the editor page, the daily, the pause menu, the end screen, a list's cell - that level's own name is now left exactly as written. Only during that drawing, so a level named "Play" does not keep the Play button English elsewhere
  - Device report confirmed: every Korean text box has a 0x0 size, so lines are aligned on the box's own anchor point as v5.25.0 assumed, and the loading tip now sits exactly in the middle

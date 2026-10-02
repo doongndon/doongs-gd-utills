@@ -6,6 +6,7 @@
 #include <Geode/modify/LevelListCell.hpp>
 #include <Geode/modify/LevelPage.hpp>
 #include <Geode/modify/PauseLayer.hpp>
+#include <Geode/modify/TextGameObject.hpp>
 
 #include <string>
 
@@ -120,5 +121,17 @@ class $modify(KoreanNamePauseLayer, PauseLayer) {
     void customSetup() {
         kopatch::LevelNameScope const scope(nameOfPlaying());
         PauseLayer::customSetup();
+    }
+};
+
+// 레벨 안에 놓인 글자 오브젝트는 만든 사람이 쓴 글이다. 레벨 이름과 같은 까닭으로
+// 번역하지 않는다. "Progress" 라고 써 둔 표지판이 "진행도" 가 되면 안 된다.
+// 쪼개는 동안 라벨 훅을 재우는 깃발을 그대로 빌려 쓴다.
+class $modify(KoreanKeepTextObject, TextGameObject) {
+    void updateTextObject(gd::string text, bool defaultFont) {
+        bool const was = kopatch::splittingText();
+        kopatch::setSplittingText(true);
+        TextGameObject::updateTextObject(text, defaultFont);
+        kopatch::setSplittingText(was);
     }
 };
