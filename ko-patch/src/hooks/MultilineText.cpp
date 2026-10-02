@@ -270,9 +270,11 @@ class $modify(KoreanMultiline, MultilineBitmapFont) {
         char const* useFont = font;
         std::string fontPath;
 
-        // 이미 한글인 글은 다른 한국어 패치가 먼저 바꿔 놓은 것이다.
-        if (!kopatch::containsHangul(source)) {
-            bool korean = false;
+        // 이미 한글인 글은 다른 한국어 패치나 모드가 처음부터 한국어로 쓴
+        // 것이다. 글은 그대로 두되, 글꼴은 아래에서 우리 것으로 바꾼다. 게임
+        // 글꼴에는 한글이 없어 그대로 두면 빈칸으로 그려진다.
+        bool korean = kopatch::containsHangul(source);
+        if (!korean) {
 
             if (auto const entry = translator.translate(source)) {
                 source = entry->text;
@@ -285,20 +287,20 @@ class $modify(KoreanMultiline, MultilineBitmapFont) {
             else {
                 kopatch::collector::note(source);
             }
+        }
 
-            if (korean && translator.ownFont()) {
-                fontPath = kopatch::ownFont(
-                    translator.pixelFont(), kopatch::wantsGold(font ? font : ""));
-                useFont = fontPath.c_str();
+        if (korean && translator.ownFont()) {
+            fontPath = kopatch::ownFont(
+                translator.pixelFont(), kopatch::wantsGold(font ? font : ""));
+            useFont = fontPath.c_str();
 
-                // 글꼴이 바뀌면 한 줄의 높이도 바뀐다. 같은 배율로 두면
-                // 글씨가 작아 보이므로, 높이가 달라진 만큼 배율을 되돌린다.
-                SplitGuard const guard;
-                int const before = lineHeight(font);
-                int const after = lineHeight(useFont);
-                if (before > 0 && after > 0) {
-                    scale *= static_cast<float>(before) / static_cast<float>(after);
-                }
+            // 글꼴이 바뀌면 한 줄의 높이도 바뀐다. 같은 배율로 두면
+            // 글씨가 작아 보이므로, 높이가 달라진 만큼 배율을 되돌린다.
+            SplitGuard const guard;
+            int const before = lineHeight(font);
+            int const after = lineHeight(useFont);
+            if (before > 0 && after > 0) {
+                scale *= static_cast<float>(before) / static_cast<float>(after);
             }
         }
 

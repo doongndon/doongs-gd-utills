@@ -291,6 +291,9 @@ class $modify(KoreanLabel, CCLabelBMFont) {
         // 영어 폭은 글꼴 교체 여부와 관계없이 측정해야 한다. 이미 패치
         // 글꼴을 쓰는 경우에는 현재 렌더링 배율까지 반영한다.
         english_width = this->getContentSize().width * m_fields->m_fontScale;
+        // 처음부터 한국어였던 글은 글꼴만 바꾸는 것이다. 게임 글꼴로 잰 너비는
+        // 한글이 빠진 너비라 기준으로 삼을 수 없다.
+        if (english == korean) english_width = 0.f;
 
         if (translator.ownFont() && !m_fields->m_usingOwnFont) {
             // 어느 글꼴을 쓰고 있었는지는 바꾸기 전에 봐야 한다. 바꾸고 나면
@@ -532,7 +535,10 @@ class $modify(KoreanLabel, CCLabelBMFont) {
                 && incoming.starts_with(base)
                 && hasAsciiLetter(incoming.substr(base.size()));
         };
-        if (!m_fields->m_korean.empty()) {
+        // 처음부터 한국어여서 글꼴만 바꾼 라벨(m_english == m_korean)은 번역한 적이
+        // 없으니 덧붙어도 되돌릴 것이 없다. 되돌리면 게임 글꼴로 돌아가 다시
+        // 빈칸이 된다.
+        if (!m_fields->m_korean.empty() && m_fields->m_korean != m_fields->m_english) {
             bool const sameFrame =
                 m_fields->m_koreanFrame == CCDirector::sharedDirector()->getTotalFrames();
             if (sameFrame && grewFrom(m_fields->m_english)) {
@@ -552,7 +558,16 @@ class $modify(KoreanLabel, CCLabelBMFont) {
 
         // 이미 한글인 글자는 다른 한국어 패치가 먼저 바꿔 놓은 것이다. 거기에
         // 또 손을 대면 두 패치가 같은 라벨을 두고 서로 밀어내게 된다.
+        //
+        // 다만 글꼴에 한글이 없으면 빈칸으로 그려진다. Geode 가 이 모드의 한국어
+        // 설명을 그릴 때가 그랬다. 우리 글꼴을 쓰기로 했으면 글은 그대로 두고
+        // 글꼴만 바꾼다. 다른 한국어 글꼴을 쓰는 사람은 그 설정을 끄면 된다.
         if (kopatch::containsHangul(text)) {
+            if (translator.ownFont()) {
+                std::string const same(text);
+                this->applyKorean(same, same, needUpdateLabel);
+                return;
+            }
             CCLabelBMFont::setString(text, needUpdateLabel);
             return;
         }
