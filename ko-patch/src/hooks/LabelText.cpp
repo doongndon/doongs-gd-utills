@@ -505,6 +505,14 @@ class $modify(KoreanLabel, CCLabelBMFont) {
             return;
         }
 
+        // 지금 그리는 레벨의 이름이다. 이름은 번역하지 않는다. KoreanFont.hpp 를 보라.
+        if (kopatch::isLevelNameInScope(text)) {
+            m_fields->m_english.clear();
+            m_fields->m_korean.clear();
+            CCLabelBMFont::setString(text, needUpdateLabel);
+            return;
+        }
+
         // Geode 의 TextRenderer 는 라벨에 단어를 하나씩, 안 들어가면 글자를
         // 하나씩 덧붙여 가며 폭을 잰다. 붙일 때마다 라벨에 **지금 적힌 글자**를
         // 읽어서 거기에 잇는다. 첫 조각 "No" 가 표에 걸려 "아니오" 가 되면,

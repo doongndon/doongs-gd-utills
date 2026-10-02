@@ -260,7 +260,8 @@ class $modify(KoreanMultiline, MultilineBitmapFont) {
     ) {
         auto const& translator = kopatch::Translator::get();
 
-        if (!translator.enabled() || kopatch::splittingText()) {
+        if (!translator.enabled() || kopatch::splittingText()
+            || kopatch::isLevelNameInScope(std::string_view(text.c_str(), text.size()))) {
             return MultilineBitmapFont::initWithFont(
                 font, text, scale, width, anchor, height, disableColor);
         }

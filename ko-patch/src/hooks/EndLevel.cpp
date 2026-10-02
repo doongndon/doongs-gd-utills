@@ -37,6 +37,11 @@ namespace {
 
 class $modify(KoreanEndLevelLayer, EndLevelLayer) {
     void customSetup() {
+        // 끝 화면에도 레벨 이름이 뜬다. 이름은 번역하지 않는다.
+        auto* play = PlayLayer::get();
+        kopatch::LevelNameScope const scope(
+            play && play->m_level ? std::string(play->m_level->m_levelName) : std::string());
+
         kopatch::setSplittingText(true);
         EndLevelLayer::customSetup();
         kopatch::setSplittingText(false);

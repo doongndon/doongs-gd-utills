@@ -2,6 +2,9 @@
 
 #include <Geode/Geode.hpp>
 
+#include <string>
+#include <vector>
+
 using namespace geode::prelude;
 
 namespace kopatch {
@@ -32,4 +35,28 @@ namespace kopatch {
     void setSplittingText(bool on) {
         g_splitting = on;
     }
+
+    namespace {
+        std::vector<std::string>& levelNames() {
+            static std::vector<std::string> names;
+            return names;
+        }
+    }
+
+    LevelNameScope::LevelNameScope(std::string_view name) {
+        levelNames().emplace_back(name);
+    }
+
+    LevelNameScope::~LevelNameScope() {
+        levelNames().pop_back();
+    }
+
+    bool isLevelNameInScope(std::string_view text) {
+        if (text.empty()) return false;
+        for (auto const& name : levelNames()) {
+            if (name == text) return true;
+        }
+        return false;
+    }
 }
+

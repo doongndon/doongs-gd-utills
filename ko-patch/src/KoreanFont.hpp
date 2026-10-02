@@ -18,4 +18,22 @@ namespace kopatch {
     // 통째로 바꾼다.
     bool splittingText();
     void setSplittingText(bool on);
+
+    // 레벨 이름은 이름이다. "Jumper" 라는 레벨을 "점퍼" 로, 남이 "Test" 라고
+    // 지은 레벨을 "시험" 으로 바꾸면 안 된다. 그런데 글자만 봐서는 그것이
+    // 단추 글인지 누가 지은 이름인지 알 수 없다.
+    //
+    // 그래서 게임이 레벨 하나를 그리는 동안(레벨 칸, 레벨 정보, 일시정지 창..)
+    // 그 레벨의 이름을 여기 올려 두고, 그 이름과 똑같은 글은 번역하지 않는다.
+    // 그리는 동안만 막으므로, "Play" 라는 레벨이 있다고 다른 화면의 "Play"
+    // 단추까지 영어로 남지는 않는다.
+    class LevelNameScope {
+    public:
+        explicit LevelNameScope(std::string_view name);
+        ~LevelNameScope();
+        LevelNameScope(LevelNameScope const&) = delete;
+        LevelNameScope& operator=(LevelNameScope const&) = delete;
+    };
+
+    bool isLevelNameInScope(std::string_view text);
 }

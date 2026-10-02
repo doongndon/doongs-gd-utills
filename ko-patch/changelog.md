@@ -1,3 +1,7 @@
+# v5.25.4
+ - **Level names were being translated.** Words alone cannot tell a button from a name someone gave their level - a level called "Jumper" or "Test" matched the table like any other text. While the game draws one level - its cell in a list, its info page, its page in the main levels, the editor page, the daily, the pause menu, the end screen, a list's cell - that level's own name is now left exactly as written. Only during that drawing, so a level named "Play" does not keep the Play button English elsewhere
+ - Device report confirmed: every Korean text box has a 0x0 size, so lines are aligned on the box's own anchor point as v5.25.0 assumed, and the loading tip now sits exactly in the middle
+
 # v5.25.3
  - **The level-complete message could sit off-centre.** That screen is built with translation paused so NodeIDs can name its parts, and the message box was then translated line by line in place - each Korean line kept the English line's left edge, the same thing that pushed the loading tip left. The message is now rewritten as a whole sentence, so it is wrapped and centred like any other text box
 
