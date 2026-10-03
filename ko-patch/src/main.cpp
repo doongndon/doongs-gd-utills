@@ -3,8 +3,11 @@
 
 #include <string>
 
+#include <fmt/format.h>
+
 #include "Collector.hpp"
 #include "Gemini.hpp"
+#include "LayoutLog.hpp"
 #include "Translator.hpp"
 #include "Updater.hpp"
 #include "hooks/Loading.hpp"
@@ -39,10 +42,22 @@ $on_mod(Loaded) {
     auto* mod = Mod::get();
     auto& translator = kopatch::Translator::get();
 
+    // 같은 글이 기기마다 다르게 놓인다는 보고를 견주려면 어느 기기의 기록인지
+    // 알아야 한다. '모은 글 복사' 가 내놓는 정렬 기록의 맨 앞에 적어 둔다.
+    {
+        auto* director = CCDirector::sharedDirector();
+        auto const screen = director->getWinSize();
+        kopatch::layoutlog::record(fmt::format(
+            "[device] {} quality=x{:.0f} screen={:.0f}x{:.0f}",
+            GEODE_PLATFORM_NAME, director->getContentScaleFactor(),
+            screen.width, screen.height));
+    }
+
     translator.load();
     translator.setEnabled(mod->getSettingValue<bool>("enabled"));
     translator.setOwnFont(mod->getSettingValue<bool>("own-font"));
     translator.setPixelFont(mod->getSettingValue<std::string>("font") == "dunggeunmo");
+    translator.setStableLines(mod->getSettingValue<bool>("stable-lines"));
 
     listenForSettingChanges<bool>("enabled", [](bool enabled) {
         kopatch::Translator::get().setEnabled(enabled);
@@ -52,6 +67,9 @@ $on_mod(Loaded) {
     });
     listenForSettingChanges<std::string>("font", [](std::string const& font) {
         kopatch::Translator::get().setPixelFont(font == "dunggeunmo");
+    });
+    listenForSettingChanges<bool>("stable-lines", [](bool on) {
+        kopatch::Translator::get().setStableLines(on);
     });
 
     auto applyGemini = [] {

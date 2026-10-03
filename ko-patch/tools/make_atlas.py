@@ -23,6 +23,12 @@ OUT = ROOT / "resources"
 BASE_SIZE = 64
 VARIANTS = (("", 4), ("-hd", 2), ("-uhd", 1))   # Geode 와 같은 배수
 
+# 대역 글자. 여러 줄 글을 GD 가 줄로 나누는 동안 한글 한 글자 대신 이 한 바이트를
+# 건넨다(src/hooks/MultilineText.cpp). 폭도 그림도 없으므로 GD 가 이것을 재면 0 이
+# 나온다. 폰의 GD 가 한글 바이트를 잴 때와 같은 값이다. 다 나눈 뒤에는 한글로
+# 되돌리므로 화면에 그려지는 일은 없다.
+STAND_IN = 0x7F
+
 WHITE = (255, 255, 255)
 GOLD = (255, 193, 43)
 OUTLINE = (0, 0, 0)
@@ -113,6 +119,9 @@ def build(name, ttf, colour, size, suffix):
     sheet.quantize(colors=32, method=Image.Quantize.FASTOCTREE).save(
         OUT / f"{name}{suffix}.png", optimize=True)
 
+    if any(g["id"] == STAND_IN for g in glyphs):
+        raise SystemExit(f"{name}{suffix}: 대역 글자 {STAND_IN:#x} 를 진짜 글자로 쓰고 있습니다")
+
     if missing:
         shown = "".join(chr(cp) for cp in missing[:40])
         raise SystemExit(
@@ -120,7 +129,9 @@ def build(name, ttf, colour, size, suffix):
 
     lines = [
         f'char id=32 x=0 y=0 width=0 height=0 xoffset=0 yoffset=0 '
-        f'xadvance={round(font.getlength(" "))} page=0 chnl=0'
+        f'xadvance={round(font.getlength(" "))} page=0 chnl=0',
+        f'char id={STAND_IN} x=0 y=0 width=0 height=0 xoffset=0 yoffset=0 '
+        f'xadvance=0 page=0 chnl=0',
     ]
     for g in sorted(glyphs, key=lambda g: g["id"]):
         lines.append(
