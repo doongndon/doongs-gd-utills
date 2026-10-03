@@ -6,6 +6,7 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <vector>
 
 #include <fmt/format.h>
 
@@ -19,11 +20,26 @@ using namespace geode::prelude;
 
 namespace {
     // 깃발을 들었으면 반드시 내려놓게 한다. 중간에 빠져나가도 라벨 훅이
-    // 잠든 채로 남지 않는다.
+    // 잠든 채로 남지 않는다. 깃발을 든 채로 또 들 수도 있으므로(대역 글자를
+    // 시험할 때), 내려놓을 때는 들기 전 상태로 돌려놓는다.
     struct SplitGuard {
+        bool const was = kopatch::splittingText();
         SplitGuard() { kopatch::setSplittingText(true); }
-        ~SplitGuard() { kopatch::setSplittingText(false); }
+        ~SplitGuard() { kopatch::setSplittingText(was); }
     };
+
+    // 기록에 남길 글의 앞부분. UTF-8 한 글자의 한가운데에서 자르지 않고, 한
+    // 기록이 한 줄에 들도록 줄바꿈은 빈칸으로 편다.
+    std::string snippetOf(std::string text) {
+        if (text.size() > 36) {
+            std::size_t cut = 36;
+            while (cut > 0 && (static_cast<unsigned char>(text[cut]) & 0xC0) == 0x80) --cut;
+            text.resize(cut);
+            text += "..";
+        }
+        std::ranges::replace(text, '\n', ' ');
+        return text;
+    }
 
     // GD 가 줄을 나누는 stringWithMaxWidth 는 글을 바이트 단위로 훑으며 글꼴의
     // 글자표에서 너비를 찾는다. 한글 한 글자는 세 바이트이고 그 바이트값은
@@ -176,14 +192,8 @@ namespace {
             return;
         }
 
-        std::string snippet = first && first->getString() ? first->getString() : "";
-        if (snippet.size() > 36) {
-            std::size_t cut = 36;
-            // UTF-8 한 글자의 한가운데에서 자르지 않는다.
-            while (cut > 0 && (static_cast<unsigned char>(snippet[cut]) & 0xC0) == 0x80) --cut;
-            snippet.resize(cut);
-            snippet += "..";
-        }
+        std::string const snippet =
+            snippetOf(first && first->getString() ? first->getString() : "");
 
         auto const anchor = node->getAnchorPoint();
         auto const size = node->getContentSize();
@@ -242,6 +252,146 @@ namespace {
         }
 
         recordRealign(node, anchorX, first, lines, firstMove, largestMove);
+    }
+}
+
+namespace {
+    // GD 는 여러 줄 글을 줄로 나누고 자리를 잡을 때 글을 바이트 단위로 훑으며 글자
+    // 너비를 찾는다(위의 wrapToWidth, realign 을 보라). 한글은 한 글자가 세 바이트라
+    // 그 바이트값이 너비표에 없다. 폰에서는 그것이 0 으로 셈해져 우리가 나눈 줄을
+    // GD 가 그대로 둔다. 그런데 같은 판을 PC 에서 띄우면 글이 엉뚱한 자리에서 더
+    // 끊겨 여러 줄로 벌어진다는 보고가 있었다. 모드 코드에는 기기마다 다른 곳이
+    // 없으니, 기기마다 다른 것은 GD 가 그 바이트를 재는 값이라고 본다. 한글 바이트는
+    // 0x80 이 넘는다. GD 가 너비표를 char 로 찾는다면, char 를 부호 있는 수로 다루는
+    // 컴파일러(윈도우, 맥)와 부호 없는 수로 다루는 컴파일러(안드로이드 ARM)에서 같은
+    // 코드가 다른 칸을 읽게 된다. GD 의 소스를 볼 수 없어 기기에서 확인한 것은 아니다.
+    //
+    // 그래서 GD 에게는 한글 바이트를 아예 보여 주지 않는다. 한 바이트가 아닌 글자
+    // 하나마다 대역 글자 한 바이트를 넣어 건네고, GD 가 줄을 다 지은 뒤 차례대로
+    // 원래 글자로 되돌린다. 대역 글자는 우리 글꼴에서 폭도 그림도 없는 글자라
+    // (tools/make_atlas.py), 어느 기기의 GD 가 재든 폰에서처럼 0 이 나온다. 글자
+    // 수는 하나에 하나로 같으므로 cocos 가 글자마다 붙인 스프라이트도 그대로 다시
+    // 쓰인다. 줄을 나누는 일과 자리를 고치는 일은 지금처럼 우리가 한다.
+    constexpr char STAND_IN = '\x7F';
+
+    struct StandIns {
+        std::string text;                  // 한 바이트가 아닌 글자를 대역 글자로 바꾼 글
+        std::vector<std::string> letters;  // 바꾸기 전 글자들, 나온 차례대로
+    };
+
+    // 네 바이트 글자(그림 문자 같은 것)는 cocos 가 두 칸으로 세어 하나에 하나가
+    // 맞지 않는다. 그런 글과 깨진 UTF-8, 이미 대역 글자가 든 글은 예전 길로 보낸다.
+    std::optional<StandIns> makeStandIns(std::string const& text) {
+        if (text.find(STAND_IN) != std::string::npos) return std::nullopt;
+
+        StandIns out;
+        out.text.reserve(text.size());
+        for (std::size_t i = 0; i < text.size();) {
+            unsigned char const lead = static_cast<unsigned char>(text[i]);
+            std::size_t const length =
+                lead < 0x80 ? 1 : (lead >> 5) == 0x6 ? 2 : (lead >> 4) == 0xE ? 3 : 0;
+            if (length == 0 || i + length > text.size()) return std::nullopt;
+            for (std::size_t k = 1; k < length; ++k) {
+                if ((static_cast<unsigned char>(text[i + k]) & 0xC0) != 0x80) return std::nullopt;
+            }
+
+            if (length == 1) {
+                out.text += text[i];
+            }
+            else {
+                out.text += STAND_IN;
+                out.letters.emplace_back(text, i, length);
+            }
+            i += length;
+        }
+
+        if (out.letters.empty()) return std::nullopt;
+        return out;
+    }
+
+    std::size_t countStandIns(cocos2d::CCNode* node) {
+        auto* children = node ? node->getChildren() : nullptr;
+        if (!children) return 0;
+
+        std::size_t seen = 0;
+        for (auto* child : CCArrayExt<CCNode*>(children)) {
+            auto* line = typeinfo_cast<CCLabelBMFont*>(child);
+            if (!line || !line->getString()) continue;
+            seen += static_cast<std::size_t>(
+                std::ranges::count(std::string_view(line->getString()), STAND_IN));
+        }
+        return seen;
+    }
+
+    // GD 가 대역 글자를 줄에 빠짐없이 남기는지 처음 한 번 실제로 지어 보고 확인한다.
+    // 하나라도 지우거나 바꾸는 기기라면 이 길을 쓰지 않고 예전 길로 간다.
+    bool standInsSurvive(char const* font) {
+        static std::optional<bool> survived;
+        if (survived) return *survived;
+
+        SplitGuard const guard;
+        std::string const probeText = std::string("a") + STAND_IN + " b" + STAND_IN;
+        std::size_t seen = 0;
+        if (auto* probe = MultilineBitmapFont::createWithFont(
+                font, gd::string(probeText), 1.f, 1000.f, ccp(0.f, 0.f), 20, true)) {
+            seen = countStandIns(probe);
+        }
+
+        survived = seen == 2;
+        kopatch::layoutlog::record(fmt::format("[stand-in] probe {}/2", seen));
+        if (!*survived) {
+            log::warn("the game did not keep the stand-in letters ({} of 2), using the old way", seen);
+        }
+        return *survived;
+    }
+
+    // GD 가 지은 줄에서 대역 글자를 차례대로 원래 글자로 되돌린다. 대역 글자는 글자
+    // 하나에 하나씩이고 GD 는 그것을 지우지도 보태지도 않으므로(standInsSurvive),
+    // n 번째 대역 글자는 곧 n 번째 글자다. 되돌린 글자 수를 돌려준다.
+    std::size_t putBack(cocos2d::CCNode* node, std::vector<std::string> const& letters) {
+        auto* children = node->getChildren();
+        if (!children) return 0;
+
+        std::size_t next = 0;
+        for (auto* child : CCArrayExt<CCNode*>(children)) {
+            auto* line = typeinfo_cast<CCLabelBMFont*>(child);
+            if (!line || !line->getString()) continue;
+
+            std::string_view const shown(line->getString());
+            if (shown.find(STAND_IN) == std::string_view::npos) continue;
+
+            std::string restored;
+            restored.reserve(shown.size() * 3);
+            for (char const c : shown) {
+                if (c != STAND_IN) {
+                    restored += c;
+                }
+                else if (next < letters.size()) {
+                    restored += letters[next++];
+                }
+            }
+            line->setString(restored.c_str());
+        }
+        return next;
+    }
+
+    // 우리가 나눈 줄을 GD 가 더 잘게 나눴는지 본다. 그랬다면 GD 가 한글 폭을 우리와
+    // 다르게 잰 것이고, 그 기기에서 무엇이 다른지 알려 주는 단서다. 표본을 고르지
+    // 않고 모두 적는다. 줄 수가 같거나 적으면(빈 줄을 GD 가 뺀 경우) 적지 않는다.
+    void noteSplit(cocos2d::CCNode* node, std::string const& source, bool standIns, float width) {
+        auto* children = node->getChildren();
+        if (!children) return;
+
+        std::size_t game = 0;
+        for (auto* child : CCArrayExt<CCNode*>(children)) {
+            if (typeinfo_cast<CCLabelBMFont*>(child)) ++game;
+        }
+        auto const ours = static_cast<std::size_t>(std::ranges::count(source, '\n')) + 1;
+        if (game <= ours) return;
+
+        kopatch::layoutlog::record(fmt::format(
+            "[split] {} ours={} game={} width={:.0f} \"{}\"",
+            standIns ? "stand-in" : "bytes", ours, game, width, snippetOf(source)));
     }
 }
 
@@ -320,11 +470,19 @@ class $modify(KoreanMultiline, MultilineBitmapFont) {
             paint = !parsed.spans.empty();
         }
 
-        if (kopatch::containsHangul(source)) {
+        bool const hangul = kopatch::containsHangul(source);
+        if (hangul) {
             source = wrapToWidth(source, useFont, scale, width);
         }
 
-        text = source;
+        // 대역 글자는 우리 글꼴에만 있으므로 우리 글꼴로 그릴 때만 쓴다.
+        std::optional<StandIns> standIns;
+        if (hangul && !fontPath.empty() && translator.stableLines()
+            && standInsSurvive(useFont)) {
+            standIns = makeStandIns(source);
+        }
+
+        text = standIns ? standIns->text : source;
 
         SplitGuard const guard;
         if (!MultilineBitmapFont::initWithFont(
@@ -332,7 +490,17 @@ class $modify(KoreanMultiline, MultilineBitmapFont) {
             return false;
         }
 
-        if (kopatch::containsHangul(source)) {
+        if (standIns) {
+            auto const back = putBack(this, standIns->letters);
+            if (back != standIns->letters.size()) {
+                kopatch::layoutlog::record(fmt::format(
+                    "[stand-in] put back {}/{} \"{}\"",
+                    back, standIns->letters.size(), snippetOf(source)));
+            }
+        }
+
+        if (hangul) {
+            noteSplit(this, source, standIns.has_value(), width);
             realign(this, anchor.x);
         }
 

@@ -8,7 +8,7 @@
     },
     "id": "doongndon.ko-patch",
     "name": "Korean Patch",
-    "version": "v1.0.1",
+    "version": "v1.0.2",
     "developers": [
         "doongndon"
     ],
@@ -47,6 +47,12 @@
                 "jua",
                 "dunggeunmo"
             ]
+        },
+        "stable-lines": {
+            "type": "bool",
+            "name": "Same line breaks on every device",
+            "description": "While the game splits Korean text into lines, it is handed a blank stand-in for each Korean letter, so every device measures the text the same way. Turn this off to go back to the old way if a text box looks wrong.",
+            "default": true
         },
         "gemini-title": {
             "type": "title",

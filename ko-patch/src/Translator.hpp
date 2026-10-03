@@ -54,6 +54,11 @@ namespace kopatch {
         void setPixelFont(bool pixel) { m_pixelFont = pixel; }
         bool pixelFont() const { return m_pixelFont; }
 
+        // 여러 줄 글을 GD 가 줄로 나누는 동안 한글 대신 대역 글자를 건넬지.
+        // hooks/MultilineText.cpp 를 보라.
+        void setStableLines(bool on) { m_stableLines = on; }
+        bool stableLines() const { return m_stableLines; }
+
         std::optional<Entry> translate(std::string_view text) const;
 
     private:
@@ -74,5 +79,6 @@ namespace kopatch {
         bool m_enabled = true;
         bool m_ownFont = true;
         bool m_pixelFont = false;
+        bool m_stableLines = true;
     };
 }
