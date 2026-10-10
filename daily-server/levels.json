@@ -1,0 +1,21 @@
+[
+    { "id": 1, "kind": "main", "name": "Stereo Madness" },
+    { "id": 2, "kind": "main", "name": "Back On Track" },
+    { "id": 3, "kind": "main", "name": "Polargeist" },
+    { "id": 4, "kind": "main", "name": "Dry Out" },
+    { "id": 5, "kind": "main", "name": "Base After Base" },
+    { "id": 6, "kind": "main", "name": "Can't Let Go" },
+    { "id": 7, "kind": "main", "name": "Jumper" },
+    { "id": 8, "kind": "main", "name": "Time Machine" },
+    { "id": 9, "kind": "main", "name": "Cycles" },
+    { "id": 10, "kind": "main", "name": "xStep" },
+    { "id": 11, "kind": "main", "name": "Clutterfunk" },
+    { "id": 12, "kind": "main", "name": "Theory of Everything" },
+    { "id": 13, "kind": "main", "name": "Electroman Adventures" },
+    { "id": 15, "kind": "main", "name": "Electrodynamix" },
+    { "id": 16, "kind": "main", "name": "Hexagon Force" },
+    { "id": 17, "kind": "main", "name": "Blast Processing" },
+    { "id": 19, "kind": "main", "name": "Geometrical Dominator" },
+    { "id": 21, "kind": "main", "name": "Fingerdash" },
+    { "id": 22, "kind": "main", "name": "Dash" }
+]

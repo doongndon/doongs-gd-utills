@@ -8,3 +8,6 @@ CMakeUserPresets.json
 *.geode
 __pycache__/
 ko-patch/resources/
+daily-server/data.json
+daily-server/data.json.tmp
+node_modules/

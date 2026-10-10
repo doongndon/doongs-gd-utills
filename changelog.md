@@ -1,3 +1,6 @@
+# v1.7.0
+ - Added the **Daily Challenge**: a Daily button on the main menu. Every day the server picks one level, and everyone races to beat it in the fewest attempts. Set the server address in the mod settings first
+
 # v1.6.1
  - The update button could stop responding entirely after one press. It holds onto the download now, and always says something back
 

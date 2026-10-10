@@ -1,0 +1,14 @@
+{
+    "name": "doongs-daily-server",
+    "version": "1.0.0",
+    "private": true,
+    "description": "Daily challenge server for Doong's GD Utils",
+    "main": "server.js",
+    "scripts": {
+        "start": "node server.js",
+        "test": "node --test"
+    },
+    "engines": {
+        "node": ">=18"
+    }
+}
