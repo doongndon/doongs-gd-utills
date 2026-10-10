@@ -11,8 +11,9 @@ A small quality-of-life pack:
   rotation and scale of the selection for natural looking decoration; *Ramp* changes rotation
   and scale gradually across the selection, left to right. Both register a normal undo step.
 
-- **Daily challenge** — a Daily button on the main menu. Every day the server picks one level and
-  everyone using the mod races to beat it in the fewest attempts. Attempts are counted from the
+- **Daily challenge** — a Daily button on the main menu. Every day the server picks one level per difficulty (a
+  main level, or a random rated level from Easy up to Easy Demon) and everyone using the mod races
+  to beat it in the fewest attempts. Attempts are counted from the
   first time you open the level that day, practice runs included; clears in practice mode or from a
   start position do not count. Results are taken on trust - it is a game, not a tournament. Needs a
   server address in the settings (the server is in `daily-server/` of the repository).

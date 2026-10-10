@@ -7,6 +7,7 @@
 
 #include <optional>
 #include <string>
+#include <vector>
 
 namespace gdu {
     class DailyPopup : public geode::Popup {
@@ -16,12 +17,18 @@ namespace gdu {
     private:
         bool init();
 
+        void buildTierRow();
+        void paintTierRow();
         void refresh();
         void render(std::optional<std::string> const& error);
 
+        void onTier(cocos2d::CCObject* sender);
         void onPlay(cocos2d::CCObject*);
         void onRefresh(cocos2d::CCObject*);
 
+        std::string m_tier;
+        cocos2d::CCMenu* m_tierMenu = nullptr;
+        std::vector<ButtonSprite*> m_tierSprites;
         cocos2d::CCLabelBMFont* m_level = nullptr;
         cocos2d::CCLabelBMFont* m_status = nullptr;
         cocos2d::CCLabelBMFont* m_board = nullptr;
