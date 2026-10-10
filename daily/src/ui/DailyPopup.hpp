@@ -69,6 +69,9 @@ namespace gdu::ui {
         bool m_loading = false;
         // 오늘의 도전을 한 번이라도 받았는지. 자정이 지나 그것이 끝나면 한 번만 새로 받는다.
         bool m_hadToday = false;
+        // 마지막으로 받은 답의 오류와, 마지막으로 그린 때의 daily::revision().
+        std::optional<std::string> m_error;
+        int m_seenRevision = -1;
 
         std::vector<Tab> m_tabs;
 

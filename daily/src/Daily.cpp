@@ -6,8 +6,11 @@
 #include <Geode/utils/async.hpp>
 
 #include <algorithm>
+#include <cctype>
 #include <chrono>
+#include <cmath>
 #include <cstdint>
+#include <cstdlib>
 #include <random>
 
 #include <fmt/format.h>
@@ -204,6 +207,308 @@ namespace {
         }
     }
 
+    // ---- 서버 대신 이 기기에서 레벨 고르기 ----
+    //
+    // 서버가 GD 서버에 닿지 못하면(호스팅 업체의 주소를 GD 서버가 막는 일이 있다) 그
+    // 칸의 레벨이 비어 있고, 서버는 검색 조건과 씨앗을 함께 보낸다. 그러면 여기서 서버와
+    // 같은 방법으로 고른다. 좋아요 순으로 첫 쪽을 받아 전체 쪽 수를 알고, 씨앗으로 쪽 하나와
+    // 그 쪽의 레벨 하나를 뽑는다. 고른 레벨은 서버에 보내고, 서버는 먼저 온 것을 그날의
+    // 레벨로 삼는다.
+
+    int g_revision = 0;
+
+    constexpr char const* GD_SEARCH = "https://www.boomlings.com/database/getGJLevels21.php";
+    constexpr int MAX_PAGES = 200;
+
+    struct PickJob {
+        std::string tier;
+        std::string date;
+        gdu::daily::PickHint hint;
+        std::uint32_t state = 0;
+        // 뽑은 쪽. 첫 쪽을 받기 전에는 -1.
+        int page = -1;
+    };
+
+    std::optional<PickJob>& pickJob() {
+        static auto* job = new std::optional<PickJob>();
+        return *job;
+    }
+
+    std::map<std::string, std::string>& pickErrors() {
+        static auto* errors = new std::map<std::string, std::string>();
+        return *errors;
+    }
+
+    async::TaskHolder<web::WebResponse>& pickTask() {
+        static async::TaskHolder<web::WebResponse> holder;
+        return holder;
+    }
+
+    // mulberry32. 서버의 seeded() 와 같은 수를 낸다.
+    double nextRandom(std::uint32_t& state) {
+        state += 0x6d2b79f5u;
+        std::uint32_t t = state;
+        t = (t ^ (t >> 15)) * (t | 1u);
+        t ^= t + (t ^ (t >> 7)) * (t | 61u);
+        return static_cast<double>(t ^ (t >> 14)) / 4294967296.0;
+    }
+
+    std::string formEncode(std::string_view text) {
+        std::string out;
+        for (char ch : text) {
+            auto const c = static_cast<unsigned char>(ch);
+            if (std::isalnum(c) || c == '-' || c == '_' || c == '.' || c == '~') {
+                out += static_cast<char>(c);
+            }
+            else {
+                out += fmt::format("%{:02X}", c);
+            }
+        }
+        return out;
+    }
+
+    std::vector<std::string> split(std::string const& text, char delimiter) {
+        std::vector<std::string> parts;
+        std::size_t start = 0;
+        while (true) {
+            auto const end = text.find(delimiter, start);
+            parts.push_back(text.substr(start, end == std::string::npos ? std::string::npos : end - start));
+            if (end == std::string::npos) {
+                return parts;
+            }
+            start = end + 1;
+        }
+    }
+
+    using Fields = std::map<std::string, std::string>;
+
+    struct Search {
+        std::vector<Fields> levels;
+        std::map<std::string, std::string> creators;
+        int total = 0;
+    };
+
+    std::string field(Fields const& level, char const* key) {
+        auto const found = level.find(key);
+        return found == level.end() ? "" : found->second;
+    }
+
+    int number(Fields const& level, char const* key) {
+        auto const text = field(level, key);
+        return text.empty() ? 0 : std::atoi(text.c_str());
+    }
+
+    // GD 서버의 레벨 검색 답. 형식은 "레벨들#만든이들#노래들#쪽정보#해시"(gd-docs 의
+    // getGJLevels21). 서버의 parseSearch 와 같다. 실패하면 "-1" 이 온다.
+    std::optional<Search> parseSearch(std::string const& text) {
+        if (text.empty() || text == "-1" || text.find('#') == std::string::npos) {
+            return std::nullopt;
+        }
+        auto const parts = split(text, '#');
+        Search out;
+        for (auto const& raw : split(parts[0], '|')) {
+            if (raw.empty()) {
+                continue;
+            }
+            auto const pieces = split(raw, ':');
+            Fields level;
+            for (std::size_t i = 0; i + 1 < pieces.size(); i += 2) {
+                level[pieces[i]] = pieces[i + 1];
+            }
+            out.levels.push_back(std::move(level));
+        }
+        if (parts.size() > 1) {
+            for (auto const& raw : split(parts[1], '|')) {
+                auto const pieces = split(raw, ':');
+                if (pieces.size() >= 2 && !pieces[0].empty() && !pieces[1].empty()) {
+                    out.creators[pieces[0]] = pieces[1];
+                }
+            }
+        }
+        if (parts.size() > 3) {
+            out.total = std::atoi(split(parts[3], ':')[0].c_str());
+        }
+        return out;
+    }
+
+    // 서버의 faceOf, featureOf 와 같다.
+    int faceOf(Fields const& level) {
+        if (field(level, "25") == "1") {
+            return -1;
+        }
+        if (field(level, "17") == "1") {
+            switch (number(level, "43")) {
+                case 3: return 7;
+                case 4: return 8;
+                case 5: return 9;
+                case 6: return 10;
+                default: return 6;
+            }
+        }
+        return std::clamp(static_cast<int>(std::lround(number(level, "9") / 10.0)), 0, 5);
+    }
+
+    int featureOf(Fields const& level) {
+        int const epic = number(level, "42");
+        if (epic > 0) {
+            return std::min(4, epic + 1);
+        }
+        return number(level, "19") > 0 ? 1 : 0;
+    }
+
+    void failPick(std::string message) {
+        auto& job = pickJob();
+        if (!job) {
+            return;
+        }
+        log::warn("daily: could not pick a {} level here: {}", job->tier, message);
+        pickErrors()[job->tier] = std::move(message);
+        job.reset();
+        ++g_revision;
+    }
+
+    void sendPick(gdu::daily::Level const& level) {
+        auto& job = pickJob();
+        if (!job) {
+            return;
+        }
+        auto picked = matjson::Value::object();
+        picked.set("id", matjson::Value(level.id));
+        picked.set("kind", matjson::Value("online"));
+        picked.set("name", matjson::Value(level.name));
+        picked.set("creator", matjson::Value(level.creator));
+        picked.set("stars", matjson::Value(level.stars));
+        picked.set("face", matjson::Value(level.face));
+        picked.set("feature", matjson::Value(level.feature));
+        picked.set("length", matjson::Value(level.length));
+        auto body = matjson::Value::object();
+        body.set("date", matjson::Value(job->date));
+        body.set("tier", matjson::Value(job->tier));
+        body.set("level", picked);
+
+        auto url = serverBase() + "/pick";
+        pickTask().spawn(
+            "daily pick",
+            [url = std::move(url), body = std::move(body), agent = std::string(Mod::get()->getID())] {
+                return web::WebRequest()
+                    .userAgent(agent)
+                    .bodyJSON(body)
+                    .timeout(std::chrono::seconds(20))
+                    .post(url);
+            },
+            [](web::WebResponse response) {
+                auto& job = pickJob();
+                if (!job) {
+                    return;
+                }
+                if (!response.ok()) {
+                    failPick(gdu::text::format("pick.refused", response.code()));
+                    return;
+                }
+                auto json = response.json();
+                auto const level = json.isOk() ? readLevel(json.unwrapOrDefault()["level"]) : std::nullopt;
+                if (!level) {
+                    failPick(std::string(gdu::text::tr("error.unreadable")));
+                    return;
+                }
+                if (g_today && g_today->date == job->date) {
+                    for (auto& entry : g_today->tiers) {
+                        if (entry.id == job->tier) {
+                            entry.level = level;
+                            entry.pick.reset();
+                        }
+                    }
+                }
+                log::info("daily: today's {} level is {} ({})", job->tier, level->id, level->name);
+                job.reset();
+                ++g_revision;
+            }
+        );
+    }
+
+    void searchPage(int page);
+
+    void onSearch(int page, web::WebResponse const& response) {
+        auto& job = pickJob();
+        if (!job) {
+            return;
+        }
+        if (!response.ok()) {
+            failPick(gdu::text::format("pick.failed", response.code()));
+            return;
+        }
+        auto const result = parseSearch(response.string().unwrapOr(""));
+        if (!result) {
+            failPick(std::string(gdu::text::tr("pick.noLevel")));
+            return;
+        }
+        if (job->page < 0) {
+            int const pages = std::clamp((result->total + 9) / 10, 1, MAX_PAGES);
+            job->page = std::min(pages - 1, static_cast<int>(nextRandom(job->state) * pages));
+            if (job->page != page) {
+                searchPage(job->page);
+                return;
+            }
+        }
+
+        // 플랫포머(길이 5)와 별이 없는 레벨은 뺀다. 서버의 pickRated 와 같다.
+        std::vector<Fields const*> candidates;
+        for (auto const& level : result->levels) {
+            if (number(level, "1") > 0 && !field(level, "2").empty() && number(level, "18") > 0
+                && field(level, "15") != "5") {
+                candidates.push_back(&level);
+            }
+        }
+        if (candidates.empty()) {
+            failPick(std::string(gdu::text::tr("pick.noLevel")));
+            return;
+        }
+        auto const index = std::min(
+            candidates.size() - 1, static_cast<std::size_t>(nextRandom(job->state) * candidates.size())
+        );
+        auto const& chosen = *candidates[index];
+
+        gdu::daily::Level level;
+        level.id = number(chosen, "1");
+        level.mainLevel = false;
+        level.name = field(chosen, "2");
+        auto const creator = result->creators.find(field(chosen, "6"));
+        level.creator = creator == result->creators.end() ? "" : creator->second;
+        level.stars = number(chosen, "18");
+        level.face = faceOf(chosen);
+        level.feature = featureOf(chosen);
+        int const length = number(chosen, "15");
+        level.length = length >= 0 && length <= 4 ? length : -1;
+        sendPick(level);
+    }
+
+    void searchPage(int page) {
+        auto& job = pickJob();
+        if (!job) {
+            return;
+        }
+        std::string form = "secret=Wmfd2893gb7&gameVersion=22&binaryVersion=42";
+        for (auto const& [key, value] : job->hint.params) {
+            form += fmt::format("&{}={}", formEncode(key), formEncode(value));
+        }
+        form += fmt::format("&page={}", page);
+        pickTask().spawn(
+            "daily gd search",
+            [form = std::move(form)] {
+                // GD 서버는 User-Agent 가 붙은 요청을 받지 않는다(gd-docs 의 예제). Geode 는
+                // 따로 정하지 않으면 붙이지 않는다.
+                return web::WebRequest()
+                    .header("Content-Type", "application/x-www-form-urlencoded")
+                    .bodyString(form)
+                    .timeout(std::chrono::seconds(15))
+                    .post(GD_SEARCH);
+            },
+            [page](web::WebResponse response) {
+                onSearch(page, response);
+            }
+        );
+    }
+
     // 아직 못 보낸 기록이 있는 난이도. 하나씩 차례로 보낸다.
     std::optional<std::string> pendingTier() {
         for (auto const& [id, progress] : stored().tiers) {
@@ -348,6 +653,16 @@ namespace gdu::daily {
                         entry.offers.push_back(std::move(ids));
                     }
                 }
+                if (auto const& pick = value["pick"]; !entry.level && pick.isObject() && pick["params"].isObject()) {
+                    PickHint hint;
+                    for (auto const& [key, param] : pick["params"]) {
+                        hint.params.emplace_back(key, param.asString().unwrapOr(""));
+                    }
+                    hint.seed = static_cast<std::uint32_t>(pick["seed"].asInt().unwrapOr(0));
+                    if (!hint.params.empty()) {
+                        entry.pick = std::move(hint);
+                    }
+                }
                 today.tiers.push_back(std::move(entry));
             }
         }
@@ -382,10 +697,12 @@ namespace gdu::daily {
 
         // 날이 바뀌었으면 이 기기의 기록도 새로 시작한다. 같은 날이라도 서버가 그
         // 난이도의 레벨을 다르게 알려 주면(서버를 다시 띄운 경우 등) 그 기록은 버린다.
+        ++g_revision;
         auto& state = stored();
         bool changed = false;
         if (state.date != g_today->date) {
             state = Stored{ .date = g_today->date };
+            pickErrors().clear();
             changed = true;
         }
         for (auto const& entry : g_today->tiers) {
@@ -641,6 +958,42 @@ namespace gdu::daily {
 
     void resubmitPending() {
         submitNext();
+    }
+
+    void pickLevel(std::string const& tierID) {
+        if (pickJob() || pickTask().isPending() || pickErrors().contains(tierID)) {
+            return;
+        }
+        auto const& current = today();
+        auto const* entry = tier(tierID);
+        if (!current || !entry || entry->level || !entry->pick) {
+            return;
+        }
+        pickJob() = PickJob{
+            .tier = tierID,
+            .date = current->date,
+            .hint = *entry->pick,
+            .state = entry->pick->seed,
+        };
+        ++g_revision;
+        searchPage(0);
+    }
+
+    bool pickingLevel(std::string const& tierID) {
+        return pickJob() && pickJob()->tier == tierID;
+    }
+
+    std::optional<std::string> pickError(std::string const& tierID) {
+        auto const found = pickErrors().find(tierID);
+        return found == pickErrors().end() ? std::nullopt : std::optional(found->second);
+    }
+
+    void forgetPickError(std::string const& tierID) {
+        pickErrors().erase(tierID);
+    }
+
+    int revision() {
+        return g_revision;
     }
 
     void open(std::string const& tierID) {

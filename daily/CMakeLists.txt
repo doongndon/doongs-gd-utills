@@ -4,7 +4,7 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_OSX_DEPLOYMENT_TARGET 10.15 CACHE STRING "Minimum OS X deployment version")
 
-project(doongs-daily-challenge VERSION 2.0.0)
+project(doongs-daily-challenge VERSION 2.0.1)
 
 file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS src/*.cpp ${CMAKE_CURRENT_SOURCE_DIR}/../common/*.cpp)
 

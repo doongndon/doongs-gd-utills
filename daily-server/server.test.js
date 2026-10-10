@@ -4,7 +4,7 @@ const test = require("node:test");
 const assert = require("node:assert");
 const {
     createApp, dateOf, levelFor, cleanName, secondsLeft, parseSearch, pickRated, offersFor, scoreOf,
-    faceOf, featureOf, TIERS, CARDS,
+    faceOf, featureOf, searchFilter, hash, TIERS, CARDS,
 } = require("./server");
 const levels = require("./levels.json");
 
@@ -323,4 +323,75 @@ test("boards rank by score, then by attempts, and a result needs its cards", asy
 
     assert.strictEqual((await result(made, { tier: "easy", cards: undefined }))[0], 400);
     assert.strictEqual((await result(made, { tier: "easy", cards: ["shield"] }))[0], 400);
+});
+
+// 모드가 대신 고른 레벨. GD 서버가 이 서버를 막아도 그날의 레벨이 정해져야 한다.
+function picked(overrides = {}) {
+    return { id: 777, kind: "online", name: "Picked", creator: "someone", stars: 2, face: 1, feature: 1, length: 2, ...overrides };
+}
+
+test("when the GD servers are out of reach, tiers carry a search hint for the mod", async () => {
+    const made = app({ failFor: new Set(["1"]) });
+    const today = await made.today("easy");
+    const easy = today.tiers.find((t) => t.id === "easy");
+    assert.strictEqual(easy.level, null);
+    assert.deepStrictEqual(easy.pick.params, searchFilter(TIERS.find((t) => t.id === "easy")));
+    assert.strictEqual(easy.pick.seed, hash(`${today.date}:easy:pick`));
+    // 고른 칸과 메인 칸에는 붙이지 않는다.
+    assert.strictEqual(today.tiers.find((t) => t.id === "main").pick, undefined);
+    assert.strictEqual(today.tiers.find((t) => t.id === "hard").pick, undefined);
+});
+
+test("the first level a mod picks becomes the level of the day", async () => {
+    const made = app({ failFor: new Set(["1"]) });
+    const { date } = await made.today("easy");
+    const [status, reply] = made.pick({ date, tier: "easy", level: picked() }, "1.1.1.1");
+    assert.strictEqual(status, 200);
+    assert.strictEqual(reply.level.id, 777);
+    assert.strictEqual(reply.level.creator, "someone");
+
+    const [, again] = made.pick({ date, tier: "easy", level: picked({ id: 888, name: "Late" }) }, "2.2.2.2");
+    assert.strictEqual(again.level.id, 777);
+
+    const today = await made.today("easy");
+    assert.strictEqual(today.level.id, 777);
+    assert.strictEqual(today.tiers.find((t) => t.id === "easy").pick, undefined);
+
+    // 그 레벨로 낸 기록은 받는다.
+    const [result] = await (async () => made.submit({
+        date, tier: "easy", levelId: 777, player: { id: "acc:9", name: "doong" }, attempts: 3,
+        cards: today.tiers.find((t) => t.id === "easy").offers.map((offer) => offer[0]),
+    }, "3.3.3.3"))();
+    assert.strictEqual(result, 200);
+});
+
+test("a picked level must belong to the tier and look like a level", async () => {
+    const made = app({ failFor: new Set(["1", "-2"]) });
+    const { date } = await made.today("easy");
+    const status = (tier, level) => made.pick({ date, tier, level }, "4.4.4.4")[0];
+    assert.strictEqual(status("easy", picked({ face: 5 })), 400);
+    assert.strictEqual(status("easy", picked({ id: -1 })), 400);
+    assert.strictEqual(status("easy", picked({ name: "" })), 400);
+    assert.strictEqual(status("easy", picked({ stars: 0 })), 400);
+    assert.strictEqual(status("main", picked()), 400);
+    assert.strictEqual(status("nope", picked()), 400);
+    assert.strictEqual(made.pick({ date: "2000-01-01", tier: "easy", level: picked() }, "4.4.4.4")[0], 409);
+    assert.strictEqual(status("easy-demon", picked({ face: 7, stars: 10 })), 200);
+});
+
+test("a slow server pick does not replace a level a mod already picked", async () => {
+    let release;
+    const gate = new Promise((resolve) => { release = resolve; });
+    const slow = async (params) => {
+        await gate;
+        return fakeGD()(params);
+    };
+    const made = app({ search: slow, pickWaitMs: 5 });
+    const first = await made.today("easy");
+    assert.strictEqual(first.tiers.find((t) => t.id === "easy").level, null);
+    made.pick({ date: first.date, tier: "easy", level: picked() }, "5.5.5.5");
+    release();
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    const later = await made.today("easy");
+    assert.strictEqual(later.tiers.find((t) => t.id === "easy").level.id, 777);
 });

@@ -3,6 +3,7 @@
 #include <Geode/Geode.hpp>
 #include <Geode/utils/web.hpp>
 
+#include <cstdint>
 #include <map>
 #include <optional>
 #include <string>
@@ -56,6 +57,12 @@ namespace gdu::daily {
         int length = -1;
     };
 
+    // 서버가 레벨을 못 골랐을 때 기기가 대신 고르는 데 쓸 GD 검색 조건과 씨앗.
+    struct PickHint {
+        std::vector<std::pair<std::string, std::string>> params;
+        std::uint32_t seed = 0;
+    };
+
     struct Tier {
         std::string id;
         std::string name;
@@ -63,6 +70,8 @@ namespace gdu::daily {
         std::optional<Level> level;
         // 지점(25, 50, 75%)마다 고를 수 있는 카드 세 장. 그날 그 칸을 하는 사람은 모두 같다.
         std::vector<std::vector<std::string>> offers;
+        // 레벨이 비어 있을 때만 있다.
+        std::optional<PickHint> pick;
     };
 
     struct Today {
@@ -148,6 +157,18 @@ namespace gdu::daily {
 
     // 깼는데 서버가 못 받은 기록이 있으면 다시 보낸다.
     void resubmitPending();
+
+    // 서버가 GD 서버에 닿지 못해 그 난이도의 레벨을 못 골랐으면, 이 기기에서 GD 서버를
+    // 검색해 골라 서버에 알린다. 서버는 먼저 온 것을 그날의 레벨로 삼는다. 한 번에 한
+    // 난이도만 고르고, 이미 고르는 중이거나 고를 것이 없으면 아무것도 하지 않는다.
+    void pickLevel(std::string const& tier);
+    bool pickingLevel(std::string const& tier);
+    // 대신 고르기에 실패한 까닭. 새로 고침하면 지운다.
+    std::optional<std::string> pickError(std::string const& tier);
+    void forgetPickError(std::string const& tier);
+
+    // 받아 둔 오늘의 도전이 바뀔 때마다 오르는 수. 창이 다시 그릴 때를 안다.
+    int revision();
 
     // 그 난이도의 레벨이 있는 곳으로 간다. 메인 레벨은 그 레벨의 쪽, 온라인 레벨은
     // 받아 둔 레벨이면 그 레벨 화면, 아니면 검색 결과.

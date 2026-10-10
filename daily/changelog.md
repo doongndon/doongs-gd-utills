@@ -1,3 +1,7 @@
+# v2.0.1
+ - Fixed online difficulties stuck on "the server is still picking this level": when the server cannot reach the GD servers, your game searches the GD servers itself, picks the level the same way and tells the server, which keeps the first pick for everyone
+ - The level card shows when a level is being picked, and why picking failed; refresh tries again
+
 # v2.0.0
  - Korean by default: every text in the mod, the card names and descriptions included, with a bundled Korean font (English in the settings)
  - New look: hand-drawn cards for every help card and curse, a card back, and a new menu button

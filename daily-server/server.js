@@ -4,6 +4,9 @@
 // - 날마다 난이도별로 레벨 하나씩을 고른다. 메인 레벨 칸은 levels.json 에서, 나머지
 //   칸(Easy ~ Easy Demon)은 GD 서버에서 그 난이도의 레이팅된 레벨 가운데 하나를
 //   무작위로 골라 온다. 한 번 고른 레벨은 그날 하루 바뀌지 않는다.
+// - GD 서버가 이 서버의 주소를 막아 고르지 못하면(호스팅 업체 주소는 막히는 일이 있다),
+//   모드가 플레이어의 기기에서 같은 검색을 해 골라 보낸다(/pick). 먼저 온 것이 그날의
+//   레벨이 된다.
 // - 모든 칸이 로그라이크다. 25%, 50%, 75% 에서 카드를 한 장씩 고르며 깨고, 점수는
 //   100 + 고른 카드의 점수다. 카드 묶음은 날짜와 칸마다 정해져 그 칸을 하는 사람은
 //   모두 같은 카드를 받는다.
@@ -36,17 +39,29 @@ const RETRY_AFTER_MS = 10 * 60 * 1000;
 const MAX_PAGES = 200;
 const PLAYER_ID = /^(acc|dev):[A-Za-z0-9]{1,32}$/;
 
-// 고를 수 있는 난이도. diff, demonFilter 는 GD 서버의 레벨 검색 값이다.
+// 고를 수 있는 난이도. diff, demonFilter 는 GD 서버의 레벨 검색 값이다. face 는 그
+// 난이도 레벨의 얼굴 번호(faceOf)로, 기기가 대신 고른 레벨을 받을 때 맞춰 본다.
 // 데몬은 너무 어려운 것이 걸리지 않게 이지 데몬만 둔다.
 const TIERS = [
     { id: "main", name: "Main levels" },
-    { id: "easy", name: "Easy", diff: "1" },
-    { id: "normal", name: "Normal", diff: "2" },
-    { id: "hard", name: "Hard", diff: "3" },
-    { id: "harder", name: "Harder", diff: "4" },
-    { id: "insane", name: "Insane", diff: "5" },
-    { id: "easy-demon", name: "Easy Demon", diff: "-2", demonFilter: "1" },
+    { id: "easy", name: "Easy", diff: "1", face: 1 },
+    { id: "normal", name: "Normal", diff: "2", face: 2 },
+    { id: "hard", name: "Hard", diff: "3", face: 3 },
+    { id: "harder", name: "Harder", diff: "4", face: 4 },
+    { id: "insane", name: "Insane", diff: "5", face: 5 },
+    { id: "easy-demon", name: "Easy Demon", diff: "-2", demonFilter: "1", face: 7 },
 ];
+
+// 그 난이도의 레이팅된 레벨을 찾는 검색 조건. 좋아요 순, 플랫포머(길이 5)는 뺀다.
+function searchFilter(tier) {
+    return {
+        type: "2",
+        star: "1",
+        diff: tier.diff,
+        len: "0,1,2,3,4",
+        ...(tier.demonFilter ? { demonFilter: tier.demonFilter } : {}),
+    };
+}
 
 // 로그라이크 칸의 카드. 25%, 50%, 75% 에서 세 장 가운데 한 장을 고른다. 도움 카드는
 // 점수를 깎고 저주 카드는 점수를 올린다. 효과는 모드가 id 를 보고 건다. 이름과
@@ -230,13 +245,7 @@ function searchGD(params) {
 // 그 난이도의 레이팅된 레벨 하나를 무작위로 고른다. 좋아요 순 목록의 아무 쪽이나
 // 열어 그 안에서 하나를 뽑는다. 플랫포머(길이 5)는 시도 수로 겨루기 어려워 뺀다.
 async function pickRated(tier, search, random) {
-    const filter = {
-        type: "2",
-        star: "1",
-        diff: tier.diff,
-        len: "0,1,2,3,4",
-        ...(tier.demonFilter ? { demonFilter: tier.demonFilter } : {}),
-    };
+    const filter = searchFilter(tier);
     const first = parseSearch(await search({ ...filter, page: "0" }));
     if (!first || first.total <= 0) throw new Error(`no rated ${tier.name} levels found`);
 
@@ -270,10 +279,26 @@ function within(promise, ms, fallback) {
     return Promise.race([promise, late]).finally(() => clearTimeout(timer));
 }
 
+// 기기가 대신 고른 레벨을 다듬는다. 그 난이도의 레벨이 아니면(얼굴 번호가 다르면) null.
+// 서버는 GD 서버에 그 레벨이 정말 있는지 확인할 수 없다. 순위표처럼 정직함에 기댄다.
+function cleanPicked(level, tier) {
+    if (!level || typeof level !== "object") return null;
+    if (!Number.isInteger(level.id) || level.id <= 0 || level.id > 2000000000) return null;
+    const name = cleanName(level.name);
+    if (!name) return null;
+    if (level.face !== tier.face) return null;
+    if (!Number.isInteger(level.stars) || level.stars < 1 || level.stars > 10) return null;
+    const creator = (typeof level.creator === "string" && cleanName(level.creator)) || "";
+    const feature = Number.isInteger(level.feature) && level.feature >= 0 && level.feature <= 4 ? level.feature : 0;
+    const length = Number.isInteger(level.length) && level.length >= 0 && level.length <= 4 ? level.length : -1;
+    return { id: level.id, kind: "online", name, creator, stars: level.stars, face: tier.face, feature, length };
+}
+
 function createApp({
     levels, now = () => Date.now(), dataFile = null, search = searchGD, random = Math.random,
-    // 모드는 20초를 기다린다. 고르기가 그보다 오래 걸려도 답은 먼저 보낸다.
-    pickWaitMs = 8000,
+    // 모드는 20초를 기다린다. 고르기가 늦어지면 답은 먼저 보내고, 그동안 모드가 직접
+    // GD 서버에서 골라 보낼 수 있다(/pick).
+    pickWaitMs = 4000,
 } = {}) {
     validateLevels(levels);
 
@@ -337,9 +362,13 @@ function createApp({
 
         const job = pickRated(tier, search, random)
             .then((level) => {
-                day(date).levels[tier.id] = level;
-                save();
-                return level;
+                const entry = day(date);
+                // 그사이 모드가 먼저 골라 보냈으면 그것을 그대로 둔다. 모두가 같은 레벨을 봐야 한다.
+                if (!entry.levels[tier.id]) {
+                    entry.levels[tier.id] = level;
+                    save();
+                }
+                return entry.levels[tier.id];
             })
             .catch((error) => {
                 console.error(`could not pick a ${tier.name} level:`, error.message);
@@ -405,7 +434,15 @@ function createApp({
         return {
             date,
             secondsLeft: secondsLeft(time),
-            tiers: TIERS.map((t, i) => ({ id: t.id, name: t.name, level: picked[i], offers: offersFor(date, t.id) })),
+            // 레벨을 아직 못 고른 칸에는 검색 조건과 씨앗을 붙인다. 이 서버가 GD 서버에 닿지
+            // 못해도(호스팅 업체의 주소를 막는 경우가 있다) 모드가 기기에서 골라 보낼 수 있게.
+            tiers: TIERS.map((t, i) => ({
+                id: t.id,
+                name: t.name,
+                level: picked[i],
+                offers: offersFor(date, t.id),
+                ...(picked[i] || !t.diff ? {} : { pick: { params: searchFilter(t), seed: hash(`${date}:${t.id}:pick`) } }),
+            })),
             tier: tier.id,
             level: picked[TIERS.indexOf(tier)],
             roguelike: { milestones: MILESTONES, base: BASE_SCORE, cards: CARDS },
@@ -446,6 +483,27 @@ function createApp({
         return [200, { date, tier: body.tier, level, ...board(date, body.tier, body.player.id) }];
     }
 
+    // 모드가 GD 서버에서 대신 고른 레벨. 그 칸에 레벨이 아직 없을 때만 받는다. 먼저 온
+    // 것이 그날의 레벨이 되고, 뒤에 온 것은 이미 정해진 레벨을 돌려받는다.
+    function pick(body, address) {
+        const date = dateOf(now());
+        if (!body || typeof body !== "object") return [400, { error: "bad-body" }];
+        if (body.date !== date) return [409, { error: "day-over", date }];
+        const tier = TIERS.find((t) => t.id === body.tier);
+        if (!tier || !tier.diff) return [400, { error: "bad-tier" }];
+        const level = cleanPicked(body.level, tier);
+        if (!level) return [400, { error: "bad-level" }];
+        if (!allowPost(address)) return [429, { error: "slow-down" }];
+
+        const today = day(date);
+        if (!today.levels[tier.id]) {
+            today.levels[tier.id] = level;
+            save();
+            console.log(`${date} ${tier.name}: a player picked ${level.id} (${level.name})`);
+        }
+        return [200, { date, tier: tier.id, level: today.levels[tier.id] }];
+    }
+
     function send(res, status, body) {
         const text = JSON.stringify(body);
         res.writeHead(status, {
@@ -473,7 +531,9 @@ function createApp({
                 });
             return;
         }
-        if (req.method === "POST" && url.pathname === "/result") {
+        const handlers = { "/result": submit, "/pick": pick };
+        if (req.method === "POST" && handlers[url.pathname]) {
+            const handle = handlers[url.pathname];
             let size = 0;
             const chunks = [];
             let tooBig = false;
@@ -494,7 +554,7 @@ function createApp({
                 } catch {
                     return send(res, 400, { error: "bad-json" });
                 }
-                const [status, reply] = submit(body, address);
+                const [status, reply] = handle(body, address);
                 send(res, status, reply);
             });
             return;
@@ -502,12 +562,12 @@ function createApp({
         send(res, 404, { error: "not-found" });
     });
 
-    return { server, today, submit };
+    return { server, today, submit, pick };
 }
 
 module.exports = {
     createApp, dateOf, levelFor, cleanName, secondsLeft, parseSearch, pickRated, offersFor, scoreOf,
-    faceOf, featureOf, TIERS, CARDS, MILESTONES,
+    faceOf, featureOf, searchFilter, hash, TIERS, CARDS, MILESTONES,
 };
 
 if (require.main === module) {

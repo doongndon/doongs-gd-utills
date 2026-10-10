@@ -47,6 +47,12 @@ namespace {
         { "error.http", "The server did not answer (HTTP {})", "서버가 답하지 않아요 (HTTP {})" },
         { "error.unreadable", "The server sent something unreadable", "서버의 답을 읽을 수 없어요" },
         { "error.empty", "The server sent an empty challenge", "서버가 빈 도전을 보냈어요" },
+        { "status.picking", "PICKING A LEVEL...", "레벨 고르는 중..." },
+        { "detail.picking", "Searching the GD servers for today's level", "GD 서버에서 오늘의 레벨을 찾고 있어요" },
+        { "status.pickFailed", "NO LEVEL YET", "레벨을 못 골랐어요" },
+        { "pick.failed", "The GD servers did not answer (HTTP {})", "GD 서버가 답하지 않았어요 (HTTP {})" },
+        { "pick.noLevel", "The GD servers sent no usable level", "GD 서버에서 쓸 만한 레벨을 못 찾았어요" },
+        { "pick.refused", "Our server did not take the level (HTTP {})", "우리 서버가 레벨을 받지 않았어요 (HTTP {})" },
 
         { "picker.choose", "CHOOSE A CARD", "카드를 고르세요" },
         { "picker.hintDesktop", "Click a card, or press 1, 2 or 3", "카드를 누르거나 1, 2, 3 키를 누르세요" },

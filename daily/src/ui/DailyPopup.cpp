@@ -336,8 +336,13 @@ namespace gdu::ui {
     }
 
     void DailyPopup::render(std::optional<std::string> const& error) {
+        m_error = error;
         if (daily::today()) {
             m_hadToday = true;
+        }
+        // 서버가 이 난이도의 레벨을 못 골랐으면 이 기기에서 GD 서버를 검색해 대신 고른다.
+        if (auto const* tier = daily::tier(m_tier); tier && !tier->level && tier->pick && !error) {
+            daily::pickLevel(m_tier);
         }
         this->paintTabs();
         this->renderLevel(error);
@@ -350,6 +355,7 @@ namespace gdu::ui {
         m_rankingTab->updateBGImage(m_view == View::Ranking ? "GJ_button_01.png" : "GJ_button_04.png");
         m_cardsTab->updateBGImage(m_view == View::Cards ? "GJ_button_01.png" : "GJ_button_04.png");
         this->renderTimer();
+        m_seenRevision = daily::revision();
     }
 
     void DailyPopup::renderLevel(std::optional<std::string> const& error) {
@@ -396,6 +402,14 @@ namespace gdu::ui {
             if (error) {
                 status(tr("status.offline"), BAD);
                 detail(*error);
+            }
+            else if (daily::pickingLevel(m_tier)) {
+                status(tr("status.picking"), PLAIN);
+                detail(tr("detail.picking"));
+            }
+            else if (auto const failed = daily::pickError(m_tier)) {
+                status(tr("status.pickFailed"), BAD);
+                detail(*failed);
             }
             else {
                 bool const waiting = m_loading || !daily::today();
@@ -590,6 +604,10 @@ namespace gdu::ui {
 
     void DailyPopup::tick(float) {
         this->renderTimer();
+        // 뒤에서 오늘의 도전이 바뀌었으면(대신 고른 레벨이 정해지는 등) 다시 그린다.
+        if (!m_loading && daily::revision() != m_seenRevision) {
+            this->render(m_error);
+        }
         // 자정이 지나 오늘의 도전이 끝났으면 새것을 한 번 받는다. 서버가 안 받을 때
         // 매초 두드리지 않도록 받아 둔 것이 있다가 사라졌을 때만.
         if (m_hadToday && !daily::today() && !m_loading) {
@@ -624,6 +642,8 @@ namespace gdu::ui {
 
     void DailyPopup::onRefresh(CCObject*) {
         if (!m_loading) {
+            // 대신 고르기에 실패했던 것도 새로 고침에서 다시 해 본다.
+            daily::forgetPickError(m_tier);
             this->refresh();
         }
     }
