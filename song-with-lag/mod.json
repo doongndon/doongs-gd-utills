@@ -8,7 +8,7 @@
     },
     "id": "doongndon.song-with-lag",
     "name": "Song With Lag",
-    "version": "v1.0.0",
+    "version": "v1.0.1",
     "developers": [
         "doongndon"
     ],
@@ -22,7 +22,7 @@
         "enabled": {
             "type": "bool",
             "name": "Song lags with the game",
-            "description": "When a frame takes too long, the level moves on by one ordinary frame instead of jumping ahead, and the song is wound back by the time the game spent frozen.",
+            "description": "When a frame takes too long, the level moves on by one ordinary frame instead of jumping ahead, and whenever the song gets ahead of the level it is wound back to match.",
             "default": true
         },
         "threshold-ms": {
@@ -40,7 +40,7 @@
         "show-notice": {
             "type": "bool",
             "name": "Show what was absorbed",
-            "description": "Briefly shows in the top-right corner how many milliseconds the song was wound back.",
+            "description": "Briefly shows in the top-right corner how many milliseconds the song was wound back, or \"no music\" when a lag came but no playing song was found.",
             "default": false
         },
         "update-title": {
