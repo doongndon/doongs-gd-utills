@@ -1,6 +1,7 @@
 #include <Geode/Geode.hpp>
 #include <Geode/modify/GJBaseGameLayer.hpp>
 #include <Geode/modify/PlayLayer.hpp>
+#include <Geode/ui/NineSlice.hpp>
 
 #include <algorithm>
 #include <random>
@@ -224,6 +225,7 @@ namespace {
         CCMenu* m_menu = nullptr;
         CCLabelBMFont* m_title = nullptr;
         CCLabelBMFont* m_count = nullptr;
+        CCLabelBMFont* m_hint = nullptr;
         std::vector<std::string> m_offer;
         int m_left = 3;
 
@@ -241,30 +243,39 @@ namespace {
             }
             m_title = CCLabelBMFont::create(
                 fmt::format("{}% - pick a card", percent).c_str(), "bigFont.fnt");
-            m_title->setScale(0.6f);
-            m_title->setPosition({ size.width / 2.f, size.height / 2.f + 105.f });
+            m_title->setScale(0.75f);
+            m_title->setPosition({ size.width / 2.f, size.height / 2.f + 112.f });
             this->addChild(m_title);
+
+            auto* hint = CCLabelBMFont::create("Help cards cost points, curses earn them", "chatFont.fnt");
+            hint->setScale(0.6f);
+            hint->setOpacity(190);
+            hint->setPosition({ size.width / 2.f, size.height / 2.f + 92.f });
+            this->addChild(hint);
+            m_hint = hint;
 
             m_menu = CCMenu::create();
             m_menu->setPosition({ 0.f, 0.f });
             this->addChild(m_menu);
 
-            constexpr float CARD_W = 120.f;
-            constexpr float CARD_H = 150.f;
-            constexpr float GAP = 14.f;
+            constexpr float CARD_W = 122.f;
+            constexpr float CARD_H = 160.f;
+            constexpr float GAP = 16.f;
             float const total = CARD_W * static_cast<float>(offer.size()) + GAP * static_cast<float>(offer.size() - 1);
             for (std::size_t i = 0; i < offer.size(); ++i) {
                 auto* face = this->makeCard(offer[i], CARD_W, CARD_H);
                 auto* button = CCMenuItemSpriteExtra::create(face, this, menu_selector(CardPicker::onPick));
                 button->setTag(static_cast<int>(i));
+                // 카드는 크므로 누를 때 살짝만 커지게 한다(기본은 1.26배).
+                button->m_scaleMultiplier = 1.06f;
                 button->setPosition({
                     size.width / 2.f - total / 2.f + CARD_W / 2.f + static_cast<float>(i) * (CARD_W + GAP),
-                    size.height / 2.f - 5.f
+                    size.height / 2.f - 14.f
                 });
                 m_menu->addChild(button);
             }
 
-            m_count = CCLabelBMFont::create("", "bigFont.fnt");
+            m_count = CCLabelBMFont::create("", "goldFont.fnt");
             m_count->setPosition({ size.width / 2.f, size.height / 2.f });
             m_count->setVisible(false);
             this->addChild(m_count);
@@ -279,32 +290,50 @@ namespace {
             face->setContentSize({ width, height });
             face->setAnchorPoint({ 0.5f, 0.5f });
 
-            auto* background = CCLayerColor::create(
-                help ? ccColor4B{ 22, 78, 46, 240 } : ccColor4B{ 78, 24, 66, 240 }, width, height);
-            face->addChild(background);
+            // 바탕은 Geode 의 목록이 쓰는 판을 카드 색으로 물들인 것. 도움은 초록, 저주는 보라.
+            auto* frame = NineSlice::create("GJ_square02.png");
+            frame->setContentSize({ width, height });
+            frame->setAnchorPoint({ 0.f, 0.f });
+            face->addChild(frame);
+
+            auto* tint = NineSlice::create("square02b_001.png");
+            tint->setContentSize({ width - 12.f, height - 12.f });
+            tint->setAnchorPoint({ 0.f, 0.f });
+            tint->setPosition({ 6.f, 6.f });
+            tint->setColor(help ? ccColor3B{ 40, 170, 90 } : ccColor3B{ 160, 50, 150 });
+            tint->setOpacity(110);
+            face->addChild(tint);
 
             auto* kind = CCLabelBMFont::create(help ? "HELP" : "CURSE", "goldFont.fnt");
             kind->setScale(0.45f);
-            kind->setPosition({ width / 2.f, height - 14.f });
+            kind->setColor(help ? ccColor3B{ 150, 255, 170 } : ccColor3B{ 255, 150, 240 });
+            kind->setPosition({ width / 2.f, height - 16.f });
             face->addChild(kind);
 
+            if (auto* icon = CCSprite::createWithSpriteFrameName(help ? "GJ_completesIcon_001.png" : "exMark_001.png")) {
+                float const size = std::max(icon->getContentSize().width, icon->getContentSize().height);
+                icon->setScale(size > 0.f ? 26.f / size : 1.f);
+                icon->setPosition({ width / 2.f, height - 42.f });
+                face->addChild(icon);
+            }
+
             auto* name = CCLabelBMFont::create(card ? card->name.c_str() : id.c_str(), "bigFont.fnt");
-            name->limitLabelWidth(width - 14.f, 0.55f, 0.2f);
-            name->setPosition({ width / 2.f, height - 40.f });
+            name->limitLabelWidth(width - 18.f, 0.5f, 0.2f);
+            name->setPosition({ width / 2.f, height - 70.f });
             face->addChild(name);
 
             auto* text = CCLabelBMFont::create(
-                card ? card->text.c_str() : "", "chatFont.fnt", (width - 16.f) / 0.6f, kCCTextAlignmentCenter);
-            text->setScale(0.6f);
-            text->setPosition({ width / 2.f, height / 2.f - 8.f });
+                card ? card->text.c_str() : "", "chatFont.fnt", (width - 20.f) / 0.55f, kCCTextAlignmentCenter);
+            text->setScale(0.55f);
+            text->setPosition({ width / 2.f, height / 2.f - 22.f });
             face->addChild(text);
 
             int const points = card ? card->points : 0;
             auto* score = CCLabelBMFont::create(
                 fmt::format("{}{} pts", points > 0 ? "+" : "", points).c_str(), "goldFont.fnt");
-            score->setScale(0.5f);
+            score->setScale(0.55f);
             score->setColor(points >= 0 ? ccColor3B{ 120, 255, 120 } : ccColor3B{ 255, 140, 140 });
-            score->setPosition({ width / 2.f, 16.f });
+            score->setPosition({ width / 2.f, 20.f });
             face->addChild(score);
             return face;
         }
@@ -318,6 +347,7 @@ namespace {
             // 단추 줄을 이 콜백 안에서 지우지 않는다. 숨기고 막아만 둔다.
             m_menu->setEnabled(false);
             m_menu->setVisible(false);
+            m_hint->setVisible(false);
 
             g_run.picks.push_back(m_offer[index]);
             applyCard(layer, m_offer[index]);
@@ -340,8 +370,8 @@ namespace {
 
         void step() {
             m_count->setString(std::to_string(m_left).c_str());
-            m_count->setScale(1.4f);
-            m_count->runAction(CCEaseBackOut::create(CCScaleTo::create(0.3f, 1.f)));
+            m_count->setScale(2.4f);
+            m_count->runAction(CCEaseBackOut::create(CCScaleTo::create(0.3f, 1.6f)));
             --m_left;
         }
 
@@ -385,7 +415,9 @@ class $modify(RoguelikePlayLayer, PlayLayer) {
         hud->setID("roguelike-hud"_spr);
         hud->setScale(0.55f);
         hud->setAnchorPoint({ 0.5f, 1.f });
-        hud->setPosition({ size.width / 2.f, size.height - 6.f });
+        // 진행 막대가 맨 위 가운데에 있으므로 그 아래에 둔다.
+        hud->setPosition({ size.width / 2.f, size.height - 26.f });
+        hud->setOpacity(220);
         hud->setAlignment(kCCTextAlignmentCenter);
         this->addChild(hud, HUD_Z);
         g_run.hud = hud;

@@ -426,6 +426,14 @@ namespace gdu::daily {
         return g_today;
     }
 
+    std::optional<int> secondsLeft() {
+        if (!today()) {
+            return std::nullopt;
+        }
+        auto const left = std::chrono::duration_cast<std::chrono::seconds>(g_todayUntil - Clock::now()).count();
+        return static_cast<int>(std::max<std::int64_t>(left, 0));
+    }
+
     Tier const* tier(std::string const& id) {
         auto const& current = today();
         if (!current) {

@@ -1,6 +1,7 @@
 #include <Geode/Geode.hpp>
 #include <Geode/modify/MenuLayer.hpp>
 #include <Geode/modify/PlayLayer.hpp>
+#include <Geode/ui/BasedButtonSprite.hpp>
 
 #include "Settings.hpp"
 #include "daily/Daily.hpp"
@@ -20,25 +21,27 @@ class $modify(DailyMenuLayer, MenuLayer) {
         // 메뉴에서 곧장 레벨에 들어가도 오늘의 도전인지 알아보도록 미리 받아 둔다.
         gdu::daily::refreshInBackground();
 
-        auto* sprite = ButtonSprite::create("Daily", "goldFont.fnt", "GJ_button_01.png", 0.8f);
+        // 메뉴 아래쪽 줄의 다른 단추(업적, 설정, 통계)와 같은 크기의 둥근 단추. 크기를
+        // 따로 줄이지 않는다. 줄인 단추는 누를 때 원래 크기를 기준으로 커져 튀어 보인다.
+        auto* sprite = CircleButtonSprite::createWithSpriteFrameName(
+            "GJ_timeIcon_001.png", 1.1f, CircleBaseColor::Green, CircleBaseSize::MediumAlt
+        );
         auto* button = CCMenuItemSpriteExtra::create(
             sprite, this, menu_selector(DailyMenuLayer::onDailyChallenge)
         );
         button->setID("daily-challenge-button"_spr);
 
         // 아래쪽 단추 줄이 있으면 거기에 끼운다. 다른 모드가 그 줄을 옮기거나
-        // 없앴으면 왼쪽 아래에 따로 둔다.
+        // 없앴으면 왼쪽 가운데에 따로 둔다.
         if (auto* bottom = this->getChildByID("bottom-menu")) {
-            button->setScale(0.7f);
             bottom->addChild(button);
             bottom->updateLayout();
             return true;
         }
 
         auto const size = CCDirector::sharedDirector()->getWinSize();
-        button->setScale(0.6f);
-        auto const half = button->getScaledContentSize() / 2.f;
-        button->setPosition({ 8.f + half.width, size.height / 2.f });
+        auto const half = button->getContentSize() / 2.f;
+        button->setPosition({ 12.f + half.width, size.height / 2.f });
 
         auto* menu = CCMenu::create();
         menu->setID("daily-challenge-menu"_spr);

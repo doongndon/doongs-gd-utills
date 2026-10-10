@@ -134,8 +134,8 @@
         "daily-server": {
             "type": "string",
             "name": "Daily server address",
-            "description": "Address of the daily challenge server, for example https://your-server.onrender.com. The server lives in the daily-server folder of this mod's repository.",
-            "default": ""
+            "description": "Address of the daily challenge server. Leave it as it is unless you run your own (the server lives in the daily-server folder of this mod's repository).",
+            "default": "https://doongs-gd-utills.onrender.com"
         },
         "update-title": {
             "type": "title",

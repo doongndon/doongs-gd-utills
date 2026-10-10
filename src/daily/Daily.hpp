@@ -98,6 +98,8 @@ namespace gdu::daily {
     void refreshInBackground();
 
     std::optional<Today> const& today();
+    // 다음 도전까지 남은 초. 오늘의 도전을 아직 모르면 비어 있다.
+    std::optional<int> secondsLeft();
     Tier const* tier(std::string const& id);
     Progress progress(std::string const& tier);
 

@@ -1,5 +1,7 @@
 # v1.7.0
  - Added the **Roguelike** daily: the game stops at 25, 50 and 75% and offers three cards. Help cards (shield, slow) cost points, curses (mirror, rush, dark, ghost...) earn them, and dying loses every card. Highest score wins
+ - Buttons no longer jump to full size when pressed. Shrunk buttons kept the game's default size as the size to grow from
+ - The daily challenge points at the official server out of the box
  - Added the **Daily Challenge**: a Daily button on the main menu. Every day the server picks one level per difficulty - a main level, or a random rated level from Easy up to Easy Demon - and everyone races to beat it in the fewest attempts. Set the server address in the mod settings first
 
 # v1.6.1

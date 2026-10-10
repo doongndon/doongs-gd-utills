@@ -109,6 +109,7 @@ namespace gdu {
         auto* sprite = ButtonSprite::create(text, "goldFont.fnt", "GJ_button_01.png", 0.8f);
         auto* button = CCMenuItemSpriteExtra::create(sprite, this, handler);
         button->setScale(0.75f);
+        button->m_baseScale = 0.75f;
         button->setPosition({ x, y });
         m_buttonMenu->addChild(button);
     }

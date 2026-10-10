@@ -28,6 +28,7 @@ class $modify(DecoEditorUI, EditorUI) {
         );
         button->setID("deco-tools-button"_spr);
         button->setScale(0.6f);
+        button->m_baseScale = 0.6f;
 
         auto const buttonSize = button->getScaledContentSize();
         button->setPosition({

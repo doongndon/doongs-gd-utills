@@ -60,6 +60,7 @@ class $modify(LevelInfoPauseLayer, PauseLayer) {
         );
         button->setID("copy-id-button"_spr);
         button->setScale(0.6f);
+        button->m_baseScale = 0.6f;
         button->setPosition({
             PADDING + button->getScaledContentSize().width / 2.f,
             PADDING + label->getScaledContentSize().height + 16.f
