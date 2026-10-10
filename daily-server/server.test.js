@@ -2,7 +2,10 @@
 // GD 서버 대신 가짜 검색을 넣어 시험한다. 답의 모양은 gd-docs 의 getGJLevels21 예시를 따른다.
 const test = require("node:test");
 const assert = require("node:assert");
-const { createApp, dateOf, levelFor, cleanName, secondsLeft, parseSearch, pickRated, TIERS } = require("./server");
+const {
+    createApp, dateOf, levelFor, cleanName, secondsLeft, parseSearch, pickRated, offersFor, scoreOf,
+    TIERS, CARDS,
+} = require("./server");
 const levels = require("./levels.json");
 
 // 2026-10-10 12:00 한국 시간
@@ -226,4 +229,67 @@ test("the HTTP routes answer", async () => {
     finally {
         made.server.close();
     }
+});
+
+test("the roguelike deck: one help and two curses per stop, no curse twice a day, same for everyone", () => {
+    for (let day = 0; day < 100; day++) {
+        const date = new Date(Date.parse("2026-01-01T00:00:00Z") + day * 86400000).toISOString().slice(0, 10);
+        const offers = offersFor(date);
+        assert.deepStrictEqual(offers, offersFor(date));
+        assert.strictEqual(offers.length, 3);
+        const curses = [];
+        for (const offer of offers) {
+            assert.strictEqual(offer.length, 3);
+            assert.strictEqual(offer.filter((id) => CARDS[id].kind === "help").length, 1);
+            curses.push(...offer.filter((id) => CARDS[id].kind === "curse"));
+        }
+        assert.strictEqual(new Set(curses).size, curses.length, `${date} repeats a curse`);
+    }
+});
+
+test("roguelike scores add the card points to 100, and made-up picks are refused", () => {
+    const offers = offersFor("2026-10-10");
+    const picks = offers.map((offer) => offer[0]);
+    const expected = 100 + picks.reduce((sum, id) => sum + CARDS[id].points, 0);
+    assert.strictEqual(scoreOf("2026-10-10", picks), expected);
+    assert.strictEqual(scoreOf("2026-10-10", picks.slice(0, 2)), null);
+    assert.strictEqual(scoreOf("2026-10-10", [picks[0], picks[1], "not-a-card"]), null);
+    // 지점의 차례를 바꿔 고른 것도 받지 않는다(첫 지점에 셋째 지점의 저주를 고른 경우)
+    const thirdOnly = offers[2].find((id) => !offers[0].includes(id));
+    assert.strictEqual(scoreOf("2026-10-10", [thirdOnly, picks[1], picks[2]]), null);
+});
+
+test("the roguelike level is a main level and never the main slot's level", async () => {
+    for (let day = 0; day < 120; day++) {
+        const made = app({ time: NOON_KST + day * 86400000 });
+        const today = await made.today("roguelike");
+        const main = today.tiers.find((t) => t.id === "main").level;
+        assert.strictEqual(today.level.kind, "main");
+        assert.notStrictEqual(today.level.id, main.id);
+        assert.deepStrictEqual(today.roguelike.offers, offersFor(today.date));
+    }
+});
+
+test("the roguelike board ranks by score, then by attempts", async () => {
+    const made = app();
+    const today = await made.today("roguelike");
+    const offers = today.roguelike.offers;
+    const best = offers.map((offer) => offer.reduce((a, b) => (CARDS[a].points >= CARDS[b].points ? a : b)));
+    const worst = offers.map((offer) => offer.reduce((a, b) => (CARDS[a].points <= CARDS[b].points ? a : b)));
+
+    await result(made, { tier: "roguelike", cards: worst, attempts: 2, player: { id: "acc:1", name: "safe" } });
+    made.setClock(NOON_KST + 1000);
+    await result(made, { tier: "roguelike", cards: best, attempts: 40, player: { id: "acc:2", name: "bold" } });
+    made.setClock(NOON_KST + 2000);
+    const [status, reply] = await result(made, { tier: "roguelike", cards: best, attempts: 9, player: { id: "acc:3", name: "bolder" } });
+    assert.strictEqual(status, 200);
+    assert.deepStrictEqual(reply.top.map((row) => row.name), ["bolder", "bold", "safe"]);
+    assert.strictEqual(reply.top[0].score, scoreOf(today.date, best));
+    assert.strictEqual(reply.me.rank, 1);
+
+    // 점수가 낮은 기록으로는 바뀌지 않는다
+    const [, again] = await result(made, { tier: "roguelike", cards: worst, attempts: 1, player: { id: "acc:3", name: "bolder" } });
+    assert.strictEqual(again.me.score, scoreOf(today.date, best));
+
+    assert.strictEqual((await result(made, { tier: "roguelike", cards: ["shield"] }))[0], 400);
 });

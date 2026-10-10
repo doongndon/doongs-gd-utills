@@ -6,6 +6,8 @@
 //   무작위로 골라 온다. 한 번 고른 레벨은 그날 하루 바뀌지 않는다.
 // - 난이도마다 따로 순위를 매긴다. 적은 시도로 깬 사람이 위다.
 // - 한 사람은 난이도마다 하루에 한 줄. 더 적은 시도로 다시 깨면 그 기록으로 바꾼다.
+// - 로그라이크 칸은 메인 레벨 하나에 그날의 카드 묶음이 붙는다. 25%, 50%, 75% 에서
+//   카드를 한 장씩 고르며 깨고, 점수(100 + 카드 점수)가 높은 순으로 매긴다.
 //
 // 기록은 정직함에 기댄다. 모드가 연습 모드나 시작 위치로 깬 것은 보내지 않지만,
 // 서버는 누가 보냈는지 확인할 방법이 없다. 상금을 거는 대회가 아니라 재미로
@@ -43,7 +45,69 @@ const TIERS = [
     { id: "harder", name: "Harder", diff: "4" },
     { id: "insane", name: "Insane", diff: "5" },
     { id: "easy-demon", name: "Easy Demon", diff: "-2", demonFilter: "1" },
+    { id: "roguelike", name: "Roguelike" },
 ];
+
+// 로그라이크 칸의 카드. 25%, 50%, 75% 에서 세 장 가운데 한 장을 고른다. 도움 카드는
+// 점수를 깎고 저주 카드는 점수를 올린다. 효과는 모드가 id 를 보고 건다. 이름과
+// 설명은 모드가 그대로 화면에 띄운다.
+const CARDS = {
+    shield: { kind: "help", points: -30, name: "Shield", text: "Survive one death, then 1s of safety" },
+    slow: { kind: "help", points: -20, name: "Slow", text: "The game runs at 0.85x speed" },
+    mirror: { kind: "curse", points: 25, name: "Mirror", text: "The screen is flipped" },
+    mini: { kind: "curse", points: 15, name: "Mini", text: "You turn mini until a portal says otherwise" },
+    fast: { kind: "curse", points: 30, name: "Rush", text: "The game runs at 1.2x speed" },
+    dark: { kind: "curse", points: 20, name: "Dark", text: "The screen goes dim" },
+    shake: { kind: "curse", points: 15, name: "Quake", text: "The screen shakes" },
+    invisible: { kind: "curse", points: 35, name: "Ghost", text: "Your icon disappears" },
+    mute: { kind: "curse", points: 10, name: "Silence", text: "The music stops" },
+    flash: { kind: "curse", points: 25, name: "Blackout", text: "The screen blacks out now and then" },
+};
+const MILESTONES = [25, 50, 75];
+const BASE_SCORE = 100;
+
+// 수 하나로 이어지는 주사위. 같은 씨앗이면 언제나 같은 수가 나온다(mulberry32).
+function seeded(seed) {
+    let state = seed >>> 0;
+    return () => {
+        state = (state + 0x6d2b79f5) >>> 0;
+        let t = state;
+        t = Math.imul(t ^ (t >>> 15), t | 1);
+        t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+}
+
+// 그날의 카드 묶음. 지점마다 도움 한 장, 저주 두 장. 저주는 하루 안에서 겹치지 않는다.
+// 날짜만 같으면 누구에게나 같은 묶음이 나온다.
+function offersFor(date) {
+    const roll = seeded(hash(`${date}:cards`));
+    const take = (pool) => pool.splice(Math.floor(roll() * pool.length), 1)[0];
+    const helps = Object.keys(CARDS).filter((id) => CARDS[id].kind === "help");
+    const curses = Object.keys(CARDS).filter((id) => CARDS[id].kind === "curse");
+    return MILESTONES.map(() => {
+        const help = helps[Math.floor(roll() * helps.length)];
+        const offer = [help, take(curses), take(curses)];
+        // 도움 카드가 늘 왼쪽에 있지 않게 섞는다.
+        for (let i = offer.length - 1; i > 0; i--) {
+            const j = Math.floor(roll() * (i + 1));
+            [offer[i], offer[j]] = [offer[j], offer[i]];
+        }
+        return offer;
+    });
+}
+
+// 고른 카드가 그날 그 지점에 나온 카드인지 보고 점수를 셈한다. 맞지 않으면 null.
+function scoreOf(date, cards) {
+    if (!Array.isArray(cards) || cards.length !== MILESTONES.length) return null;
+    const offers = offersFor(date);
+    let score = BASE_SCORE;
+    for (let i = 0; i < cards.length; i++) {
+        if (!offers[i].includes(cards[i])) return null;
+        score += CARDS[cards[i]].points;
+    }
+    return score;
+}
 const TIER_IDS = new Set(TIERS.map((tier) => tier.id));
 
 function dateOf(now) {
@@ -233,6 +297,16 @@ function createApp({
             save();
             return today.levels.main;
         }
+        if (tier.id === "roguelike") {
+            // 로그라이크는 메인 레벨로 한다. GD 서버가 안 받아도 할 수 있고, 메인 칸과는
+            // 다른 레벨이 되게 한다. 모드가 레벨만 보고 어느 칸인지 알아봐야 해서다.
+            const main = levelFor(levels, date);
+            let pick = levels[hash(`${date}:roguelike`) % levels.length];
+            if (levels.length > 1 && pick.id === main.id) pick = levels[(levels.indexOf(pick) + 1) % levels.length];
+            today.levels.roguelike = pick;
+            save();
+            return pick;
+        }
 
         const key = `${date}/${tier.id}`;
         if (picking.has(key)) return picking.get(key);
@@ -255,18 +329,28 @@ function createApp({
         return job;
     }
 
+    // 로그라이크는 점수가 높은 순, 같으면 적은 시도 순. 다른 칸은 적은 시도 순.
+    function better(a, b) {
+        if ((a.score ?? 0) !== (b.score ?? 0)) return (b.score ?? 0) - (a.score ?? 0);
+        return a.attempts - b.attempts || a.at - b.at;
+    }
+
     function board(date, tierId, playerId) {
         const players = days[date]?.boards?.[tierId] || {};
         const rows = Object.entries(players)
             .map(([id, row]) => ({ id, ...row }))
-            .sort((a, b) => a.attempts - b.attempts || a.at - b.at);
+            .sort(better);
+        const shown = ({ name, attempts, score }) => (score === undefined ? { name, attempts } : { name, attempts, score });
         const result = {
-            top: rows.slice(0, TOP).map(({ name, attempts }) => ({ name, attempts })),
+            top: rows.slice(0, TOP).map(shown),
             total: rows.length,
         };
         if (playerId) {
             const index = rows.findIndex((row) => row.id === playerId);
-            if (index >= 0) result.me = { rank: index + 1, attempts: rows[index].attempts };
+            if (index >= 0) {
+                const { attempts, score } = rows[index];
+                result.me = { rank: index + 1, attempts, ...(score === undefined ? {} : { score }) };
+            }
         }
         return result;
     }
@@ -297,6 +381,7 @@ function createApp({
             tiers: TIERS.map((t, i) => ({ id: t.id, name: t.name, level: picked[i] })),
             tier: tier.id,
             level: picked[TIERS.indexOf(tier)],
+            roguelike: { milestones: MILESTONES, base: BASE_SCORE, offers: offersFor(date), cards: CARDS },
             ...board(date, tier.id, playerId),
         };
     }
@@ -317,12 +402,18 @@ function createApp({
         if (!Number.isInteger(body.attempts) || body.attempts < 1 || body.attempts > MAX_ATTEMPTS) {
             return [400, { error: "bad-attempts" }];
         }
+        let score;
+        if (body.tier === "roguelike") {
+            score = scoreOf(date, body.cards);
+            if (score === null) return [400, { error: "bad-cards" }];
+        }
         if (!allowPost(address)) return [429, { error: "slow-down" }];
 
         const players = (day(date).boards[body.tier] ||= {});
         const previous = players[body.player.id];
-        if (!previous || body.attempts < previous.attempts) {
-            players[body.player.id] = { name, attempts: body.attempts, at: now() };
+        const row = { name, attempts: body.attempts, at: now(), ...(score === undefined ? {} : { score }) };
+        if (!previous || better(row, previous) < 0) {
+            players[body.player.id] = row;
         }
         else {
             previous.name = name;
@@ -390,7 +481,10 @@ function createApp({
     return { server, today, submit };
 }
 
-module.exports = { createApp, dateOf, levelFor, cleanName, secondsLeft, parseSearch, pickRated, TIERS };
+module.exports = {
+    createApp, dateOf, levelFor, cleanName, secondsLeft, parseSearch, pickRated, offersFor, scoreOf,
+    TIERS, CARDS, MILESTONES,
+};
 
 if (require.main === module) {
     // 호스팅 업체는 포트를 자기가 정해서 알려준다. 알려주지 않으면(내 PC 에서 직접

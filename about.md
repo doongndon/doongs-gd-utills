@@ -17,6 +17,12 @@ A small quality-of-life pack:
   first time you open the level that day, practice runs included; clears in practice mode or from a
   start position do not count. Results are taken on trust - it is a game, not a tournament. Needs a
   server address in the settings (the server is in `daily-server/` of the repository).
+- **Roguelike daily** — one more slot in the daily challenge. The game stops at 25, 50 and 75%
+  and offers three cards: help cards (Shield, Slow) cost points, curses (Mirror, Mini, Rush,
+  Dark, Quake, Ghost, Silence, Blackout) earn them. Pick one, and the run carries on after a
+  three-second countdown. Dying loses every card - the next attempt starts empty. Score is 100
+  plus your cards; highest score wins, fewer attempts breaks ties. Everyone gets the same cards
+  that day.
 
 - **Check for updates** — a button in the settings that pulls the newest release from GitHub
   and installs it. Restart the game to apply.

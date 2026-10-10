@@ -19,6 +19,25 @@ namespace gdu::daily {
     struct Row {
         std::string name;
         int attempts = 0;
+        // 로그라이크 칸에만 있다.
+        std::optional<int> score;
+    };
+
+    // 로그라이크 칸의 카드 한 장. 효과는 Roguelike.cpp 가 id 를 보고 건다.
+    struct Card {
+        std::string name;
+        std::string text;
+        bool help = false;
+        int points = 0;
+    };
+
+    // 그날의 로그라이크 규칙. 서버가 정하고 모두에게 같다.
+    struct Roguelike {
+        std::vector<int> milestones;
+        int base = 100;
+        // 지점마다 고를 수 있는 카드 세 장.
+        std::vector<std::vector<std::string>> offers;
+        std::map<std::string, Card> cards;
     };
 
     struct Level {
@@ -42,6 +61,8 @@ namespace gdu::daily {
         std::vector<Row> top;
         int total = 0;
         std::optional<int> myRank;
+        std::optional<int> myScore;
+        Roguelike roguelike;
     };
 
     // 이 기기에서 오늘 난이도 하나에 한 도전. 게임을 껐다 켜도 이어지도록 모드
@@ -54,7 +75,12 @@ namespace gdu::daily {
         int clearedWith = 0;
         // 깬 기록을 서버가 받았는지. 못 보냈으면 다음에 오늘의 도전을 열 때 다시 보낸다.
         bool submitted = false;
+        // 로그라이크 칸에서 깼을 때 고른 카드와 점수.
+        std::vector<std::string> cards;
+        int score = 0;
     };
+
+    inline constexpr char const* ROGUELIKE = "roguelike";
 
     bool configured();
 
@@ -78,7 +104,11 @@ namespace gdu::daily {
     // 이 레벨이 오늘의 도전이면 그 난이도를 돌려준다.
     std::optional<std::string> tierOf(GJGameLevel* level);
     void startPlaying(GJGameLevel* level);
-    void cleared(GJGameLevel* level);
+    // cards 는 로그라이크 칸에서 이번 판에 고른 카드. 다른 칸에서는 비어 있다.
+    void cleared(GJGameLevel* level, std::vector<std::string> const& cards = {});
+
+    // 로그라이크 점수. 그날 규칙에 맞지 않는 카드가 섞이면 비어 있다.
+    std::optional<int> scoreOf(std::vector<std::string> const& cards);
 
     // 깼는데 서버가 못 받은 기록이 있으면 다시 보낸다.
     void resubmitPending();

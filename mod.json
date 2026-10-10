@@ -128,7 +128,7 @@
         "daily-enabled": {
             "type": "bool",
             "name": "Daily challenge button",
-            "description": "Adds a Daily button to the main menu. Every day the server picks one level per difficulty - a main level, or a random rated level from Easy up to Easy Demon - and everyone using this mod races to beat it in the fewest attempts. Practice runs count as attempts; clears in practice mode or from a start position do not count.",
+            "description": "Adds a Daily button to the main menu. Every day the server picks one level per difficulty - a main level, or a random rated level from Easy up to Easy Demon - and everyone using this mod races to beat it in the fewest attempts. Practice runs count as attempts; clears in practice mode or from a start position do not count. The Roguelike slot stops the game at 25, 50 and 75% to let you pick a card - help cards cost points, curses earn them, and dying loses them all.",
             "default": true
         },
         "daily-server": {

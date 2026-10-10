@@ -22,7 +22,7 @@ namespace {
 
     // 서버의 난이도 목록(daily-server/server.js 의 TIERS)과 같은 차례다. 서버의 답이
     // 오기 전에도 단추를 그릴 수 있게 여기에도 적어 둔다.
-    constexpr std::array<TierButton, 7> TIER_BUTTONS = {{
+    constexpr std::array<TierButton, 8> TIER_BUTTONS = {{
         { "main", "Main" },
         { "easy", "Easy" },
         { "normal", "Normal" },
@@ -30,6 +30,7 @@ namespace {
         { "harder", "Harder" },
         { "insane", "Insane" },
         { "easy-demon", "Demon" },
+        { "roguelike", "Rogue" },
     }};
 
     CCLabelBMFont* addLabel(CCNode* parent, float y, char const* font, float scale) {
@@ -170,9 +171,19 @@ namespace gdu {
         bool const boardIsThisTier = today->boardTier == m_tier;
 
         auto const progress = daily::progress(m_tier);
+        bool const roguelike = m_tier == daily::ROGUELIKE;
         std::string status;
         if (error) {
             status = *error;
+        }
+        else if (roguelike && progress.clearedWith > 0) {
+            status = boardIsThisTier && today->myRank
+                ? fmt::format("Best run: {} points - rank #{} of {}",
+                              progress.score, *today->myRank, today->total)
+                : fmt::format("Best run: {} points", progress.score);
+        }
+        else if (roguelike) {
+            status = "Pick a card at 25, 50 and 75%. Curses score more - die and you lose them all";
         }
         else if (progress.clearedWith > 0) {
             status = boardIsThisTier && today->myRank
@@ -199,7 +210,13 @@ namespace gdu {
         else {
             for (std::size_t i = 0; i < today->top.size(); ++i) {
                 auto const& row = today->top[i];
-                fmt::format_to(std::back_inserter(board), "{}. {}  -  {}\n", i + 1, row.name, row.attempts);
+                if (row.score) {
+                    fmt::format_to(std::back_inserter(board), "{}. {}  -  {} pts ({} tries)\n",
+                                   i + 1, row.name, *row.score, row.attempts);
+                }
+                else {
+                    fmt::format_to(std::back_inserter(board), "{}. {}  -  {}\n", i + 1, row.name, row.attempts);
+                }
             }
             if (today->total > static_cast<int>(today->top.size())) {
                 fmt::format_to(std::back_inserter(board), "... {} players today", today->total);
