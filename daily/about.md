@@ -32,6 +32,12 @@ gets the same cards that day. You can look at today's cards in the Cards tab bef
 Practice mode and start positions do not count. Attempts count from the first time you open the
 level that day, practice runs included.
 
+## Language
+
+The window, the cards, the picker and the HUD are in Korean by default. Switch to English
+under Language in the mod settings. Korean text is drawn in a bundled bitmap font made
+from BM JUA (Woowa Brothers, SIL Open Font License 1.1), so no other mod is needed.
+
 ## Fair play
 
 Results are taken on trust. The server cannot see how a level was beaten - this is a game,

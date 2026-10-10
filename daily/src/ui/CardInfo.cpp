@@ -1,5 +1,6 @@
 #include "CardInfo.hpp"
 
+#include "../Text.hpp"
 #include "CardFace.hpp"
 
 using namespace geode::prelude;
@@ -40,8 +41,7 @@ namespace gdu::ui {
         m_mainLayer->addChild(face);
         m_card = face;
 
-        auto* hint = CCLabelBMFont::create("Tap anywhere to close", "chatFont.fnt");
-        hint->setScale(0.55f);
+        auto* hint = text::label(std::string(text::tr("info.close")), text::Font::Chat, 0.55f);
         hint->setOpacity(170);
         hint->setPosition({ size.width / 2.f, 22.f });
         m_mainLayer->addChild(hint);

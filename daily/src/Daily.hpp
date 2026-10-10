@@ -100,8 +100,8 @@ namespace gdu::daily {
         int feature = 0;
         int stars = 0;
         std::string creator;
-        // GD 가 쓰는 길이 이름(Tiny, Short ...). 모르면 비어 있다.
-        std::string length;
+        // 0 Tiny ~ 4 XL. 모르면 -1. 이름은 Text.hpp 의 lengthName.
+        int length = -1;
     };
 
     // 팝업에서 마지막으로 고른 난이도. 다음에 열 때도 그 난이도로 연다.

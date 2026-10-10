@@ -23,10 +23,22 @@
             "resources/*.png"
         ],
         "files": [
-            "resources/*.ogg"
+            "resources/*.ogg",
+            "resources/fonts/*.fnt",
+            "resources/fonts/*.png"
         ]
     },
     "settings": {
+        "language": {
+            "type": "string",
+            "name": "Language",
+            "description": "The language of the Daily Challenge window, the card picker and the run HUD. Korean text is drawn in a bundled font, so it works without any other mod.",
+            "default": "korean",
+            "one-of": [
+                "korean",
+                "english"
+            ]
+        },
         "sound-effects": {
             "type": "bool",
             "name": "Sound effects",

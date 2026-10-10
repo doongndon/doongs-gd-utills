@@ -3,7 +3,6 @@
 #include <Geode/ui/BasedButtonSprite.hpp>
 #include <Geode/ui/General.hpp>
 #include <Geode/ui/LoadingSpinner.hpp>
-#include <Geode/ui/MDPopup.hpp>
 #include <Geode/ui/NineSlice.hpp>
 
 #include <algorithm>
@@ -14,12 +13,16 @@
 
 #include "../Art.hpp"
 #include "../Daily.hpp"
+#include "../Text.hpp"
 #include "CardFace.hpp"
 #include "CardInfo.hpp"
+#include "HelpPopup.hpp"
 
 using namespace geode::prelude;
 
 namespace {
+    using gdu::text::Font;
+
     constexpr float WIDTH = 420.f;
     constexpr float HEIGHT = 290.f;
 
@@ -45,22 +48,15 @@ namespace {
     constexpr ccColor3B GOLD{ 255, 210, 90 };
     constexpr ccColor3B MEDALS[] = { { 255, 210, 60 }, { 215, 225, 240 }, { 235, 155, 90 } };
 
-    struct TabInfo {
-        char const* id;
-        char const* label;
+    // 서버의 난이도 목록(daily-server/server.js 의 TIERS)과 같은 차례다. 서버의 답이
+    // 오기 전에도 탭을 그릴 수 있게 여기에도 적어 둔다. 이름은 Text.cpp 에 있다.
+    constexpr std::array<char const*, 7> TABS = {
+        "main", "easy", "normal", "hard", "harder", "insane", "easy-demon",
     };
 
-    // 서버의 난이도 목록(daily-server/server.js 의 TIERS)과 같은 차례다. 서버의 답이
-    // 오기 전에도 탭을 그릴 수 있게 여기에도 적어 둔다.
-    constexpr std::array<TabInfo, 7> TABS = {{
-        { "main", "Main" },
-        { "easy", "Easy" },
-        { "normal", "Normal" },
-        { "hard", "Hard" },
-        { "harder", "Harder" },
-        { "insane", "Insane" },
-        { "easy-demon", "Demon" },
-    }};
+    std::string tr(char const* key) {
+        return std::string(gdu::text::tr(key));
+    }
 
     // 어두운 반투명 판. Geode 의 모드 목록이 쓰는 것과 같은 그림이다.
     CCNode* panel(float width, float height) {
@@ -72,48 +68,17 @@ namespace {
         return bg;
     }
 
-    CCLabelBMFont* label(CCNode* parent, char const* font, float scale, CCPoint position, CCPoint anchor = { 0.5f, 0.5f }) {
-        auto* text = CCLabelBMFont::create("", font);
-        text->setScale(scale);
+    CCLabelBMFont* label(CCNode* parent, Font font, float scale, CCPoint position, CCPoint anchor = { 0.5f, 0.5f }) {
+        auto* text = gdu::text::label("", font, scale);
         text->setAnchorPoint(anchor);
         text->setPosition(position);
         parent->addChild(text);
         return text;
     }
 
-    void setText(CCLabelBMFont* label, std::string const& text, float width, float scale) {
-        label->setString(text.c_str());
-        label->limitLabelWidth(width, scale, 0.15f);
-    }
-
     std::string clock(int seconds) {
         seconds = std::max(0, seconds);
         return fmt::format("{:02}:{:02}:{:02}", seconds / 3600, seconds % 3600 / 60, seconds % 60);
-    }
-
-    // 도움말. 그날의 카드 목록은 서버가 준 것으로 채운다.
-    std::string helpText() {
-        std::string text =
-            "## A roguelike run, every day\n"
-            "Each tab has one level for today. Play it in **normal mode**:\n\n"
-            "- At **25%, 50% and 75%** the game stops and deals **three cards**. Pick one and the run "
-            "goes on after **3, 2, 1**.\n"
-            "- **Help** cards cost points. **Curses** earn points.\n"
-            "- **Dying loses every card.** The next attempt starts with none.\n"
-            "- A clear scores **100 + your cards**. The highest score wins; fewer attempts break ties.\n"
-            "- Everyone playing the same tab gets the same cards that day.\n\n"
-            "Practice mode and start positions do not count. Attempts count from the first time you open "
-            "the level that day, practice included.\n";
-        if (auto const& today = gdu::daily::today(); today && !today->roguelike.cards.empty()) {
-            text += "\n## The cards\n";
-            for (auto const& [id, card] : today->roguelike.cards) {
-                text += fmt::format(
-                    "- **{}** ({}, {}): {}\n", card.name, card.help ? "help" : "curse",
-                    gdu::art::pointsText(card.points), card.text
-                );
-            }
-        }
-        return text;
     }
 }
 
@@ -133,13 +98,18 @@ namespace gdu::ui {
             return false;
         }
         this->setID("daily-popup"_spr);
-        this->setTitle("Daily Challenge");
         // GD 의 데일리 레벨 창처럼 네 귀에 금장식을 단다.
         addSideArt(m_mainLayer, SideArt::All, SideArtStyle::PopupGold, false);
 
+        // Popup::setTitle 은 goldFont 로만 그려 한글이 빈칸이 되므로 직접 단다.
+        auto* title = text::label(tr("title"), Font::Gold, 0.75f);
+        text::fit(title, Font::Gold, WIDTH - 120.f, 0.75f, 0.2f);
+        title->setPosition({ WIDTH / 2.f, HEIGHT - 20.f });
+        m_mainLayer->addChild(title, 2);
+
         m_tier = daily::selectedTier();
-        if (std::none_of(TABS.begin(), TABS.end(), [&](TabInfo const& tab) { return m_tier == tab.id; })) {
-            m_tier = TABS[0].id;
+        if (std::none_of(TABS.begin(), TABS.end(), [&](char const* id) { return m_tier == id; })) {
+            m_tier = TABS[0];
         }
 
         if (auto* info = CCSprite::createWithSpriteFrameName("GJ_infoIcon_001.png")) {
@@ -158,7 +128,7 @@ namespace gdu::ui {
             icon->setPosition({ WIDTH / 2.f - 78.f, 31.f });
             m_mainLayer->addChild(icon);
         }
-        m_timer = label(m_mainLayer, "chatFont.fnt", 0.55f, { WIDTH / 2.f - 70.f, 31.f }, { 0.f, 0.5f });
+        m_timer = label(m_mainLayer, Font::Chat, 0.55f, { WIDTH / 2.f - 70.f, 31.f }, { 0.f, 0.5f });
 
         // 받아 둔 것이 있으면 먼저 보여 주고, 뒤에서 새로 받아 바꾼다.
         this->render(std::nullopt);
@@ -173,7 +143,7 @@ namespace gdu::ui {
         float const slot = (TABS_RIGHT - TABS_LEFT) / static_cast<float>(TABS.size());
         for (std::size_t i = 0; i < TABS.size(); ++i) {
             Tab tab;
-            tab.id = TABS[i].id;
+            tab.id = TABS[i];
             tab.holder = CCNode::create();
             tab.holder->setContentSize({ TAB_W, TAB_H });
 
@@ -192,8 +162,8 @@ namespace gdu::ui {
                 tab.holder->addChild(tab.glow, 0);
             }
 
-            tab.label = CCLabelBMFont::create(TABS[i].label, "bigFont.fnt");
-            tab.label->limitLabelWidth(TAB_W - 2.f, 0.28f, 0.1f);
+            tab.label = text::label(text::tabName(tab.id), Font::Big, 0.28f);
+            text::fit(tab.label, Font::Big, TAB_W - 2.f, 0.28f, 0.1f);
             tab.label->setPosition({ TAB_W / 2.f, 6.f });
             tab.holder->addChild(tab.label, 2);
 
@@ -251,17 +221,17 @@ namespace gdu::ui {
         m_levelPanel->addChild(m_levelArt);
 
         float const middle = LEVEL_W / 2.f;
-        m_levelName = label(m_levelPanel, "bigFont.fnt", 0.5f, { middle, 66.f });
-        m_creator = label(m_levelPanel, "goldFont.fnt", 0.45f, { middle, 52.f });
-        m_info = label(m_levelPanel, "chatFont.fnt", 0.42f, { middle, 41.f });
+        m_levelName = label(m_levelPanel, Font::Big, 0.5f, { middle, 66.f });
+        m_creator = label(m_levelPanel, Font::Gold, 0.45f, { middle, 52.f });
+        m_info = label(m_levelPanel, Font::Chat, 0.42f, { middle, 41.f });
         m_info->setOpacity(175);
 
         auto* divider = CCLayerColor::create({ 255, 255, 255, 35 }, LEVEL_W - 24.f, 1.f);
         divider->setPosition({ 12.f, 32.f });
         m_levelPanel->addChild(divider);
 
-        m_status = label(m_levelPanel, "goldFont.fnt", 0.5f, { middle, 21.f });
-        m_detail = label(m_levelPanel, "chatFont.fnt", 0.42f, { middle, 8.f });
+        m_status = label(m_levelPanel, Font::Gold, 0.5f, { middle, 21.f });
+        m_detail = label(m_levelPanel, Font::Chat, 0.42f, { middle, 8.f });
         m_detail->setOpacity(190);
 
         // GD 의 레벨 화면에 있는 그 큰 초록 재생 단추.
@@ -287,8 +257,12 @@ namespace gdu::ui {
 
         // 순위표와 오늘의 카드를 오가는 단추 두 개.
         float x = BOARD_X + 6.f;
-        for (auto [text, tag] : { std::pair{ "Ranking", 0 }, std::pair{ "Cards", 1 } }) {
-            auto* sprite = ButtonSprite::create(text, "bigFont.fnt", "GJ_button_04.png", 0.6f);
+        for (auto [key, tag] : { std::pair{ "view.ranking", 0 }, std::pair{ "view.cards", 1 } }) {
+            auto const caption = tr(key);
+            auto* sprite = ButtonSprite::create(
+                caption.c_str(), text::fontFor(caption, Font::Big), "GJ_button_04.png",
+                0.6f * text::factorFor(caption, Font::Big)
+            );
             auto* button = CCMenuItemSpriteExtra::create(sprite, this, menu_selector(DailyPopup::onView));
             button->setTag(tag);
             float const scale = 15.f / std::max(1.f, button->getContentSize().height);
@@ -319,8 +293,7 @@ namespace gdu::ui {
         m_rows->setContentSize({ BOARD_W, PANEL_H });
         m_boardPanel->addChild(m_rows);
 
-        m_empty = CCLabelBMFont::create("", "chatFont.fnt", (BOARD_W - 30.f) / 0.6f, kCCTextAlignmentCenter);
-        m_empty->setScale(0.6f);
+        m_empty = text::lines("", Font::Chat, 0.6f);
         m_empty->setOpacity(175);
         m_empty->setPosition({ BOARD_W / 2.f, 64.f });
         m_boardPanel->addChild(m_empty);
@@ -336,7 +309,7 @@ namespace gdu::ui {
         m_loading = loading;
         m_spinner->setVisible(loading);
         if (loading) {
-            m_empty->setString("");
+            text::set(m_empty, "", Font::Chat, 0.6f);
         }
     }
 
@@ -406,62 +379,75 @@ namespace gdu::ui {
         }
 
         float const width = LEVEL_W - 14.f;
+        auto status = [&](std::string const& text, ccColor3B color) {
+            m_status->setColor(color);
+            text::setFit(m_status, text, Font::Gold, width, 0.5f, 0.15f);
+        };
+        auto detail = [&](std::string const& text) {
+            text::setFit(m_detail, text, Font::Chat, width, 0.42f, 0.15f);
+        };
+        constexpr ccColor3B PLAIN{ 255, 255, 255 };
+        constexpr ccColor3B BAD{ 255, 120, 120 };
+
         if (!hasLevel) {
-            setText(m_levelName, "", width, 0.5f);
-            setText(m_creator, "", width, 0.45f);
-            setText(m_info, "", width, 0.42f);
+            text::setFit(m_levelName, "", Font::Big, width, 0.5f, 0.15f);
+            text::setFit(m_creator, "", Font::Gold, width, 0.45f, 0.15f);
+            text::setFit(m_info, "", Font::Chat, width, 0.42f, 0.15f);
             if (error) {
-                m_status->setColor({ 255, 120, 120 });
-                setText(m_status, "OFFLINE", width, 0.5f);
-                setText(m_detail, *error, width, 0.42f);
+                status(tr("status.offline"), BAD);
+                detail(*error);
             }
             else {
-                m_status->setColor({ 255, 255, 255 });
                 bool const waiting = m_loading || !daily::today();
-                setText(m_status, waiting ? "LOADING..." : "NOT READY", width, 0.5f);
-                setText(m_detail, waiting ? "" : "The server is still picking this level", width, 0.42f);
+                status(tr(waiting ? "status.loading" : "status.notReady"), PLAIN);
+                detail(waiting ? "" : tr("detail.notReady"));
             }
             return;
         }
 
         auto const& level = *tier->level;
-        setText(m_levelName, level.name, width, 0.5f);
-        setText(m_creator, look.creator.empty() ? "" : "by " + look.creator, width, 0.45f);
-        std::string info = level.mainLevel ? "Main level" : tier->name;
-        if (!look.length.empty()) {
-            info = look.length + "  -  " + info;
+        text::setFit(m_levelName, level.name, Font::Big, width, 0.5f, 0.15f);
+        text::setFit(
+            m_creator, look.creator.empty() ? "" : text::format("level.by", look.creator), Font::Gold, width, 0.45f, 0.15f
+        );
+        std::string info = level.mainLevel ? tr("level.main") : text::tierName(tier->id, tier->name);
+        if (auto const length = text::lengthName(look.length); !length.empty()) {
+            info = text::format("level.info", length, info);
         }
-        setText(m_info, info, width, 0.42f);
+        text::setFit(m_info, info, Font::Chat, width, 0.42f, 0.15f);
 
         auto const& today = daily::today();
         auto const progress = daily::progress(m_tier);
         auto const attempts = daily::attemptsToday(m_tier);
-        std::string const tries = attempts
-            ? fmt::format("{} attempt{} today", *attempts, *attempts == 1 ? "" : "s")
-            : "";
 
         if (error) {
-            m_status->setColor({ 255, 120, 120 });
-            setText(m_status, "OFFLINE", width, 0.5f);
-            setText(m_detail, *error, width, 0.42f);
+            status(tr("status.offline"), BAD);
+            detail(*error);
         }
         else if (progress.clearedWith > 0) {
-            m_status->setColor({ 255, 255, 255 });
-            setText(m_status, fmt::format("BEST {} PTS", progress.score), width, 0.5f);
+            status(text::format("status.best", progress.score), PLAIN);
             bool const ranked = today && today->boardTier == m_tier && today->myRank;
-            setText(m_detail, ranked
-                ? fmt::format("Rank #{} of {}  -  {} attempts", *today->myRank, today->total, progress.clearedWith)
-                : fmt::format("Cleared in {} attempts", progress.clearedWith), width, 0.42f);
+            detail(ranked
+                ? text::format("detail.ranked", *today->myRank, today->total, progress.clearedWith)
+                : text::format("detail.cleared", progress.clearedWith));
         }
         else if (progress.baseline >= 0) {
-            m_status->setColor({ 255, 255, 255 });
-            setText(m_status, progress.bestPercent > 0 ? fmt::format("BEST {}%", progress.bestPercent) : "IN PROGRESS", width, 0.5f);
-            setText(m_detail, tries.empty() ? "No clear yet" : tries, width, 0.42f);
+            status(progress.bestPercent > 0
+                ? text::format("status.bestPercent", progress.bestPercent)
+                : tr("status.inProgress"), PLAIN);
+            if (!attempts) {
+                detail(tr("detail.noClear"));
+            }
+            else if (*attempts == 1) {
+                detail(tr("detail.triesOne"));
+            }
+            else {
+                detail(text::format("detail.tries", *attempts));
+            }
         }
         else {
-            m_status->setColor({ 255, 255, 255 });
-            setText(m_status, "NOT PLAYED YET", width, 0.5f);
-            setText(m_detail, "Cards at 25, 50 and 75%", width, 0.42f);
+            status(tr("status.notPlayed"), PLAIN);
+            detail(tr("detail.notPlayed"));
         }
     }
 
@@ -482,14 +468,14 @@ namespace gdu::ui {
             return;
         }
         if (!today || today->boardTier != m_tier) {
-            m_empty->setString(today ? "" : "No data yet.\nTap the refresh button.");
+            text::set(m_empty, today ? "" : tr("board.noData"), Font::Chat, 0.6f);
             return;
         }
         if (today->top.empty()) {
-            m_empty->setString("No runs yet today.\nBe the first!");
+            text::set(m_empty, tr("board.empty"), Font::Chat, 0.6f);
             return;
         }
-        m_empty->setString("");
+        text::set(m_empty, "", Font::Chat, 0.6f);
 
         // 내가 10위 밖이면 마지막 줄을 내 줄로 바꾼다.
         std::vector<std::pair<int, daily::Row>> rows;
@@ -498,11 +484,10 @@ namespace gdu::ui {
         }
         int const mine = today->myRank.value_or(0);
         if (mine > static_cast<int>(rows.size()) && !rows.empty()) {
-            auto const progress = daily::progress(m_tier);
             daily::Row me;
-            me.name = "You";
+            me.name = tr("board.you");
             me.score = today->myScore;
-            me.cards = progress.cards;
+            me.cards = daily::progress(m_tier).cards;
             if (rows.size() >= ROWS) {
                 rows.back() = { mine, me };
             }
@@ -522,19 +507,22 @@ namespace gdu::ui {
                 m_rows->addChild(bar);
             }
 
-            auto* number = label(m_rows, "goldFont.fnt", 0.42f, { 15.f, y });
-            number->setString(std::to_string(rank).c_str());
+            auto* number = CCLabelBMFont::create(std::to_string(rank).c_str(), "goldFont.fnt");
+            number->setPosition({ 15.f, y });
+            number->limitLabelWidth(20.f, 0.42f, 0.2f);
             if (rank <= 3) {
                 number->setColor(MEDALS[rank - 1]);
             }
-            number->limitLabelWidth(20.f, 0.42f, 0.2f);
+            m_rows->addChild(number);
 
-            auto* name = label(m_rows, "chatFont.fnt", 0.52f, { 28.f, y }, { 0.f, 0.5f });
-            name->setString(row.name.c_str());
-            name->limitLabelWidth(92.f, 0.52f, 0.25f);
+            auto* name = text::label(row.name, Font::Chat, 0.52f);
+            name->setAnchorPoint({ 0.f, 0.5f });
+            name->setPosition({ 28.f, y });
+            text::fit(name, Font::Chat, 92.f, 0.52f, 0.25f);
             if (isMe) {
                 name->setColor(GOLD);
             }
+            m_rows->addChild(name);
 
             for (std::size_t c = 0; c < row.cards.size() && c < 3; ++c) {
                 if (auto* icon = art::cardIcon(row.cards[c])) {
@@ -544,9 +532,12 @@ namespace gdu::ui {
                 }
             }
 
-            auto* value = label(m_rows, "bigFont.fnt", 0.36f, { BOARD_W - 8.f, y }, { 1.f, 0.5f });
-            value->setString(std::to_string(row.score.value_or(0)).c_str());
+            auto* value = CCLabelBMFont::create(std::to_string(row.score.value_or(0)).c_str(), "bigFont.fnt");
+            value->setScale(0.36f);
+            value->setAnchorPoint({ 1.f, 0.5f });
+            value->setPosition({ BOARD_W - 8.f, y });
             value->setColor(rank <= 3 ? MEDALS[rank - 1] : ccColor3B{ 255, 255, 255 });
+            m_rows->addChild(value);
         }
     }
 
@@ -554,13 +545,13 @@ namespace gdu::ui {
     void DailyPopup::renderCards() {
         m_rows->removeAllChildren();
         this->clearChips();
-        m_empty->setString("");
+        text::set(m_empty, "", Font::Chat, 0.6f);
 
         auto const* tier = daily::tier(m_tier);
         auto const& today = daily::today();
         if (!tier || !today || tier->offers.empty()) {
             if (!m_loading) {
-                m_empty->setString("No cards yet.\nTap the refresh button.");
+                text::set(m_empty, tr("cards.empty"), Font::Chat, 0.6f);
             }
             return;
         }
@@ -571,8 +562,10 @@ namespace gdu::ui {
         for (std::size_t stop = 0; stop < tier->offers.size() && stop < 3; ++stop) {
             float const y = 106.f - 40.f * static_cast<float>(stop);
             int const percent = stop < milestones.size() ? milestones[stop] : 0;
-            auto* mark = label(m_rows, "goldFont.fnt", 0.48f, { 20.f, y });
-            mark->setString(fmt::format("{}%", percent).c_str());
+            auto* mark = CCLabelBMFont::create(fmt::format("{}%", percent).c_str(), "goldFont.fnt");
+            mark->setScale(0.48f);
+            mark->setPosition({ 20.f, y });
+            m_rows->addChild(mark);
 
             auto const& offer = tier->offers[stop];
             for (std::size_t i = 0; i < offer.size() && i < 3; ++i) {
@@ -592,7 +585,7 @@ namespace gdu::ui {
 
     void DailyPopup::renderTimer() {
         auto const left = daily::secondsLeft();
-        m_timer->setString(left ? fmt::format("New challenge in {}", clock(*left)).c_str() : "");
+        text::set(m_timer, left ? text::format("timer", clock(*left)) : "", Font::Chat, 0.55f);
     }
 
     void DailyPopup::tick(float) {
@@ -607,10 +600,10 @@ namespace gdu::ui {
 
     void DailyPopup::onTab(CCObject* sender) {
         auto const index = static_cast<std::size_t>(static_cast<CCNode*>(sender)->getTag());
-        if (index >= TABS.size() || m_tier == TABS[index].id) {
+        if (index >= TABS.size() || m_tier == TABS[index]) {
             return;
         }
-        m_tier = TABS[index].id;
+        m_tier = TABS[index];
         daily::selectTier(m_tier);
         this->render(std::nullopt);
         this->refresh();
@@ -636,7 +629,7 @@ namespace gdu::ui {
     }
 
     void DailyPopup::onInfo(CCObject*) {
-        if (auto* popup = MDPopup::create(false, "How it works", helpText(), "OK")) {
+        if (auto* popup = HelpPopup::create()) {
             popup->show();
         }
     }

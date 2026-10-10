@@ -10,6 +10,7 @@
 
 #include "../Art.hpp"
 #include "../Daily.hpp"
+#include "../Text.hpp"
 #include "../ui/CardPicker.hpp"
 #include "../ui/RunHud.hpp"
 
@@ -233,12 +234,13 @@ namespace {
         flash->runAction(CCSequence::create(CCFadeTo::create(0.3f, 0), CCRemoveSelf::create(true), nullptr));
         layer->addChild(flash, HUD_Z - 1);
 
-        auto* text = CCLabelBMFont::create("SHIELD!", "bigFont.fnt");
+        auto* text = gdu::text::label(std::string(gdu::text::tr("shield")), gdu::text::Font::Big, 1.f);
+        float const scale = text->getScale();
         text->setColor({ 150, 235, 255 });
         text->setPosition({ size.width / 2.f, size.height * 0.68f });
-        text->setScale(0.3f);
+        text->setScale(scale * 0.3f);
         text->runAction(CCSequence::create(
-            CCEaseBackOut::create(CCScaleTo::create(0.2f, 1.f)),
+            CCEaseBackOut::create(CCScaleTo::create(0.2f, scale)),
             CCDelayTime::create(0.3f),
             CCSpawn::create(CCFadeOut::create(0.3f), CCMoveBy::create(0.3f, { 0.f, 12.f }), nullptr),
             CCRemoveSelf::create(true),

@@ -1,4 +1,5 @@
 # v2.0.0
+ - Korean by default: every text in the mod, the card names and descriptions included, with a bundled Korean font (English in the settings)
  - New look: hand-drawn cards for every help card and curse, a card back, and a new menu button
  - The card picker deals the cards face down, flips them, and sends your pick flying into its slot
  - 3, 2, 1, GO! countdown with its own sounds, plus sounds for dealing, flipping, picking and shields (can be turned off)

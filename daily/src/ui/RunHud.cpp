@@ -10,6 +10,7 @@
 
 #include "../Art.hpp"
 #include "../Daily.hpp"
+#include "../Text.hpp"
 
 using namespace geode::prelude;
 
@@ -29,13 +30,6 @@ namespace {
 
     CCPoint slotPosition(std::size_t index) {
         return { SLOT_X + SLOT_STEP * static_cast<float>(index), SLOT_Y };
-    }
-
-    std::string upper(std::string text) {
-        std::transform(text.begin(), text.end(), text.begin(), [](unsigned char c) {
-            return static_cast<char>(std::toupper(c));
-        });
-        return text;
     }
 
     std::string speedText(float speed) {
@@ -88,10 +82,11 @@ namespace gdu::ui {
         }
 
         auto const* entry = daily::tier(tier);
-        auto* name = CCLabelBMFont::create(upper(entry ? entry->name : tier).c_str(), "goldFont.fnt");
+        auto const title = text::upper(text::tierName(tier, entry ? entry->name : tier));
+        auto* name = text::label(title, text::Font::Gold, 0.42f);
         name->setAnchorPoint({ 0.f, 0.5f });
         name->setPosition({ 22.f, TOP_Y + 0.5f });
-        name->limitLabelWidth(width - 62.f, 0.42f, 0.2f);
+        text::fit(name, text::Font::Gold, width - 62.f, 0.42f, 0.2f);
         this->addChild(name, 1);
 
         m_score = CCLabelBMFont::create("0", "bigFont.fnt");
@@ -260,13 +255,11 @@ namespace gdu::ui {
         banner->setPosition({ size.width / 2.f, size.height - 80.f });
         parent->addChild(banner, this->getZOrder());
 
-        auto* title = CCLabelBMFont::create("DAILY RUN CLEAR", "goldFont.fnt");
-        title->setScale(0.75f);
+        auto* title = text::label(std::string(text::tr("hud.clear")), text::Font::Gold, 0.75f);
         title->setPosition({ 0.f, 22.f });
         banner->addChild(title);
 
-        auto* points = CCLabelBMFont::create(fmt::format("{} POINTS", score).c_str(), "bigFont.fnt");
-        points->setScale(0.7f);
+        auto* points = text::label(text::format("hud.points", score), text::Font::Big, 0.7f);
         points->setColor({ 255, 225, 100 });
         points->setPosition({ 0.f, 0.f });
         banner->addChild(points);

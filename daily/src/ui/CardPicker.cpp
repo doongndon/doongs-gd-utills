@@ -7,12 +7,14 @@
 
 #include "../Art.hpp"
 #include "../Daily.hpp"
+#include "../Text.hpp"
 #include "CardFace.hpp"
 
 using namespace geode::prelude;
 
 namespace {
     using gdu::ui::CardFace;
+    using gdu::text::Font;
 
     // 고르는 동안의 배경 어둡기. 카운트다운 때는 판이 보여야 준비할 수 있으므로 옅게.
     constexpr GLubyte DIM = 175;
@@ -33,19 +35,15 @@ namespace {
     constexpr float FLIGHT = 0.38f;
     constexpr float BEAT = 1.f;
 
-    std::string upper(std::string text) {
-        std::transform(text.begin(), text.end(), text.begin(), [](unsigned char c) {
-            return static_cast<char>(std::toupper(c));
-        });
-        return text;
-    }
-
-    CCLabelBMFont* label(CCNode* parent, char const* text, char const* font, float scale, CCPoint position, int z = 5) {
-        auto* node = CCLabelBMFont::create(text, font);
-        node->setScale(scale);
+    CCLabelBMFont* label(CCNode* parent, std::string const& text, Font font, float scale, CCPoint position, int z = 5) {
+        auto* node = gdu::text::label(text, font, scale);
         node->setPosition(position);
         parent->addChild(node, z);
         return node;
+    }
+
+    std::string tr(char const* key) {
+        return std::string(gdu::text::tr(key));
     }
 }
 
@@ -82,17 +80,19 @@ namespace gdu::ui {
 
         float const w = size.width;
         float const h = size.height;
-        m_title = label(m_mainLayer, fmt::format("{}%", percent).c_str(), "bigFont.fnt", 0.95f, { w / 2.f, h - 30.f });
-        m_subtitle = label(m_mainLayer, "CHOOSE A CARD", "goldFont.fnt", 0.65f, { w / 2.f, h - 56.f });
+        m_title = label(m_mainLayer, fmt::format("{}%", percent), Font::Big, 0.95f, { w / 2.f, h - 30.f });
+        m_subtitle = label(m_mainLayer, tr("picker.choose"), Font::Gold, 0.65f, { w / 2.f, h - 56.f });
+        text::fit(m_subtitle, Font::Gold, w - 40.f, 0.65f, 0.2f);
 
 #ifdef GEODE_IS_DESKTOP
-        char const* hint = "Click a card, or press 1, 2 or 3";
+        auto const hint = tr("picker.hintDesktop");
 #else
-        char const* hint = "Tap a card";
+        auto const hint = tr("picker.hintMobile");
 #endif
-        m_hint = label(m_mainLayer, hint, "chatFont.fnt", 0.6f, { w / 2.f, 50.f });
-        m_rule = label(m_mainLayer, "Help cards cost points. Curses earn them. Dying loses every card.",
-            "chatFont.fnt", 0.5f, { w / 2.f, 34.f });
+        m_hint = label(m_mainLayer, hint, Font::Chat, 0.6f, { w / 2.f, 50.f });
+        text::fit(m_hint, Font::Chat, w - 40.f, 0.6f, 0.2f);
+        m_rule = label(m_mainLayer, tr("picker.rule"), Font::Chat, 0.5f, { w / 2.f, 34.f });
+        text::fit(m_rule, Font::Chat, w - 40.f, 0.5f, 0.2f);
         for (auto* node : { m_hint, m_rule }) {
             node->setOpacity(0);
         }
@@ -134,7 +134,7 @@ namespace gdu::ui {
             m_glows.push_back(glow);
         }
 
-        m_count = label(m_mainLayer, "", "bigFont.fnt", 1.7f, { w / 2.f, h / 2.f + 12.f }, 30);
+        m_count = label(m_mainLayer, "", Font::Big, 1.7f, { w / 2.f, h / 2.f + 12.f }, 30);
         return true;
     }
 
@@ -310,15 +310,18 @@ namespace gdu::ui {
             m_flying = flying;
         }
 
+        auto const title = text::upper(text::cardName(id, card ? card->name : id));
+        auto const size = CCDirector::sharedDirector()->getWinSize();
         m_title->stopAllActions();
-        m_title->setString(upper(card ? card->name : id).c_str());
+        text::setFit(m_title, title, Font::Big, size.width - 40.f, 0.95f, 0.3f);
+        float const titleScale = m_title->getScale();
         m_title->setColor(art::kindLight(help));
         m_title->setOpacity(255);
-        m_title->setScale(1.25f);
-        m_title->runAction(CCEaseBackOut::create(CCScaleTo::create(0.25f, 0.95f)));
+        m_title->setScale(titleScale * 1.3f);
+        m_title->runAction(CCEaseBackOut::create(CCScaleTo::create(0.25f, titleScale)));
         m_subtitle->stopAllActions();
         m_subtitle->setOpacity(255);
-        m_subtitle->setString(fmt::format("{} POINTS", art::pointsText(points)).c_str());
+        text::set(m_subtitle, text::format("picker.points", art::pointsText(points)), Font::Gold, 0.65f);
         m_subtitle->setColor(art::pointsColor(points));
         for (auto* node : { m_hint, m_rule }) {
             node->stopAllActions();
@@ -378,11 +381,13 @@ namespace gdu::ui {
 
     void CardPicker::count(int value) {
         m_count->stopAllActions();
-        m_count->setString(value > 0 ? std::to_string(value).c_str() : "GO!");
+        auto const shown = value > 0 ? std::to_string(value) : tr("picker.go");
+        text::set(m_count, shown, Font::Big, 1.7f);
+        float const scale = m_count->getScale();
         m_count->setColor(value > 0 ? ccColor3B{ 255, 255, 255 } : ccColor3B{ 120, 255, 140 });
         m_count->setOpacity(255);
-        m_count->setScale(2.6f);
-        m_count->runAction(CCEaseBackOut::create(CCScaleTo::create(0.25f, 1.7f)));
+        m_count->setScale(scale * 1.55f);
+        m_count->runAction(CCEaseBackOut::create(CCScaleTo::create(0.25f, scale)));
         art::play(value > 0 ? "sfx-tick.ogg" : "sfx-go.ogg", value > 0 ? 0.6f : 0.75f);
     }
 
@@ -404,7 +409,7 @@ namespace gdu::ui {
         }
 
         m_count->runAction(CCSpawn::create(
-            CCScaleTo::create(0.45f, 2.3f),
+            CCScaleTo::create(0.45f, m_count->getScale() * 1.35f),
             CCFadeOut::create(0.45f),
             nullptr
         ));

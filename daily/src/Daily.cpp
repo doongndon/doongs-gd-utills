@@ -1,5 +1,8 @@
 #include "Daily.hpp"
 
+#include "Text.hpp"
+#include "ui/Toast.hpp"
+
 #include <Geode/utils/async.hpp>
 
 #include <algorithm>
@@ -213,7 +216,7 @@ namespace {
 
     std::string tierName(std::string const& id) {
         auto const* found = gdu::daily::tier(id);
-        return found ? found->name : id;
+        return gdu::text::tierName(id, found ? found->name : id);
     }
 
     void submitNext() {
@@ -260,18 +263,16 @@ namespace {
                     // 다시 보내도 같은 답이 오므로 내려놓는다.
                     progress.submitted = true;
                     saveStored();
-                    Notification::create(
-                        response.code() == 409 ? "The daily challenge ended before your result arrived"
-                                               : "The server could not accept this daily result",
-                        NotificationIcon::Warning, 4.f)->show();
+                    gdu::ui::toast(
+                        std::string(gdu::text::tr(response.code() == 409 ? "toast.dayOver" : "toast.refused")),
+                        false
+                    );
                     submitNext();
                     return;
                 }
                 if (!response.ok()) {
                     log::warn("daily: could not send the result (HTTP {})", response.code());
-                    Notification::create(
-                        "Could not send your daily result - it will retry next time you open Daily",
-                        NotificationIcon::Error, 4.f)->show();
+                    gdu::ui::toast(std::string(gdu::text::tr("toast.failed")), false);
                     return;
                 }
 
@@ -290,10 +291,12 @@ namespace {
                     }
                     total = static_cast<int>(root["total"].asInt().unwrapOr(0));
                 }
-                auto const what = fmt::format("Daily {} cleared with {} points", tierName(tierID), score);
-                Notification::create(
-                    rank ? fmt::format("{} - rank #{} of {}", what, *rank, total) : what,
-                    NotificationIcon::Success, 5.f)->show();
+                auto const name = tierName(tierID);
+                gdu::ui::toast(
+                    rank ? gdu::text::format("toast.ranked", name, score, *rank, total)
+                         : gdu::text::format("toast.cleared", name, score),
+                    true
+                );
                 submitNext();
             }
         );
@@ -315,11 +318,11 @@ namespace gdu::daily {
 
     std::optional<std::string> acceptToday(web::WebResponse const& response) {
         if (!response.ok()) {
-            return fmt::format("The server did not answer (HTTP {})", response.code());
+            return text::format("error.http", response.code());
         }
         auto json = response.json();
         if (json.isErr()) {
-            return std::string("The server sent something unreadable");
+            return std::string(text::tr("error.unreadable"));
         }
 
         auto const root = json.unwrapOrDefault();
@@ -349,7 +352,7 @@ namespace gdu::daily {
             }
         }
         if (today.date.empty() || today.tiers.empty()) {
-            return std::string("The server sent an empty challenge");
+            return std::string(text::tr("error.empty"));
         }
 
         auto const& rogue = root["roguelike"];
@@ -512,9 +515,7 @@ namespace gdu::daily {
         look.feature = std::clamp(level.feature, 0, 4);
         look.stars = level.stars;
         look.creator = level.creator;
-        if (level.length >= 0 && level.length <= 4) {
-            look.length = std::string(GJGameLevel::lengthKeyToString(level.length));
-        }
+        look.length = level.length >= 0 && level.length <= 4 ? level.length : -1;
         return look;
     }
 

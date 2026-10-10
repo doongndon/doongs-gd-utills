@@ -4,11 +4,13 @@
 
 #include "../Art.hpp"
 #include "../Daily.hpp"
+#include "../Text.hpp"
 
 using namespace geode::prelude;
 
 namespace {
     using gdu::ui::CardFace;
+    using gdu::text::Font;
 
     // make_art.py 의 CARD_* 와 같은 자리(카드 안 좌표, 아래가 0).
     constexpr float RIBBON_Y = 153.f;
@@ -20,19 +22,6 @@ namespace {
     constexpr float TEXT_BOTTOM = 25.f;
     constexpr float TEXT_W = 84.f;
     constexpr float POINTS_Y = 13.f;
-
-    // 정해진 칸에 들어가도록 글자 크기를 줄여 가며 여러 줄로 쓴다.
-    CCLabelBMFont* boxedText(std::string const& text, float width, float height) {
-        CCLabelBMFont* label = nullptr;
-        for (float scale = 0.55f; scale > 0.27f; scale -= 0.04f) {
-            label = CCLabelBMFont::create(text.c_str(), "chatFont.fnt", width / scale, kCCTextAlignmentCenter);
-            label->setScale(scale);
-            if (label->getContentSize().height * scale <= height) {
-                break;
-            }
-        }
-        return label;
-    }
 
     // 카드 그림을 카드 크기에 맞춰 놓는다. 화질 설정과 상관없이 같은 크기가 된다.
     CCNode* cardArt(char const* name, ccColor3B fallbackColor) {
@@ -87,8 +76,8 @@ namespace gdu::ui {
         this->addChild(m_front);
         m_front->addChild(cardArt(m_help ? "card-help.png" : "card-curse.png", art::kindColor(m_help)));
 
-        auto* kind = CCLabelBMFont::create(m_help ? "HELP" : "CURSE", "bigFont.fnt");
-        kind->setScale(0.38f);
+        auto* kind = text::label(std::string(text::tr(m_help ? "card.help" : "card.curse")), Font::Big, 0.38f);
+        text::fit(kind, Font::Big, 70.f, 0.38f, 0.2f);
         kind->setPosition({ WIDTH / 2.f, RIBBON_Y });
         m_front->addChild(kind);
 
@@ -98,15 +87,16 @@ namespace gdu::ui {
             m_front->addChild(icon);
         }
 
-        auto* name = CCLabelBMFont::create(card ? card->name.c_str() : id.c_str(), "bigFont.fnt");
-        name->limitLabelWidth(NAME_W, 0.55f, 0.2f);
+        auto* name = text::label(text::cardName(id, card ? card->name : id), Font::Big, 0.55f);
+        text::fit(name, Font::Big, NAME_W, 0.55f, 0.2f);
         name->setPosition({ WIDTH / 2.f, NAME_Y });
         m_front->addChild(name);
 
-        if (card && !card->text.empty()) {
-            auto* text = boxedText(card->text, TEXT_W, TEXT_TOP - TEXT_BOTTOM - 4.f);
-            text->setPosition({ WIDTH / 2.f, (TEXT_TOP + TEXT_BOTTOM) / 2.f });
-            m_front->addChild(text);
+        auto const about = text::cardText(id, card ? card->text : "");
+        if (!about.empty()) {
+            auto* label = text::boxed(about, Font::Chat, TEXT_W, TEXT_TOP - TEXT_BOTTOM - 4.f, 0.55f);
+            label->setPosition({ WIDTH / 2.f, (TEXT_TOP + TEXT_BOTTOM) / 2.f });
+            m_front->addChild(label);
         }
 
         int const points = card ? card->points : 0;
@@ -165,9 +155,9 @@ namespace gdu::ui {
         }
 
         float const textX = 12.f + iconSize;
-        auto* name = CCLabelBMFont::create(card ? card->name.c_str() : id.c_str(), "bigFont.fnt");
+        auto* name = text::label(text::cardName(id, card ? card->name : id), Font::Big, 0.34f);
         name->setAnchorPoint({ 0.f, 0.5f });
-        name->limitLabelWidth(width - textX - 4.f, 0.34f, 0.15f);
+        text::fit(name, Font::Big, width - textX - 4.f, 0.34f, 0.15f);
         name->setPosition({ textX, height * 0.66f });
         chip->addChild(name);
 
