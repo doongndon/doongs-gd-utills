@@ -16,7 +16,8 @@ void swl::Config::reload() {
     auto* mod = Mod::get();
     enabled = mod->getSettingValue<bool>("enabled");
     threshold = static_cast<float>(mod->getSettingValue<int64_t>("threshold-ms")) / 1000.f;
-    showNotice = mod->getSettingValue<bool>("show-notice");
+    tolerance = static_cast<double>(mod->getSettingValue<int64_t>("tolerance-ms"));
+    showInfo = mod->getSettingValue<bool>("show-info");
 }
 
 $on_mod(Loaded) {

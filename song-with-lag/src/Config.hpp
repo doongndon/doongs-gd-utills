@@ -8,7 +8,9 @@ namespace swl {
         bool enabled = true;
         // 이보다 긴 프레임을 렉으로 본다. 초 단위.
         float threshold = 0.04f;
-        bool showNotice = false;
+        // 노래가 레벨에서 이보다 멀어지면 옮긴다. ms 단위.
+        double tolerance = 60.0;
+        bool showInfo = false;
 
         static Config& get();
 

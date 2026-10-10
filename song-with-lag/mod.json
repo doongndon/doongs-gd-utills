@@ -8,7 +8,7 @@
     },
     "id": "doongndon.song-with-lag",
     "name": "Song With Lag",
-    "version": "v1.0.1",
+    "version": "v1.0.2",
     "developers": [
         "doongndon"
     ],
@@ -22,7 +22,7 @@
         "enabled": {
             "type": "bool",
             "name": "Song lags with the game",
-            "description": "When a frame takes too long, the level moves on by one ordinary frame instead of jumping ahead, and whenever the song gets ahead of the level it is wound back to match.",
+            "description": "When a frame takes too long, the level moves on by one ordinary frame instead of jumping ahead, and whenever the song drifts away from the level - ahead or behind - it is moved back to match.",
             "default": true
         },
         "threshold-ms": {
@@ -37,10 +37,22 @@
                 "input": true
             }
         },
-        "show-notice": {
+        "tolerance-ms": {
+            "type": "int",
+            "name": "Sync tolerance (ms)",
+            "description": "The song is moved only when it drifts further than this from the level, ahead or behind. Each move makes the sound skip slightly, so raise this if you hear it skipping when nothing lagged.",
+            "default": 60,
+            "min": 20,
+            "max": 300,
+            "control": {
+                "slider": true,
+                "input": true
+            }
+        },
+        "show-info": {
             "type": "bool",
-            "name": "Show what was absorbed",
-            "description": "Briefly shows in the top-right corner how many milliseconds the song was wound back, or \"no music\" when a lag came but no playing song was found.",
+            "name": "Show sync info",
+            "description": "Keeps a small line in the top-right corner while playing: how far the song is from the level, how many frames lagged and how many times the song was moved. If the line never appears, the mod is not running.",
             "default": false
         },
         "update-title": {

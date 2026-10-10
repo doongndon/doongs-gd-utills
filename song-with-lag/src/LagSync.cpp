@@ -4,6 +4,8 @@
 
 #include <algorithm>
 #include <chrono>
+#include <cmath>
+#include <string>
 #include <optional>
 
 #include "Config.hpp"
@@ -19,7 +21,8 @@ using namespace geode::prelude;
 //
 // 그래서 레벨이 실제로 받은 시간과 노래가 실제로 흐른 시간을 따로 센다.
 // 노래가 레벨보다 앞서 가면 그 차이만큼 노래를 되감는다. 레벨이 멈춘 만큼
-// 노래도 멈춘 셈이 된다.
+// 노래도 멈춘 셈이 된다. 반대로 기기 전체가 멈춰 소리 출력까지 밀린 탓에
+// 노래가 뒤처지면 그만큼 앞으로 당긴다. 어느 쪽이든 노래가 레벨을 따라간다.
 //
 // 렉인지는 게임이 넘겨주는 프레임 길이로 판단하면 안 된다. Smooth Fix 가
 // 이미 바꿔 놓은 값이라 렉이 걸려도 평범해 보인다. 그래서 시계를 직접 읽는다.
@@ -27,10 +30,6 @@ namespace {
     // 레벨의 노래는 음악 번호 0 에서 돈다. 게임이 "음악이 나오고 있나" 를 물을
     // 때도 이 번호를 쓴다(GameManager 의 일시정지 처리).
     constexpr int kLevelMusic = 0;
-
-    // FMOD 가 알려 주는 위치는 믹스 블록 단위로 움직여 수십 ms 쯤 흔들린다.
-    // 이보다 작은 어긋남은 되감지 않는다. 되감을 때마다 소리가 살짝 튀기 때문이다.
-    constexpr double kToleranceMs = 50.0;
 
     // 한 프레임 동안 노래가 시계보다 이만큼 더 움직였다면 렉이 아니라 누가
     // 노래 위치를 옮긴 것이다(재시작, 체크포인트, 반복 재생).
@@ -54,6 +53,12 @@ namespace {
 
         // 렉이 아닌 프레임의 평균 길이(초). 렉 프레임 대신 이만큼 진행한다.
         float normalDt = 1.f / 60.f;
+
+        // 화면 정보 줄에 띄우는 숫자들. 레벨을 새로 들어올 때 0 으로 돌린다.
+        int lagFrames = 0;
+        int moves = 0;
+        int lastMove = 0;
+        double drift = 0.0;
     };
 
     State& state() {
@@ -92,8 +97,9 @@ namespace {
     }
 
     // 레벨 노래는 정확히 target 으로 옮기고, 송 트리거로 함께 틀어 둔 곡은
-    // 같은 양만큼 되감는다. 그 곡들도 같은 시간 동안 앞서 갔기 때문이다.
-    void rewindMusic(FMOD::Channel* main, unsigned int target, unsigned int amount) {
+    // 같은 양만큼 옮긴다. 그 곡들도 같은 시간만큼 어긋났기 때문이다.
+    // shift 가 양수면 되감고, 음수면 앞으로 당긴다.
+    void moveMusic(FMOD::Channel* main, unsigned int target, int shift) {
         main->setPosition(target, FMOD_TIMEUNIT_MS);
 
         auto* engine = FMODAudioEngine::get();
@@ -101,32 +107,36 @@ namespace {
             auto* channel = engine->channelForChannelID(music.m_channelID);
             if (!channel || channel == main) continue;
             auto position = playingPositionMs(channel);
+            if (!position) continue;
+            long long const moved = static_cast<long long>(*position) - shift;
             // 되감을 만큼 흐르지 않은 채널은 방금 새로 시작한 것이다.
-            if (!position || *position < amount) continue;
-            channel->setPosition(*position - amount, FMOD_TIMEUNIT_MS);
+            if (moved < 0) continue;
+            // 곡 길이를 넘기면 FMOD 가 거절하므로 따로 막지 않는다.
+            channel->setPosition(static_cast<unsigned int>(moved), FMOD_TIMEUNIT_MS);
         }
     }
 
-    void showNotice(CCNode* layer, std::string const& text) {
-        auto* label = static_cast<CCLabelBMFont*>(layer->getChildByID("lag-notice"_spr));
+    // 화면 아래 가운데에 떠 있는 한 줄. 오른쪽 위는 일시정지 단추 자리라 피한다. 모드가 돌고 있는지, 노래를 찾았는지, 얼마나
+    // 어긋났는지를 보여 준다. 이 줄이 안 보이면 모드가 아예 돌지 않는 것이다.
+    void showInfo(CCNode* layer, std::string const& text) {
+        auto* label = static_cast<CCLabelBMFont*>(layer->getChildByID("sync-info"_spr));
         if (!label) {
             label = CCLabelBMFont::create("", "bigFont.fnt");
-            label->setID("lag-notice"_spr);
-            label->setScale(0.35f);
-            label->setAnchorPoint({ 1.f, 1.f });
+            label->setID("sync-info"_spr);
+            label->setScale(0.3f);
+            label->setAnchorPoint({ 0.5f, 0.f });
             auto const winSize = CCDirector::get()->getWinSize();
-            label->setPosition({ winSize.width - 6.f, winSize.height - 6.f });
+            label->setPosition({ winSize.width / 2.f, 6.f });
             layer->addChild(label, 1000);
         }
-
+        label->setVisible(true);
         label->setString(text.c_str());
-        label->stopAllActions();
-        label->setOpacity(255);
-        label->runAction(CCSequence::create(
-            CCDelayTime::create(0.8f),
-            CCFadeOut::create(0.4f),
-            nullptr
-        ));
+    }
+
+    void hideInfo(CCNode* layer) {
+        if (auto* label = layer->getChildByID("sync-info"_spr)) {
+            label->setVisible(false);
+        }
     }
 
     void dropAnchor() {
@@ -159,8 +169,9 @@ class $modify(SongWithLagLayer, GJBaseGameLayer) {
 
         bool const lagging = wall > config.threshold;
         if (lagging) {
+            s.lagFrames++;
             // 긴 프레임은 평범한 한 프레임으로 줄인다. 레벨이 앞으로 순간이동하지
-            // 않고 멈춘다. 앞서 간 노래는 아래에서 되감는다.
+            // 않고 멈춘다. 그동안 앞서 간 노래는 followLevel 이 되감는다.
             dt = std::min(dt, s.normalDt);
         }
         else {
@@ -170,11 +181,21 @@ class $modify(SongWithLagLayer, GJBaseGameLayer) {
         GJBaseGameLayer::update(dt);
         s.levelMs += static_cast<double>(dt) * 1000.0;
 
-        this->followLevel(play, wall, lagging);
+        char const* status = this->followLevel(play, wall);
+
+        if (config.showInfo) {
+            showInfo(play, fmt::format(
+                "song {}  diff {:+.0f}ms  lag {}  moved {} ({:+d}ms)",
+                status, s.drift, s.lagFrames, s.moves, s.lastMove
+            ));
+        }
+        else {
+            hideInfo(play);
+        }
     }
 
-    // 노래를 레벨이 받은 시간에 맞춘다.
-    void followLevel(PlayLayer* play, float wall, bool lagging) {
+    // 노래를 레벨이 받은 시간에 맞춘다. 정보 줄에 띄울 상태 한 마디를 돌려준다.
+    char const* followLevel(PlayLayer* play, float wall) {
         auto& s = state();
         auto& config = swl::Config::get();
 
@@ -182,17 +203,14 @@ class $modify(SongWithLagLayer, GJBaseGameLayer) {
         // 그때 새로 기준을 잡는다.
         if (play->m_isPaused || play->m_hasCompletedLevel || m_playerDied) {
             dropAnchor();
-            return;
+            return "idle";
         }
 
         auto* channel = levelMusicChannel();
         auto position = playingPositionMs(channel);
         if (!position) {
-            if (lagging && config.showNotice) {
-                showNotice(play, fmt::format("lag {} ms: no music", static_cast<int>(wall * 1000.f)));
-            }
             dropAnchor();
-            return;
+            return channel ? "stopped" : "not found";
         }
 
         unsigned int const music = *position;
@@ -201,11 +219,12 @@ class $modify(SongWithLagLayer, GJBaseGameLayer) {
             s.refLevelMs = s.levelMs;
             s.refMusicMs = music;
             s.lastMusicMs = music;
+            s.drift = 0.0;
         };
 
         if (!s.anchored) {
             reanchor();
-            return;
+            return "found";
         }
 
         // 이번 프레임에 노래가 시계보다 많이 움직였거나 뒤로 갔다면 누가
@@ -213,23 +232,23 @@ class $modify(SongWithLagLayer, GJBaseGameLayer) {
         double const step = static_cast<double>(music) - static_cast<double>(s.lastMusicMs);
         if (step < -kSlackMs || step > wall * 1000.0 + kSlackMs) {
             reanchor();
-            return;
+            return "jumped";
         }
         s.lastMusicMs = music;
 
         double const expected = s.refMusicMs + (s.levelMs - s.refLevelMs);
-        double const ahead = static_cast<double>(music) - expected;
-        if (ahead <= kToleranceMs || expected < 0.0) return;
+        s.drift = static_cast<double>(music) - expected;
+        if (std::abs(s.drift) <= config.tolerance || expected < 0.0) return "ok";
 
         auto const target = static_cast<unsigned int>(expected);
-        auto const amount = music - target;
-        rewindMusic(channel, target, amount);
+        int const shift = static_cast<int>(static_cast<long long>(music) - target);
+        moveMusic(channel, target, shift);
         s.lastMusicMs = target;
+        s.moves++;
+        s.lastMove = -shift;
 
-        log::debug("song rewound by {} ms (frame took {} ms)", amount, static_cast<int>(wall * 1000.f));
-        if (config.showNotice) {
-            showNotice(play, fmt::format("-{} ms", amount));
-        }
+        log::debug("song moved by {} ms (frame took {} ms)", -shift, static_cast<int>(wall * 1000.f));
+        return "moved";
     }
 };
 
@@ -242,8 +261,13 @@ class $modify(SongWithLagPlayLayer, PlayLayer) {
     }
 
     void onQuit() {
+        auto& s = state();
         dropAnchor();
-        state().lastFrame.reset();
+        s.lastFrame.reset();
+        s.lagFrames = 0;
+        s.moves = 0;
+        s.lastMove = 0;
+        s.drift = 0.0;
         PlayLayer::onQuit();
     }
 };
