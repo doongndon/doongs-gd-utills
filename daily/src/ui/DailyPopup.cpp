@@ -363,6 +363,9 @@ namespace gdu::ui {
     }
 
     void DailyPopup::render(std::optional<std::string> const& error) {
+        if (daily::today()) {
+            m_hadToday = true;
+        }
         this->paintTabs();
         this->renderLevel(error);
         if (m_view == View::Ranking) {
@@ -594,8 +597,10 @@ namespace gdu::ui {
 
     void DailyPopup::tick(float) {
         this->renderTimer();
-        // 자정이 지나 오늘의 도전이 끝났으면 새것을 받는다.
-        if (!daily::today() && !m_loading) {
+        // 자정이 지나 오늘의 도전이 끝났으면 새것을 한 번 받는다. 서버가 안 받을 때
+        // 매초 두드리지 않도록 받아 둔 것이 있다가 사라졌을 때만.
+        if (m_hadToday && !daily::today() && !m_loading) {
+            m_hadToday = false;
             this->refresh();
         }
     }

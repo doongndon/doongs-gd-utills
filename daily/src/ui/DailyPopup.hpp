@@ -67,6 +67,8 @@ namespace gdu::ui {
         std::string m_tier;
         View m_view = View::Ranking;
         bool m_loading = false;
+        // 오늘의 도전을 한 번이라도 받았는지. 자정이 지나 그것이 끝나면 한 번만 새로 받는다.
+        bool m_hadToday = false;
 
         std::vector<Tab> m_tabs;
 

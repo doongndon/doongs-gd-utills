@@ -383,7 +383,9 @@ class $modify(RoguelikePlayLayer, PlayLayer) {
         }
 
         auto const& today = gdu::daily::today();
-        if (!today || g_run.frozen || m_hasCompletedLevel) {
+        // 죽어서 다시 시작을 기다리는 동안에는 카드를 내지 않는다.
+        bool const dead = m_player1 && m_player1->m_isDead;
+        if (!today || g_run.frozen || m_hasCompletedLevel || dead) {
             return;
         }
         auto const& rules = today->roguelike;
@@ -418,6 +420,13 @@ class $modify(RoguelikePlayLayer, PlayLayer) {
             }
             g_run.frozen = false;
             g_run.picker = nullptr;
+            // 고르는 동안 뗀 점프 키는 카드 화면이 받아 버려 게임은 아직 누르고 있다고
+            // 여길 수 있다. GO 에서 모든 누름을 풀어, 다시 눌러야 뛰게 한다.
+            if (m_uiLayer) {
+                m_uiLayer->resetAllButtons();
+            }
+            this->handleButton(false, 1, true);
+            this->handleButton(false, 1, false);
         };
 
         auto* picker = gdu::ui::CardPicker::create(rules.milestones[stop], entry->offers[stop], std::move(hooks));
