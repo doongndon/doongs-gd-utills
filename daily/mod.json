@@ -12,7 +12,7 @@
     "developers": [
         "doongndon"
     ],
-    "description": "A new level every day for every difficulty, a shared leaderboard, and a roguelike run with cards.",
+    "description": "A daily roguelike run: pick a difficulty, grab cards at 25, 50 and 75%, climb the shared leaderboard.",
     "repository": "https://github.com/doongndon/doongs-gd-utills",
     "tags": [
         "gameplay",

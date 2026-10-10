@@ -222,13 +222,11 @@ namespace {
         body.set("levelId", matjson::Value(progress.levelID));
         body.set("player", playerJson);
         body.set("attempts", matjson::Value(progress.clearedWith));
-        if (*tierID == gdu::daily::ROGUELIKE) {
-            auto cards = matjson::Value::array();
-            for (auto const& card : progress.cards) {
-                cards.push(matjson::Value(card));
-            }
-            body.set("cards", cards);
+        auto cards = matjson::Value::array();
+        for (auto const& card : progress.cards) {
+            cards.push(matjson::Value(card));
         }
+        body.set("cards", cards);
 
         auto url = serverBase() + "/result";
         submitTask().spawn(
@@ -240,7 +238,7 @@ namespace {
                     .timeout(std::chrono::seconds(20))
                     .post(url);
             },
-            [tierID = *tierID, attempts = progress.clearedWith, score = progress.score](web::WebResponse response) {
+            [tierID = *tierID, score = progress.score](web::WebResponse response) {
                 auto& progress = stored().tiers[tierID];
 
                 if (response.code() == 409 || response.code() == 400) {
@@ -278,9 +276,7 @@ namespace {
                     }
                     total = static_cast<int>(root["total"].asInt().unwrapOr(0));
                 }
-                auto const what = tierID == gdu::daily::ROGUELIKE
-                    ? fmt::format("Roguelike cleared with {} points", score)
-                    : fmt::format("Daily {} cleared in {} attempts", tierName(tierID), attempts);
+                auto const what = fmt::format("Daily {} cleared with {} points", tierName(tierID), score);
                 Notification::create(
                     rank ? fmt::format("{} - rank #{} of {}", what, *rank, total) : what,
                     NotificationIcon::Success, 5.f)->show();
@@ -319,11 +315,23 @@ namespace gdu::daily {
         auto const& tiers = root["tiers"];
         if (tiers.isArray()) {
             for (auto const& value : tiers) {
-                today.tiers.push_back({
+                Tier entry{
                     .id = value["id"].asString().unwrapOr(""),
                     .name = value["name"].asString().unwrapOr("?"),
                     .level = readLevel(value["level"]),
-                });
+                };
+                if (value["offers"].isArray()) {
+                    for (auto const& offer : value["offers"]) {
+                        std::vector<std::string> ids;
+                        if (offer.isArray()) {
+                            for (auto const& id : offer) {
+                                ids.push_back(id.asString().unwrapOr(""));
+                            }
+                        }
+                        entry.offers.push_back(std::move(ids));
+                    }
+                }
+                today.tiers.push_back(std::move(entry));
             }
         }
         if (today.date.empty() || today.tiers.empty()) {
@@ -336,17 +344,6 @@ namespace gdu::daily {
             if (rogue["milestones"].isArray()) {
                 for (auto const& value : rogue["milestones"]) {
                     today.roguelike.milestones.push_back(static_cast<int>(value.asInt().unwrapOr(0)));
-                }
-            }
-            if (rogue["offers"].isArray()) {
-                for (auto const& offer : rogue["offers"]) {
-                    std::vector<std::string> ids;
-                    if (offer.isArray()) {
-                        for (auto const& id : offer) {
-                            ids.push_back(id.asString().unwrapOr(""));
-                        }
-                    }
-                    today.roguelike.offers.push_back(std::move(ids));
                 }
             }
             if (rogue["cards"].isObject()) {
@@ -477,18 +474,20 @@ namespace gdu::daily {
         saveStored();
     }
 
-    std::optional<int> scoreOf(std::vector<std::string> const& cards) {
+    std::optional<int> scoreOf(std::string const& tierID, std::vector<std::string> const& cards) {
         auto const& current = today();
-        if (!current) {
+        auto const* entry = tier(tierID);
+        if (!current || !entry) {
             return std::nullopt;
         }
         auto const& rules = current->roguelike;
-        if (cards.size() != rules.offers.size() || cards.empty()) {
+        auto const& offers = entry->offers;
+        if (cards.size() != offers.size() || cards.empty()) {
             return std::nullopt;
         }
         int score = rules.base;
         for (std::size_t i = 0; i < cards.size(); ++i) {
-            auto const& offer = rules.offers[i];
+            auto const& offer = offers[i];
             auto const card = rules.cards.find(cards[i]);
             if (std::find(offer.begin(), offer.end(), cards[i]) == offer.end() || card == rules.cards.end()) {
                 return std::nullopt;
@@ -509,19 +508,14 @@ namespace gdu::daily {
         }
         int const attempts = std::max(1, level->m_attempts.value() - progress.baseline);
 
-        if (*tierID == ROGUELIKE) {
-            // 로그라이크는 더 높은 점수로 다시 깨면 그 기록을 다시 보낸다.
-            auto const score = scoreOf(cards);
-            if (!score || (progress.clearedWith > 0 && *score <= progress.score)) {
-                return;
-            }
-            progress.cards = cards;
-            progress.score = *score;
-        }
-        // 다른 칸은 처음 깬 것만 친다. 그 뒤에 다시 깨면 시도가 더 쌓였을 뿐이다.
-        else if (progress.clearedWith > 0) {
+        // 더 높은 점수로 다시 깨면 그 기록을 다시 보낸다. 점수가 같거나 낮으면 시도만
+        // 더 쌓인 것이라 보낼 것이 없다.
+        auto const score = scoreOf(*tierID, cards);
+        if (!score || (progress.clearedWith > 0 && *score <= progress.score)) {
             return;
         }
+        progress.cards = cards;
+        progress.score = *score;
         progress.clearedWith = attempts;
         progress.submitted = false;
         saveStored();

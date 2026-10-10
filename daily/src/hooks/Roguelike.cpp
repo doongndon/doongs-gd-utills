@@ -14,7 +14,7 @@
 
 using namespace geode::prelude;
 
-// 로그라이크 데일리. 오늘의 도전 가운데 로그라이크 칸의 레벨을 일반 모드로 하면,
+// 오늘의 도전은 모두 로그라이크다. 어느 난이도든 그날의 레벨을 일반 모드로 하면,
 // 25%, 50%, 75% 에서 게임이 멈추고 카드 세 장이 나온다. 한 장을 고르면 3초 뒤
 // 이어서 달린다. 죽으면 그 판의 카드는 모두 사라지고 처음부터 다시 고른다.
 //
@@ -27,8 +27,9 @@ namespace {
     constexpr float SAFE_SECONDS = 1.f;
 
     struct Run {
-        // 지금 레벨이 로그라이크 칸의 레벨인지. 레벨을 여는 순간 정한다.
+        // 지금 레벨이 오늘의 도전 레벨인지, 그렇다면 어느 칸인지. 레벨을 여는 순간 정한다.
         bool level = false;
+        std::string tier;
         std::size_t nextStop = 0;
         std::vector<std::string> picks;
         bool frozen = false;
@@ -70,8 +71,11 @@ namespace {
         if (!g_run.hud) {
             return;
         }
-        auto const score = gdu::daily::scoreOf(g_run.picks);
-        std::string text = "Roguelike";
+        auto const score = gdu::daily::scoreOf(g_run.tier, g_run.picks);
+        std::string text = "Daily";
+        if (auto const* entry = gdu::daily::tier(g_run.tier)) {
+            text += " " + entry->name;
+        }
         int points = 0;
         if (auto const& today = gdu::daily::today()) {
             points = today->roguelike.base;
@@ -137,9 +141,11 @@ namespace {
         }
 
         bool const level = g_run.level;
+        auto const tier = g_run.tier;
         auto hud = g_run.hud;
         g_run = Run{};
         g_run.level = level;
+        g_run.tier = tier;
         g_run.hud = hud;
         updateHud();
     }
@@ -404,7 +410,8 @@ class $modify(RoguelikePlayLayer, PlayLayer) {
         }
 
         auto const tier = gdu::daily::tierOf(level);
-        g_run.level = tier && *tier == gdu::daily::ROGUELIKE;
+        g_run.level = tier.has_value();
+        g_run.tier = tier.value_or("");
         if (!g_run.level) {
             return true;
         }
@@ -492,14 +499,15 @@ class $modify(RoguelikePlayLayer, PlayLayer) {
             return;
         }
         auto const& rules = today->roguelike;
-        if (g_run.nextStop >= rules.milestones.size() || g_run.nextStop >= rules.offers.size()) {
+        auto const* entry = gdu::daily::tier(g_run.tier);
+        if (!entry || g_run.nextStop >= rules.milestones.size() || g_run.nextStop >= entry->offers.size()) {
             return;
         }
         if (this->getCurrentPercent() < static_cast<float>(rules.milestones[g_run.nextStop])) {
             return;
         }
 
-        auto* picker = CardPicker::create(g_run.nextStop, rules.offers[g_run.nextStop]);
+        auto* picker = CardPicker::create(g_run.nextStop, entry->offers[g_run.nextStop]);
         ++g_run.nextStop;
         if (!picker) {
             return;

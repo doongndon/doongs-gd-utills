@@ -61,13 +61,4 @@ class $modify(DailyPlayLayer, PlayLayer) {
         return PlayLayer::init(level, useReplay, dontCreateObjects);
     }
 
-    void levelComplete() {
-        PlayLayer::levelComplete();
-
-        // 연습 모드나 시작 위치로 깬 것은 깬 것으로 치지 않는다.
-        if (m_isPracticeMode || m_isTestMode) {
-            return;
-        }
-        gdu::daily::cleared(m_level);
-    }
 };

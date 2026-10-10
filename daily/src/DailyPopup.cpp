@@ -36,7 +36,7 @@ namespace {
 
     // 서버의 난이도 목록(daily-server/server.js 의 TIERS)과 같은 차례다. 서버의 답이
     // 오기 전에도 탭을 그릴 수 있게 여기에도 적어 둔다.
-    constexpr std::array<Tab, 8> TABS = {{
+    constexpr std::array<Tab, 7> TABS = {{
         { "main", "Main" },
         { "easy", "Easy" },
         { "normal", "Normal" },
@@ -44,7 +44,6 @@ namespace {
         { "harder", "Harder" },
         { "insane", "Insane" },
         { "easy-demon", "Demon" },
-        { "roguelike", "Rogue" },
     }};
 
     // 난이도 칸마다 보여 줄 그림. 얼굴은 GD 의 난이도 얼굴 그림이다.
@@ -55,7 +54,6 @@ namespace {
         if (tier == "harder") return "difficulty_04_btn_001.png";
         if (tier == "insane") return "difficulty_05_btn_001.png";
         if (tier == "easy-demon") return "GJ_demonIcon_001.png";
-        if (tier == "roguelike") return "GJ_sMagicIcon_001.png";
         return "GJ_completesIcon_001.png";
     }
 
@@ -291,7 +289,6 @@ namespace gdu {
         m_levelName->limitLabelWidth(LEVEL_W - 16.f, 0.5f, 0.2f);
 
         auto const& today = daily::today();
-        bool const roguelike = m_tier == daily::ROGUELIKE;
         bool const boardIsThisTier = today && today->boardTier == m_tier;
         auto const progress = daily::progress(m_tier);
 
@@ -302,8 +299,7 @@ namespace gdu {
         else if (progress.clearedWith > 0) {
             std::string const rank = boardIsThisTier && today->myRank
                 ? fmt::format("\nRank #{} of {}", *today->myRank, today->total) : "";
-            status = roguelike ? fmt::format("Best run: {} points{}", progress.score, rank)
-                               : fmt::format("Cleared in {} attempts{}", progress.clearedWith, rank);
+            status = fmt::format("Best run: {} points{}", progress.score, rank);
         }
         else if (progress.baseline >= 0) {
             status = "In progress";
@@ -313,9 +309,7 @@ namespace gdu {
         }
         m_status->setString(status.c_str());
 
-        m_rules->setString(roguelike
-            ? "Cards at 25, 50 and 75%. Curses score more. Dying loses them all"
-            : "Fewest attempts wins. Practice runs count");
+        m_rules->setString("Pick a card at 25, 50 and 75%. Curses score more - die and you lose them all");
     }
 
     // 순위표. 순위, 이름, 기록을 칸을 맞춰 한 줄씩 놓는다. 위 세 자리는 금, 은, 동.
@@ -331,15 +325,13 @@ namespace gdu {
             return;
         }
         if (today->top.empty()) {
-            m_boardEmpty->setString(m_tier == daily::ROGUELIKE
-                ? "No runs yet.\nBe the first!" : "No clears yet.\nBe the first!");
+            m_boardEmpty->setString("No runs yet.\nBe the first!");
             return;
         }
         m_boardEmpty->setString("");
 
-        bool const scored = m_tier == daily::ROGUELIKE;
         auto* header = label(m_rows, "chatFont.fnt", 0.45f, { BOARD_W - 12.f, PANEL_HEIGHT - 30.f }, { 1.f, 0.5f });
-        header->setString(scored ? "Points" : "Attempts");
+        header->setString("Points");
         header->setOpacity(140);
 
         constexpr ccColor3B MEDALS[] = { { 255, 210, 60 }, { 210, 220, 235 }, { 230, 150, 90 } };
@@ -358,8 +350,7 @@ namespace gdu {
             name->limitLabelWidth(BOARD_W - 100.f, 0.55f, 0.3f);
 
             auto* value = label(m_rows, "chatFont.fnt", 0.55f, { BOARD_W - 12.f, y }, { 1.f, 0.5f });
-            value->setString(scored && row.score ? std::to_string(*row.score).c_str()
-                                                 : std::to_string(row.attempts).c_str());
+            value->setString(std::to_string(row.score.value_or(0)).c_str());
             value->setColor(i < 3 ? MEDALS[i] : ccColor3B{ 255, 255, 255 });
         }
 
