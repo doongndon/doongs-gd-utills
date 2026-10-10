@@ -15,8 +15,8 @@ A small quality-of-life pack:
   main level, or a random rated level from Easy up to Easy Demon) and everyone using the mod races
   to beat it in the fewest attempts. Attempts are counted from the
   first time you open the level that day, practice runs included; clears in practice mode or from a
-  start position do not count. Results are taken on trust - it is a game, not a tournament. Needs a
-  server address in the settings (the server is in `daily-server/` of the repository).
+  start position do not count. Results are taken on trust - it is a game, not a tournament. It uses the
+  official server out of the box; the server code is in `daily-server/` of the repository.
 - **Roguelike daily** — one more slot in the daily challenge. The game stops at 25, 50 and 75%
   and offers three cards: help cards (Shield, Slow) cost points, curses (Mirror, Mini, Rush,
   Dark, Quake, Ghost, Silence, Blackout) earn them. Pick one, and the run carries on after a

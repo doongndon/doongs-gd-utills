@@ -220,11 +220,6 @@ namespace gdu {
     }
 
     void DailyPopup::refresh() {
-        if (!daily::configured()) {
-            this->render(std::string("Set the server address in the mod settings"));
-            return;
-        }
-
         this->setLoading(true);
         auto url = daily::todayUrl(m_tier);
         m_task.spawn(

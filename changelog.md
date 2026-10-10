@@ -1,3 +1,6 @@
+# v2.0.1
+ - The daily challenge always uses the official server unless you set your own. Devices that kept the old empty server address no longer need to type it in
+
 # v2.0.0
  - Redesigned the **Daily Challenge** window: difficulty tabs on top, a level card on the left and an aligned leaderboard on the right, with a loading spinner and the time until the next challenge
  - The Daily button on the main menu is now a round clock button the same size as the other menu buttons

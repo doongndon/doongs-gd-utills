@@ -120,6 +120,11 @@ namespace {
         return { fmt::format("dev:{}", deviceID()), name.empty() ? "Player" : name };
     }
 
+    // 공식 서버. 설정 칸은 자기 서버를 따로 돌리는 사람만 쓴다. 비어 있으면 여기로 간다.
+    // 예전 판은 이 칸의 기본값이 빈칸이었고, 그 빈칸이 저장값으로 남아 있는 기기가
+    // 있다. 그래서 기본값에만 기대지 않고 빈칸도 공식 서버로 읽는다.
+    constexpr char const* OFFICIAL_SERVER = "https://doongs-gd-utills.onrender.com";
+
     std::string serverBase() {
         auto base = gdu::Settings::get().dailyServer;
         while (!base.empty() && (base.back() == '/' || base.back() == ' ')) {
@@ -128,7 +133,7 @@ namespace {
         while (!base.empty() && base.front() == ' ') {
             base.erase(base.begin());
         }
-        return base;
+        return base.empty() ? std::string(OFFICIAL_SERVER) : base;
     }
 
     async::TaskHolder<web::WebResponse>& backgroundTask() {

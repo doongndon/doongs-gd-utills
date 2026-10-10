@@ -8,7 +8,7 @@
     },
     "id": "doongndon.gd-utils",
     "name": "Doong's GD Utils",
-    "version": "v2.0.0",
+    "version": "v2.0.1",
     "developers": [
         "doongndon"
     ],
@@ -133,9 +133,9 @@
         },
         "daily-server": {
             "type": "string",
-            "name": "Daily server address",
-            "description": "Address of the daily challenge server. Leave it as it is unless you run your own (the server lives in the daily-server folder of this mod's repository).",
-            "default": "https://doongs-gd-utills.onrender.com"
+            "name": "Custom server (optional)",
+            "description": "Leave this empty to use the official daily challenge server. Only fill it in if you run your own server (it lives in the daily-server folder of this mod's repository).",
+            "default": ""
         },
         "update-title": {
             "type": "title",
