@@ -1,0 +1,119 @@
+name: Release Song With Lag
+
+on:
+  push:
+    tags:
+      - "lag-v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  check:
+    name: Check version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Tag must match mod.json
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          set -euo pipefail
+          declared=$(python3 -c "import json; print(json.load(open('song-with-lag/mod.json'))['version'])")
+          tagged="${{ github.ref_name }}"
+          tagged="${tagged#lag-}"
+          if [ "$declared" != "$tagged" ]; then
+            echo "song-with-lag/mod.json says $declared but the tag is ${{ github.ref_name }}" >&2
+            exit 1
+          fi
+
+  build:
+    name: ${{ matrix.config.name }}
+    needs: check
+    strategy:
+      fail-fast: false
+      matrix:
+        config:
+          - name: Windows
+            os: windows-latest
+
+          - name: macOS
+            os: macos-latest
+
+          - name: iOS
+            os: macos-latest
+            target: iOS
+
+          - name: Android32
+            os: ubuntu-latest
+            target: Android32
+
+          - name: Android64
+            os: ubuntu-latest
+            target: Android64
+
+    runs-on: ${{ matrix.config.os }}
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Build the mod
+        uses: geode-sdk/build-geode-mod@main
+        with:
+          path: ./song-with-lag
+          combine: true
+          target: ${{ matrix.config.target }}
+
+  release:
+    name: Publish
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: geode-sdk/build-geode-mod/combine@main
+        id: build
+
+      # 태그를 밀어서 온 것이면 그 이름을 쓰고, 손으로 돌렸으면 mod.json 의
+      # 판본으로 짓는다. 태그 자체는 gh 가 릴리스를 만들며 함께 세워 준다.
+      - name: Work out the tag
+        id: tag
+        run: |
+          set -euo pipefail
+          if [ "${{ github.ref_type }}" = "tag" ]; then
+            name="${{ github.ref_name }}"
+          else
+            name="lag-$(python3 -c "import json; print(json.load(open('song-with-lag/mod.json'))['version'])")"
+          fi
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+
+      - name: Attach the .geode file to a GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          file=$(find "${{ steps.build.outputs.build-output }}" -name '*.geode' | head -n 1)
+          if [ -z "$file" ]; then
+            echo "the build produced no .geode file" >&2
+            exit 1
+          fi
+          gh release create "${{ steps.tag.outputs.name }}" "$file" \
+            --target "${{ github.sha }}" \
+            --title "${{ steps.tag.outputs.name }}" --generate-notes
+
+      # 모드마다 고정 태그를 두고 새 파일이 나올 때마다 옮긴다. 모드 안의
+      # 업데이트 버튼이 보는 주소라, 저장소에 모드가 둘이어도 서로 엉키지 않는다.
+      - name: Move the rolling tag to this build
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          file=$(find "${{ steps.build.outputs.build-output }}" -name '*.geode' | head -n 1)
+          gh release delete "lag-latest" --yes --cleanup-tag || true
+          gh release create "lag-latest" "$file" \
+            --target "${{ github.sha }}" \
+            --title "Newest Song With Lag" \
+            --notes "Always points at the newest build. Released as ${{ steps.tag.outputs.name }}." \
+            --latest=false

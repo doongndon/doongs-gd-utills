@@ -7,9 +7,15 @@ on:
       - "**"
     paths-ignore:
       - "ko-patch/**"
+      - "song-with-lag/**"
+      - ".github/workflows/build-song-with-lag.yml"
+      - ".github/workflows/release-song-with-lag.yml"
   pull_request:
     paths-ignore:
       - "ko-patch/**"
+      - "song-with-lag/**"
+      - ".github/workflows/build-song-with-lag.yml"
+      - ".github/workflows/release-song-with-lag.yml"
 
 jobs:
   build:

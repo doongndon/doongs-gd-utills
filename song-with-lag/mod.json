@@ -1,0 +1,59 @@
+{
+    "geode": "5.10.1",
+    "gd": {
+        "win": "2.2081",
+        "mac": "2.2081",
+        "android": "2.2081",
+        "ios": "2.2081"
+    },
+    "id": "doongndon.song-with-lag",
+    "name": "Song With Lag",
+    "version": "v1.0.0",
+    "developers": [
+        "doongndon"
+    ],
+    "description": "When the game lags, the song lags with it, so the level and the music stay in sync.",
+    "repository": "https://github.com/doongndon/doongs-gd-utills",
+    "tags": [
+        "gameplay",
+        "music"
+    ],
+    "settings": {
+        "enabled": {
+            "type": "bool",
+            "name": "Song lags with the game",
+            "description": "When a frame takes too long, the level moves on by one ordinary frame instead of jumping ahead, and the song is wound back by the time the game spent frozen.",
+            "default": true
+        },
+        "threshold-ms": {
+            "type": "int",
+            "name": "Lag threshold (ms)",
+            "description": "A frame longer than this counts as lag. At 60 FPS an ordinary frame is about 17 ms; on a high refresh rate screen you can lower this.",
+            "default": 40,
+            "min": 20,
+            "max": 500,
+            "control": {
+                "slider": true,
+                "input": true
+            }
+        },
+        "show-notice": {
+            "type": "bool",
+            "name": "Show what was absorbed",
+            "description": "Briefly shows in the top-right corner how many milliseconds the song was wound back.",
+            "default": false
+        },
+        "update-title": {
+            "type": "title",
+            "name": "Updates"
+        },
+        "check-updates": {
+            "type": "button",
+            "name": "Check for updates",
+            "description": "Downloads the newest release straight from GitHub. Restart the game afterwards to apply it.",
+            "buttons": {
+                "check": "Check"
+            }
+        }
+    }
+}
