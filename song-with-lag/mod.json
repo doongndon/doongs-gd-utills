@@ -8,7 +8,7 @@
     },
     "id": "doongndon.song-with-lag",
     "name": "Song With Lag",
-    "version": "v1.0.2",
+    "version": "v1.0.3",
     "developers": [
         "doongndon"
     ],
@@ -52,8 +52,8 @@
         "show-info": {
             "type": "bool",
             "name": "Show sync info",
-            "description": "Keeps a small line in the top-right corner while playing: how far the song is from the level, how many frames lagged and how many times the song was moved. If the line never appears, the mod is not running.",
-            "default": false
+            "description": "When a level starts, pops up \"Song With Lag is on\", and while playing keeps a small line at the bottom of the screen: how far the song is from the level, how many frames lagged and how many times the song was moved. If the pop-up never appears, the mod is not loaded.",
+            "default": true
         },
         "update-title": {
             "type": "title",

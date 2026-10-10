@@ -255,12 +255,13 @@ class $modify(SongWithLagLayer, GJBaseGameLayer) {
 // 일시정지 메뉴에서 다시 시작하거나 레벨을 나가면 노래 위치가 프레임 밖에서
 // 바뀐다. 기준을 버려 다음 프레임에 다시 잡는다.
 class $modify(SongWithLagPlayLayer, PlayLayer) {
-    void resetLevel() {
-        PlayLayer::resetLevel();
-        dropAnchor();
-    }
+    // 레벨에 들어올 때 모드가 켜져 있다고 알린다. 이 알림은 Geode 가 화면
+    // 맨 위에 따로 그리므로 레벨이 어떻게 그려지든 보인다. 알림은 뜨는데
+    // 아래 정보 줄이 안 뜬다면, 다른 모드가 게임 진행 함수를 가로채 이 모드까지
+    // 차례가 오지 않는 것이다.
+    bool init(GJGameLevel* level, bool useReplay, bool dontCreateObjects) {
+        if (!PlayLayer::init(level, useReplay, dontCreateObjects)) return false;
 
-    void onQuit() {
         auto& s = state();
         dropAnchor();
         s.lastFrame.reset();
@@ -268,6 +269,26 @@ class $modify(SongWithLagPlayLayer, PlayLayer) {
         s.moves = 0;
         s.lastMove = 0;
         s.drift = 0.0;
+
+        auto& config = swl::Config::get();
+        if (config.showInfo) {
+            Notification::create(
+                config.enabled ? "Song With Lag is on" : "Song With Lag is off",
+                NotificationIcon::Info,
+                2.f
+            )->show();
+        }
+        return true;
+    }
+
+    void resetLevel() {
+        PlayLayer::resetLevel();
+        dropAnchor();
+    }
+
+    void onQuit() {
+        dropAnchor();
+        state().lastFrame.reset();
         PlayLayer::onQuit();
     }
 };
