@@ -4,7 +4,7 @@ const test = require("node:test");
 const assert = require("node:assert");
 const {
     createApp, dateOf, levelFor, cleanName, secondsLeft, parseSearch, pickRated, offersFor, scoreOf,
-    TIERS, CARDS,
+    faceOf, featureOf, TIERS, CARDS,
 } = require("./server");
 const levels = require("./levels.json");
 
@@ -105,11 +105,35 @@ test("a rated pick asks for rated, non-platformer levels of the tier and skips b
         ].join("|") + "#c#s#3:0:10#h";
     };
     const level = await pickRated(tier, search, () => 0);
-    assert.deepStrictEqual(level, { id: 3, kind: "online", name: "Good" });
+    assert.deepStrictEqual(level, {
+        id: 3, kind: "online", name: "Good", creator: "", stars: 4, face: 3, feature: 0, length: 2,
+    });
     assert.strictEqual(calls[0].star, "1");
     assert.strictEqual(calls[0].diff, "-2");
     assert.strictEqual(calls[0].demonFilter, "1");
     assert.strictEqual(calls[0].len, "0,1,2,3,4");
+});
+
+test("a rated pick carries the creator, stars, face, feature and length of the level", async () => {
+    // gd-docs 의 예시 그대로: Bloodbath, 익스트림 데몬, 피처드, 만든이 Riot, 길이 Long
+    const docsExample = "1:10565740:2:Bloodbath:5:3:6:503085:8:10:9:50:10:44138442:12:0:13:21:14:2375318:17:1:43:6:25::18:10:19:10330:42:0:45:24746:3:V2hv:15:3:30:7679228:31:0:37:0:38:0:39:0:46:1:47:2:35:467339#503085:Riot:37415#songs#4:0:10#1664b8bb";
+    const tier = TIERS.find((t) => t.id === "easy-demon");
+    const level = await pickRated(tier, async () => docsExample, () => 0);
+    assert.deepStrictEqual(level, {
+        id: 10565740, kind: "online", name: "Bloodbath", creator: "Riot", stars: 10, face: 10, feature: 1, length: 3,
+    });
+});
+
+test("faces and features follow the GD sprite numbers", () => {
+    assert.strictEqual(faceOf({ "9": "10" }), 1);
+    assert.strictEqual(faceOf({ "9": "50" }), 5);
+    assert.strictEqual(faceOf({ "9": "50", "17": "1", "43": "3" }), 7);
+    assert.strictEqual(faceOf({ "9": "50", "17": "1", "43": "0" }), 6);
+    assert.strictEqual(faceOf({ "25": "1" }), -1);
+    assert.strictEqual(featureOf({ "19": "0", "42": "0" }), 0);
+    assert.strictEqual(featureOf({ "19": "5", "42": "0" }), 1);
+    assert.strictEqual(featureOf({ "19": "5", "42": "1" }), 2);
+    assert.strictEqual(featureOf({ "19": "5", "42": "3" }), 4);
 });
 
 test("every tier gets a level, and it stays the same all day", async () => {
@@ -290,6 +314,9 @@ test("boards rank by score, then by attempts, and a result needs its cards", asy
     assert.strictEqual(status, 200);
     assert.deepStrictEqual(reply.top.map((row) => row.name), ["bolder", "bold", "safe"]);
     assert.strictEqual(reply.top[0].score, scoreOf(today.date, "easy", best));
+    // 순위표에는 그 사람이 고른 카드도 실린다. 모드가 줄마다 카드 그림을 띄운다.
+    assert.deepStrictEqual(reply.top[0].cards, best);
+    assert.deepStrictEqual(reply.top[2].cards, worst);
 
     const [, again] = await result(made, { tier: "easy", cards: worst, attempts: 1, player: { id: "acc:3", name: "bolder" } });
     assert.strictEqual(again.me.score, scoreOf(today.date, "easy", best));

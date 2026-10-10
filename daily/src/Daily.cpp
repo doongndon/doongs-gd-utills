@@ -44,6 +44,7 @@ namespace {
                         .clearedWith = static_cast<int>(value["clearedWith"].asInt().unwrapOr(0)),
                         .submitted = value["submitted"].asBool().unwrapOr(false),
                         .score = static_cast<int>(value["score"].asInt().unwrapOr(0)),
+                        .bestPercent = static_cast<int>(value["bestPercent"].asInt().unwrapOr(0)),
                     };
                     if (value["cards"].isArray()) {
                         for (auto const& card : value["cards"]) {
@@ -67,6 +68,7 @@ namespace {
             value.set("clearedWith", matjson::Value(progress.clearedWith));
             value.set("submitted", matjson::Value(progress.submitted));
             value.set("score", matjson::Value(progress.score));
+            value.set("bestPercent", matjson::Value(progress.bestPercent));
             auto cards = matjson::Value::array();
             for (auto const& card : progress.cards) {
                 cards.push(matjson::Value(card));
@@ -145,6 +147,11 @@ namespace {
         out.id = static_cast<int>(level["id"].asInt().unwrapOr(0));
         out.mainLevel = level["kind"].asString().unwrapOr("main") != "online";
         out.name = level["name"].asString().unwrapOr("?");
+        out.creator = level["creator"].asString().unwrapOr("");
+        out.stars = static_cast<int>(level["stars"].asInt().unwrapOr(0));
+        out.face = static_cast<int>(level["face"].asInt().unwrapOr(-1));
+        out.feature = static_cast<int>(level["feature"].asInt().unwrapOr(0));
+        out.length = static_cast<int>(level["length"].asInt().unwrapOr(-1));
         if (out.id <= 0) {
             return std::nullopt;
         }
@@ -166,10 +173,17 @@ namespace {
                 if (auto value = row["score"].asInt(); value.isOk()) {
                     score = static_cast<int>(value.unwrapOr(0));
                 }
+                std::vector<std::string> cards;
+                if (row["cards"].isArray()) {
+                    for (auto const& card : row["cards"]) {
+                        cards.push_back(card.asString().unwrapOr(""));
+                    }
+                }
                 g_today->top.push_back({
                     .name = row["name"].asString().unwrapOr("?"),
                     .attempts = static_cast<int>(row["attempts"].asInt().unwrapOr(0)),
                     .score = score,
+                    .cards = std::move(cards),
                 });
             }
         }
@@ -442,6 +456,68 @@ namespace gdu::daily {
         return found == tiers.end() ? Progress{} : found->second;
     }
 
+    bool clearedAnyToday() {
+        auto const& current = today();
+        if (!current) {
+            return false;
+        }
+        return std::any_of(current->tiers.begin(), current->tiers.end(), [](Tier const& entry) {
+            return progress(entry.id).clearedWith > 0;
+        });
+    }
+
+    Card const* card(std::string const& id) {
+        auto const& current = today();
+        if (!current) {
+            return nullptr;
+        }
+        auto const found = current->roguelike.cards.find(id);
+        return found == current->roguelike.cards.end() ? nullptr : &found->second;
+    }
+
+    int tierFace(std::string_view tier) {
+        if (tier == "easy") return 1;
+        if (tier == "normal") return 2;
+        if (tier == "hard") return 3;
+        if (tier == "harder") return 4;
+        if (tier == "insane") return 5;
+        if (tier == "easy-demon") return 7;
+        if (tier == "main") {
+            // 메인 레벨 칸은 그날의 레벨 얼굴을 쓴다. 아직 모르면 N/A 얼굴.
+            if (auto const* entry = daily::tier("main"); entry && entry->level) {
+                return lookOf(*entry).face;
+            }
+        }
+        return 0;
+    }
+
+    Look lookOf(Tier const& tier) {
+        Look look;
+        if (!tier.level) {
+            look.face = tierFace(tier.id == "main" ? "" : tier.id);
+            return look;
+        }
+        auto const& level = *tier.level;
+        if (level.mainLevel) {
+            // 메인 레벨은 GD 가 난이도와 별을 알고 있다. 레벨 내용은 읽지 않는다.
+            if (auto* main = GameLevelManager::sharedState()->getMainLevel(level.id, true)) {
+                int const difficulty = static_cast<int>(main->m_difficulty);
+                look.face = std::clamp(difficulty, 0, 10);
+                look.stars = main->m_stars.value();
+            }
+            look.creator = "RobTop";
+            return look;
+        }
+        look.face = level.face >= 0 ? std::clamp(level.face, 0, 10) : tierFace(tier.id);
+        look.feature = std::clamp(level.feature, 0, 4);
+        look.stars = level.stars;
+        look.creator = level.creator;
+        if (level.length >= 0 && level.length <= 4) {
+            look.length = std::string(GJGameLevel::lengthKeyToString(level.length));
+        }
+        return look;
+    }
+
     std::optional<std::string> tierOf(GJGameLevel* level) {
         auto const& current = today();
         if (!current || !level) {
@@ -472,6 +548,46 @@ namespace gdu::daily {
         }
         progress = Progress{ .levelID = level->m_levelID.value(), .baseline = level->m_attempts.value() };
         saveStored();
+    }
+
+    std::optional<int> attemptsToday(std::string const& tierID) {
+        auto const* entry = tier(tierID);
+        auto const saved = progress(tierID);
+        if (!entry || !entry->level || saved.baseline < 0 || saved.levelID != entry->level->id) {
+            return std::nullopt;
+        }
+        auto* manager = GameLevelManager::sharedState();
+        GJGameLevel* level = entry->level->mainLevel
+            ? manager->getMainLevel(entry->level->id, true)
+            : manager->getSavedLevel(entry->level->id);
+        if (!level) {
+            return std::nullopt;
+        }
+        return std::max(0, level->m_attempts.value() - saved.baseline);
+    }
+
+    void notePercent(GJGameLevel* level, int percent) {
+        auto const tierID = tierOf(level);
+        if (!tierID) {
+            return;
+        }
+        auto& progress = stored().tiers[*tierID];
+        if (progress.baseline < 0 || percent <= progress.bestPercent) {
+            return;
+        }
+        progress.bestPercent = std::clamp(percent, 0, 100);
+        saveStored();
+    }
+
+    int partialScore(std::vector<std::string> const& cards) {
+        auto const& current = today();
+        int score = current ? current->roguelike.base : 100;
+        for (auto const& id : cards) {
+            if (auto const* entry = card(id)) {
+                score += entry->points;
+            }
+        }
+        return score;
     }
 
     std::optional<int> scoreOf(std::string const& tierID, std::vector<std::string> const& cards) {
@@ -536,6 +652,11 @@ namespace gdu::daily {
             // 메인 레벨은 레벨 고르는 화면의 그 쪽으로 간다. 잠긴 레벨을 몰래 열지 않는다.
             director->replaceScene(CCTransitionFade::create(
                 0.5f, LevelSelectLayer::scene(entry->level->id - 1)));
+            return;
+        }
+        // 한 번 받아 둔 레벨이면 그 레벨 화면을 바로 연다. 아니면 레벨 번호로 검색한다.
+        if (auto* saved = GameLevelManager::sharedState()->getSavedLevel(entry->level->id)) {
+            director->pushScene(CCTransitionFade::create(0.5f, LevelInfoLayer::scene(saved, false)));
             return;
         }
         auto* search = GJSearchObject::create(SearchType::Search, std::to_string(entry->level->id));

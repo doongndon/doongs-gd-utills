@@ -1,27 +1,27 @@
 #include <Geode/Geode.hpp>
 #include <Geode/modify/GJBaseGameLayer.hpp>
 #include <Geode/modify/PlayLayer.hpp>
-#include <Geode/ui/NineSlice.hpp>
 
 #include <algorithm>
+#include <cmath>
 #include <random>
 #include <string>
 #include <vector>
 
-#include <fmt/format.h>
-
-#include "Daily.hpp"
+#include "../Art.hpp"
+#include "../Daily.hpp"
+#include "../ui/CardPicker.hpp"
+#include "../ui/RunHud.hpp"
 
 using namespace geode::prelude;
 
 // 오늘의 도전은 모두 로그라이크다. 어느 난이도든 그날의 레벨을 일반 모드로 하면,
-// 25%, 50%, 75% 에서 게임이 멈추고 카드 세 장이 나온다. 한 장을 고르면 3초 뒤
-// 이어서 달린다. 죽으면 그 판의 카드는 모두 사라지고 처음부터 다시 고른다.
+// 25%, 50%, 75% 에서 게임이 멈추고 카드 세 장이 나온다. 한 장을 고르면 3, 2, 1 을
+// 센 뒤 이어서 달린다. 죽으면 그 판의 카드는 모두 사라지고 처음부터 다시 고른다.
 //
 // 카드의 효과는 여기서 id 를 보고 건다. 이름과 설명, 점수, 그날 나오는 카드는
 // 서버가 정한다(daily-server/server.js 의 CARDS).
 namespace {
-    constexpr int PICKER_Z = 1000;
     constexpr int OVERLAY_Z = 990;
     constexpr int HUD_Z = 995;
     constexpr float SAFE_SECONDS = 1.f;
@@ -35,7 +35,9 @@ namespace {
         bool frozen = false;
 
         int shields = 0;
+        int usedShields = 0;
         float safeFor = 0.f;
+        float blink = 0.f;
         float speed = 1.f;
         bool slowed = false;
         bool rushed = false;
@@ -43,73 +45,78 @@ namespace {
         bool mini = false;
         bool shaking = false;
         bool invisible = false;
+        // 유령 카드나 방패 깜빡임으로 우리가 아이콘을 숨겨 둔 상태인지.
+        bool hidden = false;
         bool muted = false;
 
         Ref<CCNode> dark;
         Ref<CCNode> blackout;
-        Ref<CCNode> picker;
-        Ref<CCLabelBMFont> hud;
+        Ref<gdu::ui::CardPicker> picker;
+        Ref<gdu::ui::RunHud> hud;
+        std::vector<Ref<CCSprite>> ticks;
     };
 
-    Run g_run;
+    // 게임을 끌 때 정적 소멸자가 cocos 보다 늦게 돌며 노드를 지우지 않도록 힙에 두고 놓지 않는다.
+    Run& g_run = *new Run();
 
     FMOD::ChannelGroup* musicChannel() {
         auto* engine = FMODAudioEngine::sharedEngine();
         return engine ? engine->m_backgroundMusicChannel : nullptr;
     }
 
-    gdu::daily::Card const* cardOf(std::string const& id) {
-        auto const& today = gdu::daily::today();
-        if (!today) {
-            return nullptr;
+    void updateHud(bool animate) {
+        if (g_run.hud) {
+            g_run.hud->refresh(
+                g_run.picks, gdu::daily::partialScore(g_run.picks), g_run.usedShields, g_run.speed, animate
+            );
         }
-        auto const found = today->roguelike.cards.find(id);
-        return found == today->roguelike.cards.end() ? nullptr : &found->second;
     }
 
-    void updateHud() {
-        if (!g_run.hud) {
+    // 진행 막대 위의 표시. 카드를 고른 지점은 그 카드의 색이 된다.
+    void paintTicks() {
+        for (std::size_t i = 0; i < g_run.ticks.size(); ++i) {
+            auto* tick = g_run.ticks[i].data();
+            if (!tick) {
+                continue;
+            }
+            if (i < g_run.picks.size()) {
+                auto const* card = gdu::daily::card(g_run.picks[i]);
+                tick->setColor(gdu::art::kindLight(card && card->help));
+                tick->setOpacity(255);
+            }
+            else {
+                tick->setColor({ 255, 255, 255 });
+                tick->setOpacity(200);
+            }
+        }
+    }
+
+    // 아이콘만 숨긴다. PlayerObject 자체의 보이기는 GD 가 쓰므로(두 번째 플레이어는 듀얼
+    // 모드에서만 보인다) 건드리지 않고, 아이콘을 담은 m_mainLayer 만 켜고 끈다.
+    void hidePlayers(PlayLayer* layer, bool hide) {
+        if (!layer || g_run.hidden == hide) {
             return;
         }
-        auto const score = gdu::daily::scoreOf(g_run.tier, g_run.picks);
-        std::string text = "Daily";
-        if (auto const* entry = gdu::daily::tier(g_run.tier)) {
-            text += " " + entry->name;
-        }
-        int points = 0;
-        if (auto const& today = gdu::daily::today()) {
-            points = today->roguelike.base;
-        }
-        std::vector<std::string> names;
-        for (auto const& id : g_run.picks) {
-            if (auto const* card = cardOf(id)) {
-                points += card->points;
-                names.push_back(card->name);
+        g_run.hidden = hide;
+        for (auto* player : { layer->m_player1, layer->m_player2 }) {
+            if (player && player->m_mainLayer) {
+                player->m_mainLayer->setVisible(!hide);
             }
         }
-        text += fmt::format("  {} pts", score.value_or(points));
-        if (g_run.shields > 0) {
-            text += fmt::format("  Shield x{}", g_run.shields);
-        }
-        if (!names.empty()) {
-            text += "\n";
-            for (std::size_t i = 0; i < names.size(); ++i) {
-                text += (i ? ", " : "") + names[i];
-            }
-        }
-        g_run.hud->setString(text.c_str());
     }
 
     // 카드 효과를 모두 걷어 낸다. 판이 새로 시작되거나, 레벨을 나가거나, 연습 모드로
     // 바뀔 때 부른다. 화면 반전과 작은 아이콘은 우리가 건 것일 때만 되돌린다.
-    void clearEffects(PlayLayer* layer) {
+    // afterReset 이면 GD 가 방금 판을 처음 상태로 돌려놓았으므로(반전, 크기 포함) 그
+    // 둘은 건드리지 않는다. 미니로 시작하는 레벨을 큰 아이콘으로 바꿔 버리지 않게.
+    void clearEffects(PlayLayer* layer, bool afterReset = false) {
         if (g_run.frozen && layer) {
             layer->resumeAudio();
         }
         g_run.frozen = false;
 
         if (g_run.picker) {
-            g_run.picker->removeFromParent();
+            g_run.picker->dismiss();
             g_run.picker = nullptr;
         }
         for (auto* overlay : { &g_run.dark, &g_run.blackout }) {
@@ -125,29 +132,30 @@ namespace {
         }
 
         if (layer) {
-            if (g_run.mirrored) {
+            if (g_run.mirrored && !afterReset) {
                 layer->toggleFlipped(false, true);
             }
-            for (auto* player : { layer->m_player1, layer->m_player2 }) {
-                if (!player) {
-                    continue;
+            if (g_run.mini && !afterReset) {
+                for (auto* player : { layer->m_player1, layer->m_player2 }) {
+                    if (player) {
+                        player->togglePlayerScale(false, true);
+                    }
                 }
-                if (g_run.mini) {
-                    player->togglePlayerScale(false, true);
-                }
-                player->setVisible(true);
             }
+            hidePlayers(layer, false);
             layer->setPosition({ 0.f, 0.f });
         }
 
         bool const level = g_run.level;
         auto const tier = g_run.tier;
         auto hud = g_run.hud;
+        auto ticks = g_run.ticks;
         g_run = Run{};
         g_run.level = level;
         g_run.tier = tier;
         g_run.hud = hud;
-        updateHud();
+        g_run.ticks = ticks;
+        paintTicks();
     }
 
     CCLayerColor* addOverlay(PlayLayer* layer, GLubyte opacity) {
@@ -183,7 +191,9 @@ namespace {
             }
         }
         else if (id == "dark" && !g_run.dark) {
-            g_run.dark = addOverlay(layer, 170);
+            auto* overlay = addOverlay(layer, 0);
+            overlay->runAction(CCFadeTo::create(0.6f, 170));
+            g_run.dark = overlay;
         }
         else if (id == "shake") {
             g_run.shaking = true;
@@ -212,198 +222,37 @@ namespace {
         }
     }
 
-    // 카드를 고르는 화면. 게임은 그동안 멈춰 있다(아래 GJBaseGameLayer::update 훅).
-    // 고르면 3, 2, 1 을 센 뒤 스스로 사라지며 게임을 다시 돌린다.
-    class CardPicker : public CCLayerColor {
-    public:
-        static CardPicker* create(std::size_t stop, std::vector<std::string> const& offer) {
-            auto* picker = new CardPicker();
-            if (picker->init(stop, offer)) {
-                picker->autorelease();
-                return picker;
-            }
-            delete picker;
-            return nullptr;
-        }
-
-    private:
-        CCMenu* m_menu = nullptr;
-        CCLabelBMFont* m_title = nullptr;
-        CCLabelBMFont* m_count = nullptr;
-        CCLabelBMFont* m_hint = nullptr;
-        std::vector<std::string> m_offer;
-        int m_left = 3;
-
-        bool init(std::size_t stop, std::vector<std::string> const& offer) {
-            auto const size = CCDirector::sharedDirector()->getWinSize();
-            if (!CCLayerColor::initWithColor({ 0, 0, 0, 160 }, size.width, size.height)) {
-                return false;
-            }
-            this->setID("roguelike-picker"_spr);
-            m_offer = offer;
-
-            int percent = 0;
-            if (auto const& today = gdu::daily::today(); today && stop < today->roguelike.milestones.size()) {
-                percent = today->roguelike.milestones[stop];
-            }
-            m_title = CCLabelBMFont::create(
-                fmt::format("{}% - pick a card", percent).c_str(), "bigFont.fnt");
-            m_title->setScale(0.75f);
-            m_title->setPosition({ size.width / 2.f, size.height / 2.f + 112.f });
-            this->addChild(m_title);
-
-            auto* hint = CCLabelBMFont::create("Help cards cost points, curses earn them", "chatFont.fnt");
-            hint->setScale(0.6f);
-            hint->setOpacity(190);
-            hint->setPosition({ size.width / 2.f, size.height / 2.f + 92.f });
-            this->addChild(hint);
-            m_hint = hint;
-
-            m_menu = CCMenu::create();
-            m_menu->setPosition({ 0.f, 0.f });
-            this->addChild(m_menu);
-
-            constexpr float CARD_W = 122.f;
-            constexpr float CARD_H = 160.f;
-            constexpr float GAP = 16.f;
-            float const total = CARD_W * static_cast<float>(offer.size()) + GAP * static_cast<float>(offer.size() - 1);
-            for (std::size_t i = 0; i < offer.size(); ++i) {
-                auto* face = this->makeCard(offer[i], CARD_W, CARD_H);
-                auto* button = CCMenuItemSpriteExtra::create(face, this, menu_selector(CardPicker::onPick));
-                button->setTag(static_cast<int>(i));
-                // 카드는 크므로 누를 때 살짝만 커지게 한다(기본은 1.26배).
-                button->m_scaleMultiplier = 1.06f;
-                button->setPosition({
-                    size.width / 2.f - total / 2.f + CARD_W / 2.f + static_cast<float>(i) * (CARD_W + GAP),
-                    size.height / 2.f - 14.f
-                });
-                m_menu->addChild(button);
-            }
-
-            m_count = CCLabelBMFont::create("", "goldFont.fnt");
-            m_count->setPosition({ size.width / 2.f, size.height / 2.f });
-            m_count->setVisible(false);
-            this->addChild(m_count);
-            return true;
-        }
-
-        CCNode* makeCard(std::string const& id, float width, float height) {
-            auto const* card = cardOf(id);
-            bool const help = card && card->help;
-
-            auto* face = CCNode::create();
-            face->setContentSize({ width, height });
-            face->setAnchorPoint({ 0.5f, 0.5f });
-
-            // 바탕은 Geode 의 목록이 쓰는 판을 카드 색으로 물들인 것. 도움은 초록, 저주는 보라.
-            auto* frame = NineSlice::create("GJ_square02.png");
-            frame->setContentSize({ width, height });
-            frame->setAnchorPoint({ 0.f, 0.f });
-            face->addChild(frame);
-
-            auto* tint = NineSlice::create("square02b_001.png");
-            tint->setContentSize({ width - 12.f, height - 12.f });
-            tint->setAnchorPoint({ 0.f, 0.f });
-            tint->setPosition({ 6.f, 6.f });
-            tint->setColor(help ? ccColor3B{ 40, 170, 90 } : ccColor3B{ 160, 50, 150 });
-            tint->setOpacity(110);
-            face->addChild(tint);
-
-            auto* kind = CCLabelBMFont::create(help ? "HELP" : "CURSE", "goldFont.fnt");
-            kind->setScale(0.45f);
-            kind->setColor(help ? ccColor3B{ 150, 255, 170 } : ccColor3B{ 255, 150, 240 });
-            kind->setPosition({ width / 2.f, height - 16.f });
-            face->addChild(kind);
-
-            if (auto* icon = CCSprite::createWithSpriteFrameName(help ? "GJ_completesIcon_001.png" : "exMark_001.png")) {
-                float const size = std::max(icon->getContentSize().width, icon->getContentSize().height);
-                icon->setScale(size > 0.f ? 26.f / size : 1.f);
-                icon->setPosition({ width / 2.f, height - 42.f });
-                face->addChild(icon);
-            }
-
-            auto* name = CCLabelBMFont::create(card ? card->name.c_str() : id.c_str(), "bigFont.fnt");
-            name->limitLabelWidth(width - 18.f, 0.5f, 0.2f);
-            name->setPosition({ width / 2.f, height - 70.f });
-            face->addChild(name);
-
-            auto* text = CCLabelBMFont::create(
-                card ? card->text.c_str() : "", "chatFont.fnt", (width - 20.f) / 0.55f, kCCTextAlignmentCenter);
-            text->setScale(0.55f);
-            text->setPosition({ width / 2.f, height / 2.f - 22.f });
-            face->addChild(text);
-
-            int const points = card ? card->points : 0;
-            auto* score = CCLabelBMFont::create(
-                fmt::format("{}{} pts", points > 0 ? "+" : "", points).c_str(), "goldFont.fnt");
-            score->setScale(0.55f);
-            score->setColor(points >= 0 ? ccColor3B{ 120, 255, 120 } : ccColor3B{ 255, 140, 140 });
-            score->setPosition({ width / 2.f, 20.f });
-            face->addChild(score);
-            return face;
-        }
-
-        void onPick(CCObject* sender) {
-            auto const index = static_cast<std::size_t>(static_cast<CCNode*>(sender)->getTag());
-            auto* layer = PlayLayer::get();
-            if (!layer || index >= m_offer.size() || !m_menu->isEnabled()) {
-                return;
-            }
-            // 단추 줄을 이 콜백 안에서 지우지 않는다. 숨기고 막아만 둔다.
-            m_menu->setEnabled(false);
-            m_menu->setVisible(false);
-            m_hint->setVisible(false);
-
-            g_run.picks.push_back(m_offer[index]);
-            applyCard(layer, m_offer[index]);
-            updateHud();
-
-            auto const* card = cardOf(m_offer[index]);
-            m_title->setString(fmt::format("{} - get ready", card ? card->name : m_offer[index]).c_str());
-            m_count->setVisible(true);
-            this->step();
-            this->runAction(CCSequence::create(
-                CCDelayTime::create(1.f),
-                CCCallFunc::create(this, callfunc_selector(CardPicker::step)),
-                CCDelayTime::create(1.f),
-                CCCallFunc::create(this, callfunc_selector(CardPicker::step)),
-                CCDelayTime::create(1.f),
-                CCCallFunc::create(this, callfunc_selector(CardPicker::resume)),
-                nullptr
-            ));
-        }
-
-        void step() {
-            m_count->setString(std::to_string(m_left).c_str());
-            m_count->setScale(2.4f);
-            m_count->runAction(CCEaseBackOut::create(CCScaleTo::create(0.3f, 1.6f)));
-            --m_left;
-        }
-
-        // 다시 달린다. 이 화면은 g_run 이 붙들고 있으므로 거기서 놓아 지운다.
-        void resume() {
-            auto* layer = PlayLayer::get();
-            if (g_run.frozen && layer) {
-                layer->resumeAudio();
-            }
-            g_run.frozen = false;
-            if (g_run.picker.data() == this) {
-                this->removeFromParent();
-                g_run.picker = nullptr;
-            }
-        }
-    };
-
     bool runsHere(PlayLayer* layer) {
         return g_run.level && layer && !layer->m_isPracticeMode && !layer->m_isTestMode;
+    }
+
+    // 방패가 죽음을 막았을 때. 화면이 하얗게 번쩍이고 SHIELD! 가 뜬다.
+    void shieldFlash(PlayLayer* layer) {
+        auto const size = CCDirector::sharedDirector()->getWinSize();
+        auto* flash = CCLayerColor::create({ 200, 245, 255, 150 }, size.width, size.height);
+        flash->runAction(CCSequence::create(CCFadeTo::create(0.3f, 0), CCRemoveSelf::create(true), nullptr));
+        layer->addChild(flash, HUD_Z - 1);
+
+        auto* text = CCLabelBMFont::create("SHIELD!", "bigFont.fnt");
+        text->setColor({ 150, 235, 255 });
+        text->setPosition({ size.width / 2.f, size.height * 0.68f });
+        text->setScale(0.3f);
+        text->runAction(CCSequence::create(
+            CCEaseBackOut::create(CCScaleTo::create(0.2f, 1.f)),
+            CCDelayTime::create(0.3f),
+            CCSpawn::create(CCFadeOut::create(0.3f), CCMoveBy::create(0.3f, { 0.f, 12.f }), nullptr),
+            CCRemoveSelf::create(true),
+            nullptr
+        ));
+        layer->addChild(text, HUD_Z + 1);
+        gdu::art::play("sfx-shield.ogg", 0.7f);
     }
 }
 
 class $modify(RoguelikePlayLayer, PlayLayer) {
     bool init(GJGameLevel* level, bool useReplay, bool dontCreateObjects) {
         clearEffects(nullptr);
-        g_run.level = false;
-        g_run.hud = nullptr;
+        g_run = Run{};
 
         if (!PlayLayer::init(level, useReplay, dontCreateObjects)) {
             return false;
@@ -412,31 +261,50 @@ class $modify(RoguelikePlayLayer, PlayLayer) {
         auto const tier = gdu::daily::tierOf(level);
         g_run.level = tier.has_value();
         g_run.tier = tier.value_or("");
-        if (!g_run.level) {
+        auto const& today = gdu::daily::today();
+        if (!g_run.level || !today) {
             return true;
         }
 
         auto const size = CCDirector::sharedDirector()->getWinSize();
-        auto* hud = CCLabelBMFont::create("", "chatFont.fnt");
-        hud->setID("roguelike-hud"_spr);
-        hud->setScale(0.55f);
-        hud->setAnchorPoint({ 0.5f, 1.f });
-        // 진행 막대가 맨 위 가운데에 있으므로 그 아래에 둔다.
-        hud->setPosition({ size.width / 2.f, size.height - 26.f });
-        hud->setOpacity(220);
-        hud->setAlignment(kCCTextAlignmentCenter);
-        this->addChild(hud, HUD_Z);
-        g_run.hud = hud;
-        updateHud();
+        if (auto* hud = gdu::ui::RunHud::create(g_run.tier, today->roguelike.milestones)) {
+            hud->setPosition({ 8.f, size.height - 8.f });
+            this->addChild(hud, HUD_Z);
+            g_run.hud = hud;
+        }
+
+        // 진행 막대 위에 카드가 나오는 지점을 찍는다. 막대를 숨기면 같이 숨는다.
+        if (m_progressBar) {
+            auto const bar = m_progressBar->getContentSize();
+            float const scale = m_progressBar->getScale();
+            for (int percent : today->roguelike.milestones) {
+                if (auto* tick = gdu::art::sprite("hud-tick.png")) {
+                    gdu::art::fit(tick, scale > 0.f ? 9.f / scale : 9.f);
+                    tick->setPosition({ 2.f + (bar.width - 4.f) * static_cast<float>(percent) / 100.f, bar.height / 2.f });
+                    m_progressBar->addChild(tick, 5);
+                    g_run.ticks.push_back(tick);
+                }
+            }
+        }
+
+        updateHud(false);
+        paintTicks();
         return true;
     }
 
-    // 죽으면 다시 시작하며 여기를 지난다. 로그라이크이므로 카드도 모두 잃는다.
+    // 죽거나 다시 시작하면 여기를 지난다. 로그라이크이므로 카드도 모두 잃는다.
     void resetLevel() {
+        bool const lostCards = g_run.level && !g_run.picks.empty();
         PlayLayer::resetLevel();
-        if (g_run.level) {
-            clearEffects(this);
+        if (!g_run.level) {
+            return;
         }
+        clearEffects(this, true);
+        if (lostCards && g_run.hud) {
+            g_run.hud->lost();
+            gdu::art::play("sfx-lose.ogg", 0.5f);
+        }
+        updateHud(false);
     }
 
     void onQuit() {
@@ -445,6 +313,14 @@ class $modify(RoguelikePlayLayer, PlayLayer) {
         }
         g_run = Run{};
         PlayLayer::onQuit();
+    }
+
+    // 일시 정지를 풀면 GD 가 음악을 다시 튼다. 카드를 고르는 중이면 다시 멈춘다.
+    void resume() {
+        PlayLayer::resume();
+        if (g_run.frozen) {
+            this->pauseAudio();
+        }
     }
 
     // 방패가 있으면 한 번 버티고, 그 뒤 잠깐은 무엇에 닿아도 죽지 않는다. 안티치트용
@@ -456,11 +332,16 @@ class $modify(RoguelikePlayLayer, PlayLayer) {
             }
             if (g_run.shields > 0) {
                 --g_run.shields;
+                ++g_run.usedShields;
                 g_run.safeFor = SAFE_SECONDS;
-                updateHud();
-                Notification::create("Shield!", NotificationIcon::Info, 1.f)->show();
+                shieldFlash(this);
+                if (g_run.hud) {
+                    g_run.hud->shieldBroke();
+                }
+                updateHud(false);
                 return;
             }
+            gdu::daily::notePercent(m_level, this->getCurrentPercentInt());
         }
         PlayLayer::destroyPlayer(player, object);
     }
@@ -470,24 +351,31 @@ class $modify(RoguelikePlayLayer, PlayLayer) {
         if (!g_run.level) {
             return;
         }
-        // 연습 모드로 바꾸면 그 판은 로그라이크가 아니다. 효과를 걷는다.
-        if (m_isPracticeMode || m_isTestMode) {
+        // 연습 모드나 시작 위치로 하는 판은 로그라이크가 아니다. 효과를 걷고 HUD 를 숨긴다.
+        bool const counts = runsHere(this);
+        if (g_run.hud) {
+            g_run.hud->setVisible(counts);
+        }
+        for (auto& tick : g_run.ticks) {
+            if (tick) {
+                tick->setVisible(counts);
+            }
+        }
+        if (!counts) {
             if (!g_run.picks.empty() || g_run.frozen) {
                 clearEffects(this);
+                updateHud(false);
             }
             return;
         }
 
         if (g_run.safeFor > 0.f) {
             g_run.safeFor = std::max(0.f, g_run.safeFor - dt);
+            g_run.blink += dt;
         }
-        if (g_run.invisible) {
-            for (auto* player : { m_player1, m_player2 }) {
-                if (player) {
-                    player->setVisible(false);
-                }
-            }
-        }
+        // 방패가 깨진 뒤 무적인 동안은 아이콘이 깜빡인다.
+        bool const blinkOff = g_run.safeFor > 0.f && std::fmod(g_run.blink, 0.12f) > 0.06f;
+        hidePlayers(this, g_run.invisible || blinkOff);
         if (g_run.shaking) {
             static std::mt19937 random(std::random_device{}());
             std::uniform_real_distribution<float> jitter(-3.f, 3.f);
@@ -507,23 +395,52 @@ class $modify(RoguelikePlayLayer, PlayLayer) {
             return;
         }
 
-        auto* picker = CardPicker::create(g_run.nextStop, entry->offers[g_run.nextStop]);
-        ++g_run.nextStop;
+        std::size_t const stop = g_run.nextStop++;
+        gdu::ui::CardPicker::Hooks hooks;
+        hooks.picked = [this](std::string const& id) {
+            g_run.picks.push_back(id);
+            applyCard(this, id);
+        };
+        hooks.target = [stop]() -> CCPoint {
+            if (g_run.hud) {
+                return g_run.hud->slotWorld(stop);
+            }
+            auto const size = CCDirector::sharedDirector()->getWinSize();
+            return { 30.f, size.height - 30.f };
+        };
+        hooks.landed = [] {
+            updateHud(true);
+            paintTicks();
+        };
+        hooks.resume = [this] {
+            if (g_run.frozen) {
+                this->resumeAudio();
+            }
+            g_run.frozen = false;
+            g_run.picker = nullptr;
+        };
+
+        auto* picker = gdu::ui::CardPicker::create(rules.milestones[stop], entry->offers[stop], std::move(hooks));
         if (!picker) {
             return;
         }
         g_run.frozen = true;
         this->pauseAudio();
-        this->addChild(picker, PICKER_Z);
         g_run.picker = picker;
+        picker->show();
     }
 
     void levelComplete() {
         auto const picks = g_run.picks;
         bool const counts = runsHere(this);
         PlayLayer::levelComplete();
-        if (counts) {
-            gdu::daily::cleared(m_level, picks);
+        if (!counts) {
+            return;
+        }
+        gdu::daily::cleared(m_level, picks);
+        if (g_run.hud) {
+            int const score = gdu::daily::scoreOf(g_run.tier, picks).value_or(gdu::daily::partialScore(picks));
+            g_run.hud->showClear(score, picks);
         }
     }
 };

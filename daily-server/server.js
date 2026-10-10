@@ -163,7 +163,8 @@ function validateLevels(levels) {
 }
 
 // GD 서버의 레벨 검색 답을 읽는다. 형식은 "레벨들#만든이들#노래들#쪽정보#해시" 이고,
-// 레벨들은 | 로, 레벨 하나는 "키:값:키:값..." 으로 나뉜다. 실패하면 "-1" 이 온다.
+// 레벨들은 | 로, 레벨 하나는 "키:값:키:값..." 으로 나뉜다. 만든이는 "userID:이름:accountID"
+// 가 | 로 이어진다. 실패하면 "-1" 이 온다.
 // (https://github.com/Rifct/gd-docs 의 getGJLevels21 문서를 따랐다.)
 function parseSearch(text) {
     if (typeof text !== "string" || text.trim() === "-1" || !text.includes("#")) return null;
@@ -174,8 +175,29 @@ function parseSearch(text) {
         for (let i = 0; i + 1 < fields.length; i += 2) level[fields[i]] = fields[i + 1];
         return level;
     });
+    const creators = {};
+    for (const raw of (parts[1] || "").split("|")) {
+        const [userID, name] = raw.split(":");
+        if (userID && name) creators[userID] = name;
+    }
     const [total] = (parts[3] || "").split(":").map(Number);
-    return { levels, total: Number.isFinite(total) ? total : 0 };
+    return { levels, creators, total: Number.isFinite(total) ? total : 0 };
+}
+
+// 레벨의 난이도 얼굴 번호. GD 의 그림 번호(diffIcon_XX_btn_001.png)를 따른다.
+// 1~5 이지~인세인, 6 하드 데몬, 7 이지, 8 미디엄, 9 인세인, 10 익스트림 데몬, 0 N/A, -1 오토.
+// 데몬의 세부 난이도(키 43)는 3 이지, 4 미디엄, 0 하드, 5 인세인, 6 익스트림이다.
+function faceOf(level) {
+    if (level["25"] === "1") return -1;
+    if (level["17"] === "1") return { 3: 7, 4: 8, 0: 6, 5: 9, 6: 10 }[Number(level["43"]) || 0] ?? 6;
+    return Math.max(0, Math.min(5, Math.round((Number(level["9"]) || 0) / 10)));
+}
+
+// 0 없음, 1 피처드, 2 에픽, 3 레전더리, 4 미식. 키 42 는 1 에픽, 2 레전더리, 3 미식이다.
+function featureOf(level) {
+    const epic = Number(level["42"]) || 0;
+    if (epic > 0) return Math.min(4, epic + 1);
+    return Number(level["19"]) > 0 ? 1 : 0;
 }
 
 // GD 서버에 레벨 검색을 보낸다. GD 서버는 User-Agent 가 붙은 요청을 막는 것으로
@@ -226,7 +248,17 @@ async function pickRated(tier, search, random) {
     if (candidates.length === 0) throw new Error(`page ${page} of ${tier.name} had no usable level`);
 
     const level = candidates[Math.floor(random() * candidates.length)];
-    return { id: Number(level["1"]), kind: "online", name: level["2"] };
+    const length = Number(level["15"]);
+    return {
+        id: Number(level["1"]),
+        kind: "online",
+        name: level["2"],
+        creator: chosen.creators?.[level["6"]] || "",
+        stars: Number(level["18"]) || 0,
+        face: faceOf(level),
+        feature: featureOf(level),
+        length: Number.isInteger(length) && length >= 0 && length <= 4 ? length : -1,
+    };
 }
 
 // 기다리다 말 약속. 늦으면 fallback 을 준다. 고르기는 뒤에서 계속되어 다음 요청에 쓰인다.
@@ -330,7 +362,12 @@ function createApp({
         const rows = Object.entries(players)
             .map(([id, row]) => ({ id, ...row }))
             .sort(better);
-        const shown = ({ name, attempts, score }) => (score === undefined ? { name, attempts } : { name, attempts, score });
+        const shown = ({ name, attempts, score, cards }) => ({
+            name,
+            attempts,
+            ...(score === undefined ? {} : { score }),
+            ...(Array.isArray(cards) ? { cards } : {}),
+        });
         const result = {
             top: rows.slice(0, TOP).map(shown),
             total: rows.length,
@@ -398,7 +435,7 @@ function createApp({
 
         const players = (day(date).boards[body.tier] ||= {});
         const previous = players[body.player.id];
-        const row = { name, attempts: body.attempts, at: now(), score };
+        const row = { name, attempts: body.attempts, at: now(), score, cards: [...body.cards] };
         if (!previous || better(row, previous) < 0) {
             players[body.player.id] = row;
         }
@@ -470,7 +507,7 @@ function createApp({
 
 module.exports = {
     createApp, dateOf, levelFor, cleanName, secondsLeft, parseSearch, pickRated, offersFor, scoreOf,
-    TIERS, CARDS, MILESTONES,
+    faceOf, featureOf, TIERS, CARDS, MILESTONES,
 };
 
 if (require.main === module) {
