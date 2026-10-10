@@ -192,26 +192,41 @@ namespace {
     }
 
     int lineHeight(char const* file) {
-        auto* probe = CCLabelBMFont::create("", file);
-        auto* config = probe ? probe->getConfiguration() : nullptr;
+        auto* config = FNTConfigLoadFile(file);
         return config ? static_cast<int>(config->m_nCommonHeight) : 0;
+    }
+
+    // GD 글꼴의 줄 높이. 화질을 바꾸면 글꼴을 다시 읽어 값이 달라지므로, 화질 배율이
+    // 바뀌면 다시 잰다.
+    int gameHeight(Font font) {
+        static std::array<int, 3> heights{};
+        static float scaleFactor = 0.f;
+        float const now = CCDirector::sharedDirector()->getContentScaleFactor();
+        if (now != scaleFactor) {
+            heights = {};
+            scaleFactor = now;
+        }
+        auto& height = heights[static_cast<std::size_t>(font)];
+        if (height <= 0) {
+            height = lineHeight(gameFont(font));
+        }
+        return height;
+    }
+
+    float ratio(int game, int own) {
+        return game > 0 && own > 0 ? static_cast<float>(game) / static_cast<float>(own) : 1.f;
     }
 
     // GD 글꼴의 줄 높이 / 우리 글꼴의 줄 높이. 같은 배율이면 같은 크기로 보이게 곱한다.
     float ownFactor(Font font) {
-        static std::array<float, 3> cache{};
-        auto& value = cache[static_cast<std::size_t>(font)];
-        if (value <= 0.f) {
-            int const game = lineHeight(gameFont(font));
-            int const own = lineHeight(ownFont(font).c_str());
-            value = game > 0 && own > 0 ? static_cast<float>(game) / static_cast<float>(own) : 1.f;
-        }
-        return value;
+        return ratio(gameHeight(font), lineHeight(ownFont(font).c_str()));
     }
 
-    bool usesOwnFont(CCLabelBMFont* label, Font font) {
-        auto const* file = label ? label->getFntFile() : nullptr;
-        return file && ownFont(font) == file;
+    // 라벨이 지금 쓰는 글꼴 기준의 배율. 한국어 패치 모드가 깔려 있으면 한글 라벨의
+    // 글꼴을 제 것으로 바꿔 끼우므로, 우리가 고른 글꼴이 아니라 실제 글꼴로 잰다.
+    float currentFactor(CCLabelBMFont* label, Font font) {
+        auto* config = label ? label->getConfiguration() : nullptr;
+        return ratio(gameHeight(font), config ? static_cast<int>(config->m_nCommonHeight) : 0);
     }
 }
 
@@ -281,7 +296,7 @@ namespace gdu::text {
 
     CCLabelBMFont* label(std::string const& text, Font font, float scale) {
         auto* node = CCLabelBMFont::create(text.c_str(), fontFor(text, font));
-        node->setScale(scale * factorFor(text, font));
+        node->setScale(scale * currentFactor(node, font));
         return node;
     }
 
@@ -289,7 +304,7 @@ namespace gdu::text {
         // 너비를 주지 않으면(-1) 글꼴이 줄을 스스로 나누지 않는다. 한글은 글자마다 바이트
         // 수가 달라 GD 가 줄을 엉뚱하게 나누는 일이 있어, 줄은 글 안의 \n 으로만 나눈다.
         auto* node = CCLabelBMFont::create(text.c_str(), fontFor(text, font), -1.f, kCCTextAlignmentCenter);
-        node->setScale(scale * factorFor(text, font));
+        node->setScale(scale * currentFactor(node, font));
         return node;
     }
 
@@ -303,14 +318,14 @@ namespace gdu::text {
             label->setFntFile(file);
         }
         label->setString(text.c_str());
-        label->setScale(scale * factorFor(text, font));
+        label->setScale(scale * currentFactor(label, font));
     }
 
     void fit(CCLabelBMFont* label, Font font, float width, float scale, float minScale) {
         if (!label) {
             return;
         }
-        float const factor = usesOwnFont(label, font) ? ownFactor(font) : 1.f;
+        float const factor = currentFactor(label, font);
         label->limitLabelWidth(width, scale * factor, minScale * factor);
     }
 
