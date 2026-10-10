@@ -8,7 +8,7 @@
     },
     "id": "doongndon.gd-utils",
     "name": "Doong's GD Utils",
-    "version": "v2.0.1",
+    "version": "v2.1.0",
     "developers": [
         "doongndon"
     ],
@@ -120,22 +120,6 @@
             "name": "Deco tools button",
             "description": "Adds a Deco button to the editor with Scatter (random jitter) and Ramp (gradual change) for the current selection.",
             "default": true
-        },
-        "daily-title": {
-            "type": "title",
-            "name": "Daily Challenge"
-        },
-        "daily-enabled": {
-            "type": "bool",
-            "name": "Daily challenge button",
-            "description": "Adds a Daily button to the main menu. Every day the server picks one level per difficulty - a main level, or a random rated level from Easy up to Easy Demon - and everyone using this mod races to beat it in the fewest attempts. Practice runs count as attempts; clears in practice mode or from a start position do not count. The Roguelike slot stops the game at 25, 50 and 75% to let you pick a card - help cards cost points, curses earn them, and dying loses them all.",
-            "default": true
-        },
-        "daily-server": {
-            "type": "string",
-            "name": "Custom server (optional)",
-            "description": "Leave this empty to use the official daily challenge server. Only fill it in if you run your own server (it lives in the daily-server folder of this mod's repository).",
-            "default": ""
         },
         "update-title": {
             "type": "title",

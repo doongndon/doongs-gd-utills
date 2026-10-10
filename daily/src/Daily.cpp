@@ -9,7 +9,6 @@
 
 #include <fmt/format.h>
 
-#include "Settings.hpp"
 
 using namespace geode::prelude;
 
@@ -120,20 +119,12 @@ namespace {
         return { fmt::format("dev:{}", deviceID()), name.empty() ? "Player" : name };
     }
 
-    // 공식 서버. 설정 칸은 자기 서버를 따로 돌리는 사람만 쓴다. 비어 있으면 여기로 간다.
-    // 예전 판은 이 칸의 기본값이 빈칸이었고, 그 빈칸이 저장값으로 남아 있는 기기가
-    // 있다. 그래서 기본값에만 기대지 않고 빈칸도 공식 서버로 읽는다.
-    constexpr char const* OFFICIAL_SERVER = "https://doongs-gd-utills.onrender.com";
+    // 오늘의 도전 서버. 모두가 같은 순위표를 봐야 하므로 주소를 고정해 둔다.
+    // 서버 코드는 저장소의 daily-server/ 에 있다.
+    constexpr char const* SERVER = "https://doongs-gd-utills.onrender.com";
 
     std::string serverBase() {
-        auto base = gdu::Settings::get().dailyServer;
-        while (!base.empty() && (base.back() == '/' || base.back() == ' ')) {
-            base.pop_back();
-        }
-        while (!base.empty() && base.front() == ' ') {
-            base.erase(base.begin());
-        }
-        return base.empty() ? std::string(OFFICIAL_SERVER) : base;
+        return SERVER;
     }
 
     async::TaskHolder<web::WebResponse>& backgroundTask() {
@@ -212,7 +203,7 @@ namespace {
     }
 
     void submitNext() {
-        if (!gdu::daily::configured() || submitTask().isPending()) {
+        if (submitTask().isPending()) {
             return;
         }
         auto const tierID = pendingTier();
@@ -300,10 +291,6 @@ namespace {
 }
 
 namespace gdu::daily {
-    bool configured() {
-        return !serverBase().empty();
-    }
-
     std::string selectedTier() {
         return Mod::get()->getSavedValue<std::string>("daily-tier", "main");
     }
@@ -401,7 +388,7 @@ namespace gdu::daily {
     }
 
     void refreshInBackground() {
-        if (!configured() || backgroundTask().isPending()) {
+        if (backgroundTask().isPending()) {
             return;
         }
         auto url = todayUrl(selectedTier());

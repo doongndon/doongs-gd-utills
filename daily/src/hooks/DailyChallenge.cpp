@@ -3,9 +3,8 @@
 #include <Geode/modify/PlayLayer.hpp>
 #include <Geode/ui/BasedButtonSprite.hpp>
 
-#include "Settings.hpp"
-#include "daily/Daily.hpp"
-#include "daily/DailyPopup.hpp"
+#include "Daily.hpp"
+#include "DailyPopup.hpp"
 
 using namespace geode::prelude;
 
@@ -14,10 +13,6 @@ class $modify(DailyMenuLayer, MenuLayer) {
         if (!MenuLayer::init()) {
             return false;
         }
-        if (!gdu::Settings::get().dailyEnabled) {
-            return true;
-        }
-
         // 메뉴에서 곧장 레벨에 들어가도 오늘의 도전인지 알아보도록 미리 받아 둔다.
         gdu::daily::refreshInBackground();
 
@@ -62,9 +57,7 @@ class $modify(DailyPlayLayer, PlayLayer) {
     bool init(GJGameLevel* level, bool useReplay, bool dontCreateObjects) {
         // 시도 수를 세기 시작하는 기준은 레벨을 열기 전의 값이어야 한다. 열면서
         // GD 가 첫 시도를 하나 더하기 때문이다.
-        if (gdu::Settings::get().dailyEnabled) {
-            gdu::daily::startPlaying(level);
-        }
+        gdu::daily::startPlaying(level);
         return PlayLayer::init(level, useReplay, dontCreateObjects);
     }
 
@@ -72,7 +65,7 @@ class $modify(DailyPlayLayer, PlayLayer) {
         PlayLayer::levelComplete();
 
         // 연습 모드나 시작 위치로 깬 것은 깬 것으로 치지 않는다.
-        if (!gdu::Settings::get().dailyEnabled || m_isPracticeMode || m_isTestMode) {
+        if (m_isPracticeMode || m_isTestMode) {
             return;
         }
         gdu::daily::cleared(m_level);

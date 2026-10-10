@@ -26,9 +26,6 @@ namespace gdu {
         saveOnBackground = mod->getSettingValue<bool>("save-on-background");
         decoTools = mod->getSettingValue<bool>("deco-tools");
 
-        dailyEnabled = mod->getSettingValue<bool>("daily-enabled");
-        dailyServer = mod->getSettingValue<std::string>("daily-server");
-
         ++revision;
     }
 }

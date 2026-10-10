@@ -1,0 +1,35 @@
+{
+    "geode": "5.10.1",
+    "gd": {
+        "win": "2.2081",
+        "mac": "2.2081",
+        "android": "2.2081",
+        "ios": "2.2081"
+    },
+    "id": "doongndon.daily-challenge",
+    "name": "Daily Challenge",
+    "version": "v1.0.0",
+    "developers": [
+        "doongndon"
+    ],
+    "description": "A new level every day for every difficulty, a shared leaderboard, and a roguelike run with cards.",
+    "repository": "https://github.com/doongndon/doongs-gd-utills",
+    "tags": [
+        "gameplay",
+        "online"
+    ],
+    "settings": {
+        "update-title": {
+            "type": "title",
+            "name": "Updates"
+        },
+        "check-updates": {
+            "type": "button",
+            "name": "Check for updates",
+            "description": "Downloads the newest release straight from GitHub. Restart the game afterwards to apply it.",
+            "buttons": {
+                "check": "Check"
+            }
+        }
+    }
+}

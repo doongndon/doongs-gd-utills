@@ -1,3 +1,6 @@
+# v2.1.0
+ - The Daily Challenge and the roguelike run moved out into their own mod, **Daily Challenge** (doongndon.daily-challenge). Install that one to keep playing them
+
 # v2.0.1
  - The daily challenge always uses the official server unless you set your own. Devices that kept the old empty server address no longer need to type it in
 

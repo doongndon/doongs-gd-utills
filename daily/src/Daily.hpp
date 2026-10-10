@@ -82,8 +82,6 @@ namespace gdu::daily {
 
     inline constexpr char const* ROGUELIKE = "roguelike";
 
-    bool configured();
-
     // 팝업에서 마지막으로 고른 난이도. 다음에 열 때도 그 난이도로 연다.
     std::string selectedTier();
     void selectTier(std::string const& tier);

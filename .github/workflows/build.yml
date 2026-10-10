@@ -7,9 +7,11 @@ on:
       - "**"
     paths-ignore:
       - "ko-patch/**"
+      - "daily/**"
   pull_request:
     paths-ignore:
       - "ko-patch/**"
+      - "daily/**"
 
 jobs:
   build:

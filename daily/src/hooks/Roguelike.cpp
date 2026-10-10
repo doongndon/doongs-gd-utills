@@ -10,8 +10,7 @@
 
 #include <fmt/format.h>
 
-#include "Settings.hpp"
-#include "daily/Daily.hpp"
+#include "Daily.hpp"
 
 using namespace geode::prelude;
 
@@ -405,7 +404,7 @@ class $modify(RoguelikePlayLayer, PlayLayer) {
         }
 
         auto const tier = gdu::daily::tierOf(level);
-        g_run.level = gdu::Settings::get().dailyEnabled && tier && *tier == gdu::daily::ROGUELIKE;
+        g_run.level = tier && *tier == gdu::daily::ROGUELIKE;
         if (!g_run.level) {
             return true;
         }
@@ -515,7 +514,7 @@ class $modify(RoguelikePlayLayer, PlayLayer) {
         auto const picks = g_run.picks;
         bool const counts = runsHere(this);
         PlayLayer::levelComplete();
-        if (counts && gdu::Settings::get().dailyEnabled) {
+        if (counts) {
             gdu::daily::cleared(m_level, picks);
         }
     }
