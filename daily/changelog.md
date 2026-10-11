@@ -1,3 +1,6 @@
+# v2.0.2
+ - Fixed the featured border: GD's border sprite sits above the face's centre, so it peeked out over the top of the face. Featured levels now get a gold ring drawn around the face, and epic, legendary and mythic levels a flame ring in orange, blue or purple
+
 # v2.0.1
  - Fixed online difficulties stuck on "the server is still picking this level": when the server cannot reach the GD servers, your game searches the GD servers itself, picks the level the same way and tells the server, which keeps the first pick for everyone
  - The level card shows when a level is being picked, and why picking failed; refresh tries again

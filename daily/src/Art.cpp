@@ -67,22 +67,23 @@ namespace gdu::art {
         }
 
         if (feature > 0) {
-            // 피처드는 금테, 에픽 이상은 불꽃 테. 불꽃 그림을 못 찾으면 금테로 둔다.
-            CCSprite* ring = nullptr;
-            if (feature == 2) {
-                ring = frame("GJ_epicCoin_001.png");
-            }
-            else if (feature == 3) {
-                ring = frame("GJ_epicCoin2_001.png");
-            }
-            else if (feature >= 4) {
-                ring = frame("GJ_epicCoin3_001.png");
-            }
-            if (!ring) {
-                ring = frame("GJ_featuredCoin_001.png");
-            }
-            if (ring) {
-                ring->setPosition(face->getContentSize() / 2.f);
+            // 피처드는 금테, 에픽 이상은 불꽃 테. GD 의 테 그림(GJ_featuredCoin 등)은 얼굴
+            // 가운데에서 위로 치우쳐 있어 얼굴 정중앙에 붙이면 위쪽만 삐져나온다. 그래서
+            // 얼굴 가운데에 맞춰 그린 우리 테를 쓴다(make_art.py 의 ring_featured, ring_flames).
+            bool const flames = feature >= 2;
+            if (auto* ring = sprite(flames ? "ring-flames.png" : "ring-featured.png")) {
+                auto const content = face->getContentSize();
+                fit(ring, std::max(content.width, content.height) * (flames ? 1.6f : 1.32f));
+                ring->setPosition(content / 2.f);
+                if (feature == 2) {
+                    ring->setColor({ 255, 140, 40 });   // 에픽: 주황
+                }
+                else if (feature == 3) {
+                    ring->setColor({ 90, 200, 255 });   // 레전더리: 하늘
+                }
+                else if (feature >= 4) {
+                    ring->setColor({ 220, 90, 255 });   // 미식: 보라
+                }
                 face->addChild(ring, -1);
             }
         }

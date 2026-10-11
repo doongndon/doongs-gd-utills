@@ -682,6 +682,66 @@ def badge():
     return finish(img, 16 * UHD)
 
 
+def ring_featured():
+    # 피처드 레벨의 금테. 난이도 얼굴 뒤에 깔리고, 얼굴보다 조금 커서 테만 보인다.
+    size = 64 * UHD * SS
+    img = canvas(size, size)
+    c = size / 2
+    outer = ellipse_mask(size, size, (c - size * 0.47, c - size * 0.47, c + size * 0.47, c + size * 0.47))
+    inner = ellipse_mask(size, size, (c - size * 0.37, c - size * 0.37, c + size * 0.37, c + size * 0.37))
+    band = ImageChops.subtract(outer, inner)
+    img = paint(img, solid(size, size, INK), grow(band, 3 * SS))
+    img = paint(img, gradient(size, size, (255, 240, 150), (215, 135, 20), 70), band)
+    img = paint(img, sheen(size, size, band, 120, 45), band)
+    # 테 위의 반짝임 네 점
+    for ang in (-60, 30, 120, 210):
+        a = math.radians(ang)
+        x = c + math.cos(a) * size * 0.42
+        y = c + math.sin(a) * size * 0.42
+        star = poly_mask(size, size, star_points(x, y, size * 0.05, size * 0.018, 4, -90))
+        img = paint(img, solid(size, size, (255, 255, 240)), star)
+    return finish(img, 64 * UHD)
+
+
+def ring_flames():
+    # 에픽 이상의 불꽃 테. 흰색으로 그려 게임에서 등급 색(주황, 하늘, 보라)으로 물들인다.
+    # 불꽃은 위로 솟으므로 윗부분 불꽃을 크게, 끝을 위쪽으로 휘게 그린다.
+    size = 80 * UHD * SS
+    img = canvas(size, size)
+    c = size / 2
+    r_in = size * 0.27
+    r_out = size * 0.34
+    flames = mask(size, size)
+    count = 13
+    for k in range(count):
+        a = math.radians(k * 360 / count - 90)
+        dx, dy = math.cos(a), math.sin(a)
+        up = max(0.0, -dy)                      # 위를 볼수록 1
+        length = size * (0.045 + 0.095 * up ** 1.3)
+        width = math.radians(360 / count * 0.62)
+        base_l = (c + math.cos(a - width) * r_out * 0.92, c + math.sin(a - width) * r_out * 0.92)
+        base_r = (c + math.cos(a + width) * r_out * 0.92, c + math.sin(a + width) * r_out * 0.92)
+        tip = (c + dx * (r_out + length), c + dy * (r_out + length) - length * 0.45 * (1 - up))
+        # 끝으로 갈수록 가늘어지는 혀 모양
+        bend = 0.55
+        left = bezier([base_l, (base_l[0] + (tip[0] - base_l[0]) * bend + dy * size * 0.02,
+                                base_l[1] + (tip[1] - base_l[1]) * bend - dx * size * 0.02), tip], 16)
+        right = bezier([tip, (base_r[0] + (tip[0] - base_r[0]) * bend - dy * size * 0.02,
+                              base_r[1] + (tip[1] - base_r[1]) * bend + dx * size * 0.02), base_r], 16)
+        ImageDraw.Draw(flames).polygon(left + right[1:], fill=255)
+    ring = ImageChops.subtract(
+        ellipse_mask(size, size, (c - r_out, c - r_out, c + r_out, c + r_out)),
+        ellipse_mask(size, size, (c - r_in, c - r_in, c + r_in, c + r_in)),
+    )
+    shape = ImageChops.lighter(blur(flames, 3 * SS).point(lambda v: 255 if v > 100 else 0), ring)
+    img = paint(img, solid(size, size, INK), grow(shape, 3 * SS))
+    # 안쪽(뿌리)이 밝고 끝이 어두운 빛. 물들이면 뿌리는 밝은 색, 끝은 짙은 색이 된다.
+    img = paint(img, radial(size, size, (c, c), size * 0.5, (255, 255, 255), (150, 150, 150), 1.6), shape)
+    core = ImageChops.multiply(shape, ellipse_mask(size, size, (c - r_out * 1.08, c - r_out * 1.08, c + r_out * 1.08, c + r_out * 1.08)))
+    img = paint(img, solid(size, size, (255, 255, 255, 140)), core)
+    return finish(img, 80 * UHD)
+
+
 def main():
     os.makedirs(OUT, exist_ok=True)
     for kind in KINDS:
@@ -695,6 +755,8 @@ def main():
     save(menu_icon(), "menu-icon.png")
     save(refresh_icon(), "refresh-icon.png")
     save(badge(), "badge.png")
+    save(ring_featured(), "ring-featured.png")
+    save(ring_flames(), "ring-flames.png")
 
 
 if __name__ == "__main__":

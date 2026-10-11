@@ -368,18 +368,18 @@ namespace gdu::ui {
         auto const look = tier ? daily::lookOf(*tier) : daily::Look{ .face = daily::tierFace(m_tier) };
         if (auto* face = art::difficultyFace(look.face, look.feature)) {
             art::fit(face, 40.f);
-            face->setPosition({ 42.f, 114.f });
+            face->setPosition({ 42.f, 116.f });
             m_levelArt->addChild(face);
         }
         if (look.stars > 0) {
             auto* stars = CCLabelBMFont::create(std::to_string(look.stars).c_str(), "bigFont.fnt");
             stars->setScale(0.36f);
             stars->setAnchorPoint({ 1.f, 0.5f });
-            stars->setPosition({ 41.f, 85.f });
+            stars->setPosition({ 41.f, 79.f });
             m_levelArt->addChild(stars);
             if (auto* star = CCSprite::createWithSpriteFrameName("GJ_starsIcon_001.png")) {
                 art::fit(star, 11.f);
-                star->setPosition({ 49.f, 85.f });
+                star->setPosition({ 49.f, 79.f });
                 m_levelArt->addChild(star);
             }
         }
