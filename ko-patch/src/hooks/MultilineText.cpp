@@ -496,8 +496,8 @@ class $modify(KoreanMultiline, MultilineBitmapFont) {
         // 다시 자르게 두면 안 된다.
         //
         // 그래서 우리가 나눈 글이 GD 의 줄 나누기를 지나는 동안에는 그
-        // 함수가 받은 글을 그대로 돌려주게 한다. 아래 stringWithMaxWidth 를
-        // 보라. 폭 값 자체는 GD 에게 그대로 넘긴다.
+        // 함수가 우리 줄을 한 줄씩 그대로 돌려주게 한다. 아래
+        // stringWithMaxWidth 를 보라. 폭 값 자체는 GD 에게 그대로 넘긴다.
         //
         // 아래의 대역 글자는 우리 글꼴로 그릴 때만 쓰이지만, 이 막음은 글꼴과
         // 상관없이 걸린다. 바로 위의 예가 텍스처 팩의 한국어 글꼴을 쓰는
@@ -548,12 +548,22 @@ class $modify(KoreanMultiline, MultilineBitmapFont) {
         return true;
     }
 
-    // GD 가 글을 폭에 맞춰 줄로 나누는 곳. 위에서 우리가 이미 나눈 한글 글이면
-    // 손대지 않고 그대로 돌려준다. 그 밖의 글은 GD 가 하던 대로 나눈다.
+    // GD 가 글을 폭에 맞춰 줄로 나누는 곳. GD 는 남은 글을 통째로 넣어 맨 앞
+    // 한 줄만 받고, 받은 길이만큼 앞에서 떼어 낸 뒤 남은 글로 다시 부른다.
+    // 줄바꿈에서 멈춘 줄은 그 줄바꿈 자리에 빈칸 하나를 붙여 돌려주므로, 떼어
+    // 낼 때 줄바꿈도 함께 떨어진다. 떡을 한 줄씩 썰어 가는 칼이다.
+    //
+    // 위에서 우리가 이미 나눈 한글 글이면 GD 가 잰 줄은 버리고, 우리 줄을
+    // GD 가 줄바꿈에서 돌려주던 모양 그대로 돌려준다. 글을 통째로 돌려주면
+    // 모든 줄이 라벨 하나에 담겨 줄마다 가운데를 맞추지 못한다. GD 의 계산은
+    // 예전처럼 한 번씩 돌게 두어 그 함수가 곁들여 적어 두는 값도 그대로 둔다.
     gd::string stringWithMaxWidth(gd::string text, float width, float scale) {
-        if (g_keepOurLines) {
-            return text;
-        }
-        return MultilineBitmapFont::stringWithMaxWidth(text, width, scale);
+        auto line = MultilineBitmapFont::stringWithMaxWidth(text, width, scale);
+        if (!g_keepOurLines || text.empty()) return line;
+
+        std::string_view const rest = text;
+        auto const newline = rest.find('\n');
+        if (newline == std::string_view::npos) return text;
+        return gd::string(std::string(rest.substr(0, newline)) + ' ');
     }
 };
