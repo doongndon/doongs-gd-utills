@@ -498,6 +498,11 @@ class $modify(KoreanMultiline, MultilineBitmapFont) {
         // 그래서 우리가 나눈 글이 GD 의 줄 나누기를 지나는 동안에는 그
         // 함수가 받은 글을 그대로 돌려주게 한다. 아래 stringWithMaxWidth 를
         // 보라. 폭 값 자체는 GD 에게 그대로 넘긴다.
+        //
+        // 아래의 대역 글자는 우리 글꼴로 그릴 때만 쓰이지만, 이 막음은 글꼴과
+        // 상관없이 걸린다. 바로 위의 예가 텍스처 팩의 한국어 글꼴을 쓰는
+        // 사람(우리 글꼴을 끈 사람)에게서 나왔다. "Same line breaks on every
+        // device" 설정 하나로 둘 다 끄고 켠다.
         bool const hangul = kopatch::containsHangul(source);
         bool keepOurLines = false;
         if (hangul) {
@@ -517,7 +522,7 @@ class $modify(KoreanMultiline, MultilineBitmapFont) {
         text = standIns ? standIns->text : source;
 
         SplitGuard const guard;
-        KeepLinesGuard const keep(keepOurLines);
+        KeepLinesGuard const keep(keepOurLines && translator.stableLines());
         if (!MultilineBitmapFont::initWithFont(
                 useFont, text, scale, width, anchor, height, disableColor)) {
             return false;

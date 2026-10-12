@@ -8,7 +8,7 @@
     },
     "id": "doongndon.ko-patch",
     "name": "Korean Patch",
-    "version": "v1.0.2",
+    "version": "v1.0.3",
     "developers": [
         "doongndon"
     ],
@@ -51,7 +51,7 @@
         "stable-lines": {
             "type": "bool",
             "name": "Same line breaks on every device",
-            "description": "While the game splits Korean text into lines, it is handed a blank stand-in for each Korean letter, so every device measures the text the same way. Turn this off to go back to the old way if a text box looks wrong.",
+            "description": "Korean text is split into lines by this mod, and the game is not allowed to split those lines again. When the bundled font is used, the game is also handed a blank stand-in for each Korean letter while it lays the lines out. Every device then shows the same line breaks. Turn this off to go back to the old way if a text box looks wrong.",
             "default": true
         },
         "gemini-title": {
