@@ -6,6 +6,7 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <utility>
 
 #include <fmt/format.h>
 
@@ -25,13 +26,26 @@ namespace {
         ~SplitGuard() { kopatch::setSplittingText(false); }
     };
 
+    // 우리가 이미 줄을 나눈 글이 GD 를 지나는 중이다. 이때 GD 의 줄 나누기는
+    // 받은 글을 그대로 돌려준다.
+    bool g_keepOurLines = false;
+
+    struct KeepLinesGuard {
+        bool const previous;
+        explicit KeepLinesGuard(bool on) : previous(g_keepOurLines) { g_keepOurLines = on; }
+        ~KeepLinesGuard() { g_keepOurLines = previous; }
+    };
+
     // GD 가 줄을 나누는 stringWithMaxWidth 는 글을 바이트 단위로 훑으며 글꼴의
-    // 글자표에서 너비를 찾는다. 한글 한 글자는 세 바이트이고 그 바이트값은
-    // 글자표에 없으므로 너비가 0 으로 셈해진다. 그래서 한글 문장은 아무리 길어도
-    // 한계에 걸리지 않고 한 줄로 이어져 상자 밖으로 흘러나간다.
+    // 글자표에서 너비를 찾는다. 한글 한 글자는 세 바이트다. 그 바이트값이
+    // 글자표에 없는 글꼴에서는 너비가 0 으로 셈해져 한글 문장이 아무리 길어도
+    // 한 줄로 이어져 상자 밖으로 흘러나간다. 거꾸로 그 자리에 서양 글자가
+    // 있는 글꼴(GDKP 의 글꼴)에서는 몇 배 넓게 셈해져 글자 한가운데에서
+    // 끊기고, 반쪽 글자가 든 줄은 아예 그려지지 않는다.
     //
     // 자로 재지 못하는 자에게 종이를 맡기지 않는다. 줄은 우리가 나눠서 건넨다.
-    // 라벨을 하나 만들어 실제로 재 보고, 한계를 넘기 직전에서 끊는다.
+    // 라벨을 하나 만들어 실제로 재 보고, 한계를 넘기 직전에서 끊는다. 그리고
+    // GD 가 그것을 다시 자르지 못하게 한다(아래 stringWithMaxWidth).
     // 글꼴 한 줄의 높이. 배율을 맞추는 데 쓴다.
     int lineHeight(char const* font) {
         if (!font) return 0;
@@ -40,15 +54,16 @@ namespace {
         return probe->getConfiguration()->m_nCommonHeight;
     }
 
-    std::string wrapToWidth(
+    // 나눌 수 없었으면 nullopt. 그때는 GD 가 제 방식대로 나누게 둔다.
+    std::optional<std::string> wrapToWidth(
         std::string const& text, char const* font, float scale, float maxWidth
     ) {
         // 픽셀 너비가 아닌 값이 들어오는 자리가 있을까 봐, 상자 하나도 담지
         // 못할 만큼 작은 한계는 믿지 않고 그대로 넘긴다.
-        if (maxWidth < 40.f || scale <= 0.f || text.empty()) return text;
+        if (maxWidth < 40.f || scale <= 0.f || text.empty()) return std::nullopt;
 
         auto* ruler = CCLabelBMFont::create(" ", font);
-        if (!ruler) return text;
+        if (!ruler) return std::nullopt;
 
         // 재는 동안에는 라벨 훅이 끼어들지 않아야 한다.
         SplitGuard const guard;
@@ -320,13 +335,31 @@ class $modify(KoreanMultiline, MultilineBitmapFont) {
             paint = !parsed.spans.empty();
         }
 
+        // 한글 줄은 여기서 우리가 나눈다. 그런데 GD 의 stringWithMaxWidth 는
+        // 넘겨받은 글을 바이트로 재서 한 번 더 나눈다. 한글 한 글자는 세
+        // 바이트이고, 글꼴에 그 바이트값 자리의 서양 글자(é, ê 같은 것)가 들어
+        // 있으면 GD 는 한글을 실제보다 몇 배 넓게 잰다. GDKP 의 글꼴이 그렇다.
+        // 그러면 GD 가 우리 줄을 잘게 다시 나누면서 글자 한가운데에서 끊고,
+        // 반쪽 글자가 든 줄은 UTF-8 이 깨져 통째로 그려지지 않는다.
+        // "지금 레벨을 건너뛰고 다음을 불러올까요?" 가 창을 길게 늘인 채
+        // "지금", "고 다음을", "올" 만 남은 까닭이다. 가위질이 끝난 종이를
+        // 다시 자르게 두면 안 된다.
+        //
+        // 그래서 우리가 나눈 글이 GD 의 줄 나누기를 지나는 동안에는 그
+        // 함수가 받은 글을 그대로 돌려주게 한다. 아래 stringWithMaxWidth 를
+        // 보라. 폭 값 자체는 GD 에게 그대로 넘긴다.
+        bool keepOurLines = false;
         if (kopatch::containsHangul(source)) {
-            source = wrapToWidth(source, useFont, scale, width);
+            if (auto wrapped = wrapToWidth(source, useFont, scale, width)) {
+                source = std::move(*wrapped);
+                keepOurLines = true;
+            }
         }
 
         text = source;
 
         SplitGuard const guard;
+        KeepLinesGuard const keep(keepOurLines);
         if (!MultilineBitmapFont::initWithFont(
                 useFont, text, scale, width, anchor, height, disableColor)) {
             return false;
@@ -340,5 +373,14 @@ class $modify(KoreanMultiline, MultilineBitmapFont) {
             kopatch::colortags::apply(this, parsed.plain, parsed.spans);
         }
         return true;
+    }
+
+    // GD 가 글을 폭에 맞춰 줄로 나누는 곳. 위에서 우리가 이미 나눈 한글 글이면
+    // 손대지 않고 그대로 돌려준다. 그 밖의 글은 GD 가 하던 대로 나눈다.
+    gd::string stringWithMaxWidth(gd::string text, float width, float scale) {
+        if (g_keepOurLines) {
+            return text;
+        }
+        return MultilineBitmapFont::stringWithMaxWidth(text, width, scale);
     }
 };
